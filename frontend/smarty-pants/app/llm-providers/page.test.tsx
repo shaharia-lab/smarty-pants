@@ -1,9 +1,7 @@
-import React from 'react';
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import React, {act} from 'react';
+import {fireEvent, render, screen, waitFor} from '@testing-library/react';
 import '@testing-library/jest-dom';
-import { act } from 'react';
 import LLMProvidersPage from "@/app/llm-providers/page";
-import EmbeddingProvidersPage from "@/app/embedding-providers/page";
 
 // Mock the fetch function
 global.fetch = jest.fn();
@@ -18,10 +16,11 @@ describe('LLMProvidersPage', () => {
 
     it('renders loading state initially', async () => {
         // Mock fetch to return a promise that doesn't resolve immediately
-        (global.fetch as jest.Mock).mockImplementationOnce(() => new Promise(() => {}));
+        (global.fetch as jest.Mock).mockImplementationOnce(() => new Promise(() => {
+        }));
 
         await act(async () => {
-            render(<LLMProvidersPage />);
+            render(<LLMProvidersPage/>);
         });
 
         expect(screen.getByText('Loading...')).toBeInTheDocument();
@@ -29,16 +28,16 @@ describe('LLMProvidersPage', () => {
 
     it('fetches and displays LLM providers', async () => {
         const mockProviders = [
-            { uuid: '1', name: 'Test LLM Provider', provider: 'test', status: 'active' }
+            {uuid: '1', name: 'Test LLM Provider', provider: 'test', status: 'active'}
         ];
 
         (global.fetch as jest.Mock).mockResolvedValueOnce({
             ok: true,
-            json: async () => ({ llm_providers: mockProviders, total: 1, page: 1, per_page: 10, total_pages: 1 }),
+            json: async () => ({llm_providers: mockProviders, total: 1, page: 1, per_page: 10, total_pages: 1}),
         });
 
         await act(async () => {
-            render(<LLMProvidersPage />);
+            render(<LLMProvidersPage/>);
         });
 
         await waitFor(() => {
@@ -50,7 +49,7 @@ describe('LLMProvidersPage', () => {
         (global.fetch as jest.Mock).mockRejectedValueOnce(new Error('API error'));
 
         await act(async () => {
-            render(<LLMProvidersPage />);
+            render(<LLMProvidersPage/>);
         });
 
         await waitFor(() => {
@@ -60,26 +59,26 @@ describe('LLMProvidersPage', () => {
 
     it('handles delete provider', async () => {
         const mockProviders = [
-            { uuid: '1', name: 'Test LLM Provider', provider: 'test', status: 'active' }
+            {uuid: '1', name: 'Test LLM Provider', provider: 'test', status: 'active'}
         ];
 
         (global.fetch as jest.Mock)
             .mockResolvedValueOnce({
                 ok: true,
-                json: async () => ({ llm_providers: mockProviders, total: 1, page: 1, per_page: 10, total_pages: 1 }),
+                json: async () => ({llm_providers: mockProviders, total: 1, page: 1, per_page: 10, total_pages: 1}),
             })
             .mockResolvedValueOnce({
                 ok: true,
             })
             .mockResolvedValueOnce({
                 ok: true,
-                json: async () => ({ llm_providers: [], total: 0, page: 1, per_page: 10, total_pages: 0 }),
+                json: async () => ({llm_providers: [], total: 0, page: 1, per_page: 10, total_pages: 0}),
             });
 
         window.confirm = jest.fn().mockImplementation(() => true);
 
         await act(async () => {
-            render(<LLMProvidersPage />);
+            render(<LLMProvidersPage/>);
         });
 
         await waitFor(() => {
@@ -97,28 +96,28 @@ describe('LLMProvidersPage', () => {
 
     it('handles activate provider', async () => {
         const mockProviders = [
-            { uuid: '1', name: 'Test LLM Provider', provider: 'test', status: 'inactive' }
+            {uuid: '1', name: 'Test LLM Provider', provider: 'test', status: 'inactive'}
         ];
 
         (global.fetch as jest.Mock)
             .mockResolvedValueOnce({
                 ok: true,
-                json: async () => ({ llm_providers: mockProviders, total: 1, page: 1, per_page: 10, total_pages: 1 }),
+                json: async () => ({llm_providers: mockProviders, total: 1, page: 1, per_page: 10, total_pages: 1}),
             })
             .mockResolvedValueOnce({
                 ok: true,
-                json: async () => ({ message: 'LLM provider activated successfully' }),
+                json: async () => ({message: 'LLM provider activated successfully'}),
             })
             .mockResolvedValueOnce({
                 ok: true,
                 json: async () => ({
-                    llm_providers: [{ ...mockProviders[0], status: 'active' }],
+                    llm_providers: [{...mockProviders[0], status: 'active'}],
                     total: 1, page: 1, per_page: 10, total_pages: 1
                 }),
             });
 
         await act(async () => {
-            render(<LLMProvidersPage />);
+            render(<LLMProvidersPage/>);
         });
 
         await waitFor(() => {
@@ -136,28 +135,28 @@ describe('LLMProvidersPage', () => {
 
     it('handles deactivate provider', async () => {
         const mockProviders = [
-            { uuid: '1', name: 'Test LLM Provider', provider: 'test', status: 'active' }
+            {uuid: '1', name: 'Test LLM Provider', provider: 'test', status: 'active'}
         ];
 
         (global.fetch as jest.Mock)
             .mockResolvedValueOnce({
                 ok: true,
-                json: async () => ({ llm_providers: mockProviders, total: 1, page: 1, per_page: 10, total_pages: 1 }),
+                json: async () => ({llm_providers: mockProviders, total: 1, page: 1, per_page: 10, total_pages: 1}),
             })
             .mockResolvedValueOnce({
                 ok: true,
-                json: async () => ({ message: 'LLM provider deactivated successfully' }),
+                json: async () => ({message: 'LLM provider deactivated successfully'}),
             })
             .mockResolvedValueOnce({
                 ok: true,
                 json: async () => ({
-                    llm_providers: [{ ...mockProviders[0], status: 'inactive' }],
+                    llm_providers: [{...mockProviders[0], status: 'inactive'}],
                     total: 1, page: 1, per_page: 10, total_pages: 1
                 }),
             });
 
         await act(async () => {
-            render(<LLMProvidersPage />);
+            render(<LLMProvidersPage/>);
         });
 
         await waitFor(() => {
@@ -176,20 +175,20 @@ describe('LLMProvidersPage', () => {
     // Additional tests for error handling
     it('handles API error on delete', async () => {
         const mockProviders = [
-            { uuid: '1', name: 'Test LLM Provider', provider: 'test', status: 'active' }
+            {uuid: '1', name: 'Test LLM Provider', provider: 'test', status: 'active'}
         ];
 
         (global.fetch as jest.Mock)
             .mockResolvedValueOnce({
                 ok: true,
-                json: async () => ({ llm_providers: mockProviders, total: 1, page: 1, per_page: 10, total_pages: 1 }),
+                json: async () => ({llm_providers: mockProviders, total: 1, page: 1, per_page: 10, total_pages: 1}),
             })
             .mockRejectedValueOnce(new Error('Delete failed'));
 
         window.confirm = jest.fn().mockImplementation(() => true);
 
         await act(async () => {
-            render(<LLMProvidersPage />);
+            render(<LLMProvidersPage/>);
         });
 
         await waitFor(() => {
@@ -207,18 +206,18 @@ describe('LLMProvidersPage', () => {
 
     it('handles API error on activate', async () => {
         const mockProviders = [
-            { uuid: '1', name: 'Test Provider', provider: 'test', status: 'inactive' }
+            {uuid: '1', name: 'Test Provider', provider: 'test', status: 'inactive'}
         ];
 
         (global.fetch as jest.Mock)
             .mockResolvedValueOnce({
                 ok: true,
-                json: async () => ({ llm_providers: mockProviders, total: 1, page: 1, per_page: 10, total_pages: 1 }),
+                json: async () => ({llm_providers: mockProviders, total: 1, page: 1, per_page: 10, total_pages: 1}),
             })
             .mockRejectedValueOnce(new Error('Activation failed'));
 
         await act(async () => {
-            render(<LLMProvidersPage />);
+            render(<LLMProvidersPage/>);
         });
 
         await waitFor(() => {
@@ -236,18 +235,18 @@ describe('LLMProvidersPage', () => {
 
     it('handles API error on deactivate', async () => {
         const mockProviders = [
-            { uuid: '1', name: 'Test Provider', provider: 'test', status: 'active' }
+            {uuid: '1', name: 'Test Provider', provider: 'test', status: 'active'}
         ];
 
         (global.fetch as jest.Mock)
             .mockResolvedValueOnce({
                 ok: true,
-                json: async () => ({ llm_providers: mockProviders, total: 1, page: 1, per_page: 10, total_pages: 1 }),
+                json: async () => ({llm_providers: mockProviders, total: 1, page: 1, per_page: 10, total_pages: 1}),
             })
             .mockRejectedValueOnce(new Error('Deactivation failed'));
 
         await act(async () => {
-            render(<LLMProvidersPage />);
+            render(<LLMProvidersPage/>);
         });
 
         await waitFor(() => {

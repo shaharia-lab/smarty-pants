@@ -1,7 +1,6 @@
-import React from 'react';
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import React, {act} from 'react';
+import {fireEvent, render, screen, waitFor} from '@testing-library/react';
 import '@testing-library/jest-dom';
-import { act } from 'react';
 import EmbeddingProvidersPage from "@/app/embedding-providers/page";
 
 // Mock the fetch function
@@ -17,10 +16,11 @@ describe('EmbeddingProvidersPage', () => {
 
     it('renders loading state initially', async () => {
         // Mock fetch to return a promise that doesn't resolve immediately
-        (global.fetch as jest.Mock).mockImplementationOnce(() => new Promise(() => {}));
+        (global.fetch as jest.Mock).mockImplementationOnce(() => new Promise(() => {
+        }));
 
         await act(async () => {
-            render(<EmbeddingProvidersPage />);
+            render(<EmbeddingProvidersPage/>);
         });
 
         expect(screen.getByText('Loading...')).toBeInTheDocument();
@@ -28,16 +28,16 @@ describe('EmbeddingProvidersPage', () => {
 
     it('fetches and displays embedding providers', async () => {
         const mockProviders = [
-            { uuid: '1', name: 'Test Provider', provider: 'test', status: 'active' }
+            {uuid: '1', name: 'Test Provider', provider: 'test', status: 'active'}
         ];
 
         (global.fetch as jest.Mock).mockResolvedValueOnce({
             ok: true,
-            json: async () => ({ embedding_providers: mockProviders, total: 1, page: 1, per_page: 10, total_pages: 1 }),
+            json: async () => ({embedding_providers: mockProviders, total: 1, page: 1, per_page: 10, total_pages: 1}),
         });
 
         await act(async () => {
-            render(<EmbeddingProvidersPage />);
+            render(<EmbeddingProvidersPage/>);
         });
 
         await waitFor(() => {
@@ -49,7 +49,7 @@ describe('EmbeddingProvidersPage', () => {
         (global.fetch as jest.Mock).mockRejectedValueOnce(new Error('API error'));
 
         await act(async () => {
-            render(<EmbeddingProvidersPage />);
+            render(<EmbeddingProvidersPage/>);
         });
 
         await waitFor(() => {
@@ -59,26 +59,32 @@ describe('EmbeddingProvidersPage', () => {
 
     it('handles delete provider', async () => {
         const mockProviders = [
-            { uuid: '1', name: 'Test Provider', provider: 'test', status: 'active' }
+            {uuid: '1', name: 'Test Provider', provider: 'test', status: 'active'}
         ];
 
         (global.fetch as jest.Mock)
             .mockResolvedValueOnce({
                 ok: true,
-                json: async () => ({ embedding_providers: mockProviders, total: 1, page: 1, per_page: 10, total_pages: 1 }),
+                json: async () => ({
+                    embedding_providers: mockProviders,
+                    total: 1,
+                    page: 1,
+                    per_page: 10,
+                    total_pages: 1
+                }),
             })
             .mockResolvedValueOnce({
                 ok: true,
             })
             .mockResolvedValueOnce({
                 ok: true,
-                json: async () => ({ embedding_providers: [], total: 0, page: 1, per_page: 10, total_pages: 0 }),
+                json: async () => ({embedding_providers: [], total: 0, page: 1, per_page: 10, total_pages: 0}),
             });
 
         window.confirm = jest.fn().mockImplementation(() => true);
 
         await act(async () => {
-            render(<EmbeddingProvidersPage />);
+            render(<EmbeddingProvidersPage/>);
         });
 
         await waitFor(() => {
@@ -96,28 +102,34 @@ describe('EmbeddingProvidersPage', () => {
 
     it('handles activate provider', async () => {
         const mockProviders = [
-            { uuid: '1', name: 'Test Provider', provider: 'test', status: 'inactive' }
+            {uuid: '1', name: 'Test Provider', provider: 'test', status: 'inactive'}
         ];
 
         (global.fetch as jest.Mock)
             .mockResolvedValueOnce({
                 ok: true,
-                json: async () => ({ embedding_providers: mockProviders, total: 1, page: 1, per_page: 10, total_pages: 1 }),
+                json: async () => ({
+                    embedding_providers: mockProviders,
+                    total: 1,
+                    page: 1,
+                    per_page: 10,
+                    total_pages: 1
+                }),
             })
             .mockResolvedValueOnce({
                 ok: true,
-                json: async () => ({ message: 'Embedding provider activated successfully' }),
+                json: async () => ({message: 'Embedding provider activated successfully'}),
             })
             .mockResolvedValueOnce({
                 ok: true,
                 json: async () => ({
-                    embedding_providers: [{ ...mockProviders[0], status: 'active' }],
+                    embedding_providers: [{...mockProviders[0], status: 'active'}],
                     total: 1, page: 1, per_page: 10, total_pages: 1
                 }),
             });
 
         await act(async () => {
-            render(<EmbeddingProvidersPage />);
+            render(<EmbeddingProvidersPage/>);
         });
 
         await waitFor(() => {
@@ -135,28 +147,34 @@ describe('EmbeddingProvidersPage', () => {
 
     it('handles deactivate provider', async () => {
         const mockProviders = [
-            { uuid: '1', name: 'Test Provider', provider: 'test', status: 'active' }
+            {uuid: '1', name: 'Test Provider', provider: 'test', status: 'active'}
         ];
 
         (global.fetch as jest.Mock)
             .mockResolvedValueOnce({
                 ok: true,
-                json: async () => ({ embedding_providers: mockProviders, total: 1, page: 1, per_page: 10, total_pages: 1 }),
+                json: async () => ({
+                    embedding_providers: mockProviders,
+                    total: 1,
+                    page: 1,
+                    per_page: 10,
+                    total_pages: 1
+                }),
             })
             .mockResolvedValueOnce({
                 ok: true,
-                json: async () => ({ message: 'Embedding provider deactivated successfully' }),
+                json: async () => ({message: 'Embedding provider deactivated successfully'}),
             })
             .mockResolvedValueOnce({
                 ok: true,
                 json: async () => ({
-                    embedding_providers: [{ ...mockProviders[0], status: 'inactive' }],
+                    embedding_providers: [{...mockProviders[0], status: 'inactive'}],
                     total: 1, page: 1, per_page: 10, total_pages: 1
                 }),
             });
 
         await act(async () => {
-            render(<EmbeddingProvidersPage />);
+            render(<EmbeddingProvidersPage/>);
         });
 
         await waitFor(() => {
@@ -175,20 +193,26 @@ describe('EmbeddingProvidersPage', () => {
     // Additional tests to improve coverage
     it('handles API error on delete', async () => {
         const mockProviders = [
-            { uuid: '1', name: 'Test Provider', provider: 'test', status: 'active' }
+            {uuid: '1', name: 'Test Provider', provider: 'test', status: 'active'}
         ];
 
         (global.fetch as jest.Mock)
             .mockResolvedValueOnce({
                 ok: true,
-                json: async () => ({ embedding_providers: mockProviders, total: 1, page: 1, per_page: 10, total_pages: 1 }),
+                json: async () => ({
+                    embedding_providers: mockProviders,
+                    total: 1,
+                    page: 1,
+                    per_page: 10,
+                    total_pages: 1
+                }),
             })
             .mockRejectedValueOnce(new Error('Delete failed'));
 
         window.confirm = jest.fn().mockImplementation(() => true);
 
         await act(async () => {
-            render(<EmbeddingProvidersPage />);
+            render(<EmbeddingProvidersPage/>);
         });
 
         await waitFor(() => {
@@ -206,18 +230,24 @@ describe('EmbeddingProvidersPage', () => {
 
     it('handles API error on activate', async () => {
         const mockProviders = [
-            { uuid: '1', name: 'Test Provider', provider: 'test', status: 'inactive' }
+            {uuid: '1', name: 'Test Provider', provider: 'test', status: 'inactive'}
         ];
 
         (global.fetch as jest.Mock)
             .mockResolvedValueOnce({
                 ok: true,
-                json: async () => ({ embedding_providers: mockProviders, total: 1, page: 1, per_page: 10, total_pages: 1 }),
+                json: async () => ({
+                    embedding_providers: mockProviders,
+                    total: 1,
+                    page: 1,
+                    per_page: 10,
+                    total_pages: 1
+                }),
             })
             .mockRejectedValueOnce(new Error('Activation failed'));
 
         await act(async () => {
-            render(<EmbeddingProvidersPage />);
+            render(<EmbeddingProvidersPage/>);
         });
 
         await waitFor(() => {
@@ -235,18 +265,24 @@ describe('EmbeddingProvidersPage', () => {
 
     it('handles API error on deactivate', async () => {
         const mockProviders = [
-            { uuid: '1', name: 'Test Provider', provider: 'test', status: 'active' }
+            {uuid: '1', name: 'Test Provider', provider: 'test', status: 'active'}
         ];
 
         (global.fetch as jest.Mock)
             .mockResolvedValueOnce({
                 ok: true,
-                json: async () => ({ embedding_providers: mockProviders, total: 1, page: 1, per_page: 10, total_pages: 1 }),
+                json: async () => ({
+                    embedding_providers: mockProviders,
+                    total: 1,
+                    page: 1,
+                    per_page: 10,
+                    total_pages: 1
+                }),
             })
             .mockRejectedValueOnce(new Error('Deactivation failed'));
 
         await act(async () => {
-            render(<EmbeddingProvidersPage />);
+            render(<EmbeddingProvidersPage/>);
         });
 
         await waitFor(() => {
