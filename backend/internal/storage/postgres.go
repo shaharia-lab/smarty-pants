@@ -25,6 +25,14 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+const (
+	failedToBeginTxnErrFmt      = "failed to begin transaction: %w"
+	failedToCommitTxnErrFmt     = "failed to commit transaction: %w"
+	errorIteratingOverRowErrFmt = "error iterating over rows: %w"
+	failedToMarshalConfigErrFmt = "failed to marshal configuration: %w"
+	failedToGetTotalCountErrFmt = "failed to get total count: %w"
+)
+
 // PostgresConfig contains configuration for a Postgres database
 type PostgresConfig struct {
 	Host     string
@@ -117,40 +125,78 @@ func (p *Postgres) Store(ctx context.Context, doc types.Document) error {
 
 	tx, err := p.db.BeginTx(ctx, nil)
 	if err != nil {
-		return fmt.Errorf("failed to begin transaction: %w", err)
+		return fmt.Errorf(failedToBeginTxnErrFmt, err)
 	}
-	defer func() {
-		if err := tx.Rollback(); err != nil && !errors.Is(err, sql.ErrTxDone) {
-			p.logger.WithError(err).WithField("document_uuid", doc.UUID).Error("Failed to rollback transaction")
-		}
-	}()
+	defer p.rollbackOnError(tx, doc.UUID)
 
-	// Insert document
-	if _, err := tx.ExecContext(ctx, `
+	if err := p.insertDocument(ctx, tx, doc); err != nil {
+		return err
+	}
+
+	insertContentPart, insertEmbedding, err := p.prepareStatements(ctx, tx)
+	if err != nil {
+		return err
+	}
+	defer p.closeStatements(insertContentPart, insertEmbedding)
+
+	if err := p.insertContentPartsAndEmbeddings(ctx, doc, insertContentPart, insertEmbedding); err != nil {
+		return err
+	}
+
+	if err := p.insertMetadata(ctx, tx, doc); err != nil {
+		return err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf(failedToCommitTxnErrFmt, err)
+	}
+
+	p.logger.WithField("document_uuid", doc.UUID).Info("Document stored successfully")
+	return nil
+}
+
+func (p *Postgres) rollbackOnError(tx *sql.Tx, uuid uuid.UUID) {
+	if err := tx.Rollback(); err != nil && !errors.Is(err, sql.ErrTxDone) {
+		p.logger.WithError(err).WithField("document_uuid", uuid).Error("Failed to rollback transaction")
+	}
+}
+
+func (p *Postgres) insertDocument(ctx context.Context, tx *sql.Tx, doc types.Document) error {
+	_, err := tx.ExecContext(ctx, `
         INSERT INTO documents (uuid, title, body, status, created_at, updated_at, datasource_uuid, url)
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-		doc.UUID, doc.Title, doc.Body, doc.Status, doc.CreatedAt, doc.UpdatedAt, doc.Source.UUID, doc.URL.String()); err != nil {
+		doc.UUID, doc.Title, doc.Body, doc.Status, doc.CreatedAt, doc.UpdatedAt, doc.Source.UUID, doc.URL.String())
+	if err != nil {
 		return fmt.Errorf("failed to insert document: %w", err)
 	}
+	return nil
+}
 
-	// Prepare statements for better performance
+func (p *Postgres) prepareStatements(ctx context.Context, tx *sql.Tx) (*sql.Stmt, *sql.Stmt, error) {
 	insertContentPart, err := tx.PrepareContext(ctx, `
         INSERT INTO content_parts (document_uuid, content)
         VALUES ($1, $2) RETURNING id`)
 	if err != nil {
-		return fmt.Errorf("failed to prepare content_parts insert statement: %w", err)
+		return nil, nil, fmt.Errorf("failed to prepare content_parts insert statement: %w", err)
 	}
-	defer p.logCloseError("content_parts insert statement", insertContentPart.Close)
 
 	insertEmbedding, err := tx.PrepareContext(ctx, `
         INSERT INTO embeddings (content_part_id, embedding, embedding_provider_id, generated_at, embedding_prompt_token)
         VALUES ($1, $2, $3, $4, $5)`)
 	if err != nil {
-		return fmt.Errorf("failed to prepare embeddings insert statement: %w", err)
+		return nil, nil, fmt.Errorf("failed to prepare embeddings insert statement: %w", err)
 	}
-	defer p.logCloseError("embeddings insert statement", insertEmbedding.Close)
 
-	// Insert content parts and embeddings
+	return insertContentPart, insertEmbedding, nil
+}
+
+func (p *Postgres) closeStatements(statements ...*sql.Stmt) {
+	for _, stmt := range statements {
+		p.logCloseError(fmt.Sprintf("%T", stmt), stmt.Close)
+	}
+}
+
+func (p *Postgres) insertContentPartsAndEmbeddings(ctx context.Context, doc types.Document, insertContentPart, insertEmbedding *sql.Stmt) error {
 	for _, part := range doc.Embedding.Embedding {
 		var contentPartID int
 		if err := insertContentPart.QueryRowContext(ctx, doc.UUID, part.Content).Scan(&contentPartID); err != nil {
@@ -166,28 +212,26 @@ func (p *Postgres) Store(ctx context.Context, doc types.Document) error {
 			return fmt.Errorf("failed to insert embedding: %w", err)
 		}
 	}
+	return nil
+}
 
-	// Insert metadata (using batch insert for better performance)
-	if len(doc.Metadata) > 0 {
-		values := make([]string, len(doc.Metadata))
-		args := make([]interface{}, len(doc.Metadata)*3)
-		for i, meta := range doc.Metadata {
-			values[i] = fmt.Sprintf("($%d, $%d, $%d)", i*3+1, i*3+2, i*3+3)
-			args[i*3] = doc.UUID
-			args[i*3+1] = meta.Key
-			args[i*3+2] = meta.Value
-		}
-		query := fmt.Sprintf("INSERT INTO metadata (document_uuid, key, value) VALUES %s", strings.Join(values, ","))
-		if _, err := tx.ExecContext(ctx, query, args...); err != nil {
-			return fmt.Errorf("failed to insert metadata: %w", err)
-		}
+func (p *Postgres) insertMetadata(ctx context.Context, tx *sql.Tx, doc types.Document) error {
+	if len(doc.Metadata) == 0 {
+		return nil
 	}
 
-	if err := tx.Commit(); err != nil {
-		return fmt.Errorf("failed to commit transaction: %w", err)
+	values := make([]string, len(doc.Metadata))
+	args := make([]interface{}, len(doc.Metadata)*3)
+	for i, meta := range doc.Metadata {
+		values[i] = fmt.Sprintf("($%d, $%d, $%d)", i*3+1, i*3+2, i*3+3)
+		args[i*3] = doc.UUID
+		args[i*3+1] = meta.Key
+		args[i*3+2] = meta.Value
 	}
-
-	p.logger.WithField("document_uuid", doc.UUID).Info("Document stored successfully")
+	query := fmt.Sprintf("INSERT INTO metadata (document_uuid, key, value) VALUES %s", strings.Join(values, ","))
+	if _, err := tx.ExecContext(ctx, query, args...); err != nil {
+		return fmt.Errorf("failed to insert metadata: %w", err)
+	}
 	return nil
 }
 
@@ -358,7 +402,24 @@ func (p *Postgres) Get(ctx context.Context, filter types.DocumentFilter, options
 }
 
 func (p *Postgres) getBasicDocuments(filter types.DocumentFilter, options types.DocumentFilterOption) ([]types.Document, int, error) {
-	query := `
+	query, args := p.buildQuery(filter, options)
+
+	rows, err := p.db.Query(query, args...)
+	if err != nil {
+		return nil, 0, fmt.Errorf("error querying documents: %w", err)
+	}
+	defer rows.Close()
+
+	documents, total, err := p.scanRows(rows)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	return documents, total, nil
+}
+
+func (p *Postgres) buildQuery(filter types.DocumentFilter, options types.DocumentFilterOption) (string, []interface{}) {
+	baseQuery := `
         WITH filtered_docs AS (
             SELECT d.*, s.name as source_name, s.source_type
             FROM documents d
@@ -366,8 +427,34 @@ func (p *Postgres) getBasicDocuments(filter types.DocumentFilter, options types.
             WHERE 1=1
     `
 
-	var args []interface{}
+	conditions, args := p.buildConditions(filter)
+	query := baseQuery + conditions
+
+	query += `
+        ),
+        count_docs AS (
+            SELECT COUNT(*) as total FROM filtered_docs
+        )
+        SELECT 
+            fd.uuid, fd.title, fd.body, fd.status, fd.url, fd.created_at, fd.updated_at, fd.fetched_at,
+            fd.source_name, fd.source_type, fd.datasource_uuid,
+            cd.total
+        FROM filtered_docs fd
+        CROSS JOIN count_docs cd
+        ORDER BY fd.created_at DESC
+        LIMIT $%d OFFSET $%d
+    `
+
+	limit, offset := p.calculateLimitAndOffset(options)
+	args = append(args, limit, offset)
+	query = fmt.Sprintf(query, len(args)-1, len(args))
+
+	return query, args
+}
+
+func (p *Postgres) buildConditions(filter types.DocumentFilter) (string, []interface{}) {
 	var conditions []string
+	var args []interface{}
 	placeholderIndex := 1
 
 	if filter.UUID != "" {
@@ -386,25 +473,15 @@ func (p *Postgres) getBasicDocuments(filter types.DocumentFilter, options types.
 		placeholderIndex++
 	}
 
+	var queryConditions string
 	if len(conditions) > 0 {
-		query += " AND " + strings.Join(conditions, " AND ")
+		queryConditions = " AND " + strings.Join(conditions, " AND ")
 	}
 
-	query += `
-        ),
-        count_docs AS (
-            SELECT COUNT(*) as total FROM filtered_docs
-        )
-        SELECT 
-            fd.uuid, fd.title, fd.body, fd.status, fd.url, fd.created_at, fd.updated_at, fd.fetched_at,
-            fd.source_name, fd.source_type, fd.datasource_uuid,
-            cd.total
-        FROM filtered_docs fd
-        CROSS JOIN count_docs cd
-        ORDER BY fd.created_at DESC
-        LIMIT $%d OFFSET $%d
-    `
+	return queryConditions, args
+}
 
+func (p *Postgres) calculateLimitAndOffset(options types.DocumentFilterOption) (int, int) {
 	limit := options.Limit
 	if limit <= 0 {
 		limit = 10 // Default limit
@@ -413,51 +490,55 @@ func (p *Postgres) getBasicDocuments(filter types.DocumentFilter, options types.
 	if offset < 0 {
 		offset = 0
 	}
+	return limit, offset
+}
 
-	args = append(args, limit, offset)
-	query = fmt.Sprintf(query, placeholderIndex, placeholderIndex+1)
-
-	rows, err := p.db.Query(query, args...)
-	if err != nil {
-		return nil, 0, fmt.Errorf("error querying documents: %w", err)
-	}
-	defer rows.Close()
-
+func (p *Postgres) scanRows(rows *sql.Rows) ([]types.Document, int, error) {
 	var documents []types.Document
 	var total int
 
 	for rows.Next() {
-		var doc types.Document
-		var urlString sql.NullString
-		var sourceName, sourceType sql.NullString
-
-		err := rows.Scan(
-			&doc.UUID, &doc.Title, &doc.Body, &doc.Status, &urlString, &doc.CreatedAt, &doc.UpdatedAt, &doc.FetchedAt,
-			&sourceName, &sourceType, &doc.Source.UUID,
-			&total,
-		)
+		doc, rowTotal, err := p.scanRow(rows)
 		if err != nil {
-			return nil, 0, fmt.Errorf("error scanning document row: %w", err)
+			return nil, 0, err
 		}
-
-		if urlString.Valid {
-			parsedURL, err := url.Parse(urlString.String)
-			if err == nil {
-				doc.URL = parsedURL
-			}
-		}
-
-		doc.Source.Name = sourceName.String
-		doc.Source.SourceType = types.DatasourceType(sourceType.String)
-
 		documents = append(documents, doc)
+		total = rowTotal
 	}
 
-	if err = rows.Err(); err != nil {
+	if err := rows.Err(); err != nil {
 		return nil, 0, fmt.Errorf("error iterating document rows: %w", err)
 	}
 
 	return documents, total, nil
+}
+
+func (p *Postgres) scanRow(row *sql.Rows) (types.Document, int, error) {
+	var doc types.Document
+	var urlString sql.NullString
+	var sourceName, sourceType sql.NullString
+	var total int
+
+	err := row.Scan(
+		&doc.UUID, &doc.Title, &doc.Body, &doc.Status, &urlString, &doc.CreatedAt, &doc.UpdatedAt, &doc.FetchedAt,
+		&sourceName, &sourceType, &doc.Source.UUID,
+		&total,
+	)
+	if err != nil {
+		return types.Document{}, 0, fmt.Errorf("error scanning document row: %w", err)
+	}
+
+	if urlString.Valid {
+		parsedURL, err := url.Parse(urlString.String)
+		if err == nil {
+			doc.URL = parsedURL
+		}
+	}
+
+	doc.Source.Name = sourceName.String
+	doc.Source.SourceType = types.DatasourceType(sourceType.String)
+
+	return doc, total, nil
 }
 
 func (p *Postgres) getDocumentMetadata(docUUID uuid.UUID) ([]types.Metadata, error) {
@@ -552,7 +633,7 @@ func (p *Postgres) GetForProcessing(ctx context.Context, _ types.DocumentFilter,
 	// Start a transaction
 	tx, err := p.db.Begin()
 	if err != nil {
-		return nil, fmt.Errorf("failed to begin transaction: %w", err)
+		return nil, fmt.Errorf(failedToBeginTxnErrFmt, err)
 	}
 	defer tx.Rollback()
 
@@ -590,12 +671,12 @@ func (p *Postgres) GetForProcessing(ctx context.Context, _ types.DocumentFilter,
 	}
 
 	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("error iterating over rows: %w", err)
+		return nil, fmt.Errorf(errorIteratingOverRowErrFmt, err)
 	}
 
 	// Commit the transaction
 	if err := tx.Commit(); err != nil {
-		return nil, fmt.Errorf("failed to commit transaction: %w", err)
+		return nil, fmt.Errorf(failedToCommitTxnErrFmt, err)
 	}
 
 	return docUUIDs, nil
@@ -795,7 +876,7 @@ func (p *Postgres) DeleteDatasource(ctx context.Context, uuid uuid.UUID) error {
 func (p *Postgres) CreateEmbeddingProvider(ctx context.Context, provider types.EmbeddingProviderConfig) error {
 	configJSON, err := json.Marshal(provider.Configuration)
 	if err != nil {
-		return fmt.Errorf("failed to marshal configuration: %w", err)
+		return fmt.Errorf(failedToMarshalConfigErrFmt, err)
 	}
 
 	_, err = p.db.ExecContext(ctx,
@@ -812,7 +893,7 @@ func (p *Postgres) CreateEmbeddingProvider(ctx context.Context, provider types.E
 func (p *Postgres) UpdateEmbeddingProvider(ctx context.Context, provider types.EmbeddingProviderConfig) error {
 	configJSON, err := json.Marshal(provider.Configuration)
 	if err != nil {
-		return fmt.Errorf("failed to marshal configuration: %w", err)
+		return fmt.Errorf(failedToMarshalConfigErrFmt, err)
 	}
 
 	_, err = p.db.ExecContext(ctx,
@@ -879,7 +960,7 @@ func (p *Postgres) GetAllEmbeddingProviders(ctx context.Context, filter types.Em
 	var total int
 	err := p.db.QueryRowContext(ctx, countQuery, args...).Scan(&total)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get total count: %w", err)
+		return nil, fmt.Errorf(failedToGetTotalCountErrFmt, err)
 	}
 
 	// Apply sorting and pagination
@@ -916,7 +997,7 @@ func (p *Postgres) GetAllEmbeddingProviders(ctx context.Context, filter types.Em
 	}
 
 	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("error iterating over rows: %w", err)
+		return nil, fmt.Errorf(errorIteratingOverRowErrFmt, err)
 	}
 
 	totalPages := (total + option.Limit - 1) / option.Limit
@@ -934,7 +1015,7 @@ func (p *Postgres) GetAllEmbeddingProviders(ctx context.Context, filter types.Em
 func (p *Postgres) SetActiveEmbeddingProvider(ctx context.Context, uuid uuid.UUID) error {
 	tx, err := p.db.BeginTx(ctx, nil)
 	if err != nil {
-		return fmt.Errorf("failed to begin transaction: %w", err)
+		return fmt.Errorf(failedToBeginTxnErrFmt, err)
 	}
 	defer tx.Rollback()
 
@@ -950,7 +1031,7 @@ func (p *Postgres) SetActiveEmbeddingProvider(ctx context.Context, uuid uuid.UUI
 
 	err = tx.Commit()
 	if err != nil {
-		return fmt.Errorf("failed to commit transaction: %w", err)
+		return fmt.Errorf(failedToCommitTxnErrFmt, err)
 	}
 
 	return nil
@@ -973,7 +1054,7 @@ func (p *Postgres) SetActiveLLMProvider(ctx context.Context, id uuid.UUID) error
 	tx, err := p.db.BeginTx(ctx, nil)
 	if err != nil {
 		p.logger.WithError(err).Error("Failed to begin transaction during setting LLM provider active")
-		return fmt.Errorf("failed to begin transaction: %w", err)
+		return fmt.Errorf(failedToBeginTxnErrFmt, err)
 	}
 	defer tx.Rollback()
 
@@ -989,7 +1070,7 @@ func (p *Postgres) SetActiveLLMProvider(ctx context.Context, id uuid.UUID) error
 
 	err = tx.Commit()
 	if err != nil {
-		return fmt.Errorf("failed to commit transaction: %w", err)
+		return fmt.Errorf(failedToCommitTxnErrFmt, err)
 	}
 
 	p.logger.WithField("llm_provider_id", id).Info("LLM provider set active")
@@ -1114,7 +1195,7 @@ func (p *Postgres) Search(ctx context.Context, config types.SearchConfig) (*type
 	}
 
 	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("error iterating over rows: %w", err)
+		return nil, fmt.Errorf(errorIteratingOverRowErrFmt, err)
 	}
 
 	// Count total results
@@ -1136,7 +1217,7 @@ func (p *Postgres) Search(ctx context.Context, config types.SearchConfig) (*type
 	var totalCount int
 	err = p.db.QueryRowContext(ctx, countQuery, countArgs...).Scan(&totalCount)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get total count: %w", err)
+		return nil, fmt.Errorf(failedToGetTotalCountErrFmt, err)
 	}
 
 	totalPages := (totalCount + config.Limit - 1) / config.Limit
@@ -1239,7 +1320,7 @@ func (p *Postgres) insertDefaultSettings() (types.Settings, error) {
 func (p *Postgres) CreateLLMProvider(ctx context.Context, provider types.LLMProviderConfig) error {
 	configJSON, err := json.Marshal(provider.Configuration)
 	if err != nil {
-		return fmt.Errorf("failed to marshal configuration: %w", err)
+		return fmt.Errorf(failedToMarshalConfigErrFmt, err)
 	}
 
 	_, err = p.db.ExecContext(ctx,
@@ -1256,7 +1337,7 @@ func (p *Postgres) CreateLLMProvider(ctx context.Context, provider types.LLMProv
 func (p *Postgres) UpdateLLMProvider(ctx context.Context, provider types.LLMProviderConfig) error {
 	configJSON, err := json.Marshal(provider.Configuration)
 	if err != nil {
-		return fmt.Errorf("failed to marshal configuration: %w", err)
+		return fmt.Errorf(failedToMarshalConfigErrFmt, err)
 	}
 
 	_, err = p.db.ExecContext(ctx,
@@ -1323,7 +1404,7 @@ func (p *Postgres) GetAllLLMProviders(ctx context.Context, filter types.LLMProvi
 	var total int
 	err := p.db.QueryRowContext(ctx, countQuery, args...).Scan(&total)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get total count: %w", err)
+		return nil, fmt.Errorf(failedToGetTotalCountErrFmt, err)
 	}
 
 	// Apply sorting and pagination
@@ -1360,7 +1441,7 @@ func (p *Postgres) GetAllLLMProviders(ctx context.Context, filter types.LLMProvi
 	}
 
 	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("error iterating over rows: %w", err)
+		return nil, fmt.Errorf(errorIteratingOverRowErrFmt, err)
 	}
 
 	totalPages := (total + option.Limit - 1) / option.Limit
