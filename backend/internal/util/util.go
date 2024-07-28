@@ -18,7 +18,7 @@ func ParseSettings(sourceType types.DatasourceType, settingsJSON json.RawMessage
 	}
 
 	if err := json.Unmarshal(settingsJSON, settings); err != nil {
-		return nil, fmt.Errorf("invalid settings for %s: %v", sourceType, err)
+		return nil, invalidSettingsErr(sourceType, err)
 	}
 
 	if err := settings.Validate(); err != nil {
@@ -26,6 +26,10 @@ func ParseSettings(sourceType types.DatasourceType, settingsJSON json.RawMessage
 	}
 
 	return settings, nil
+}
+
+func invalidSettingsErr(sType interface{}, err error) error {
+	return fmt.Errorf("invalid settings for %s: %v", sType, err)
 }
 
 func ParseEmbeddingProviderSettings(providerType types.EmbeddingProviderType, settingsJSON json.RawMessage) (types.EmbeddingProviderSettings, error) {
@@ -40,7 +44,7 @@ func ParseEmbeddingProviderSettings(providerType types.EmbeddingProviderType, se
 	}
 
 	if err := json.Unmarshal(settingsJSON, settings); err != nil {
-		return nil, fmt.Errorf("invalid settings for %s: %v", providerType, err)
+		return nil, invalidSettingsErr(providerType, err)
 	}
 
 	if err := settings.Validate(); err != nil {
@@ -65,7 +69,7 @@ func ParseLLMProviderSettings(providerType types.LLMProviderType, settingsJSON j
 	}
 
 	if err := json.Unmarshal(settingsJSON, settings); err != nil {
-		return nil, fmt.Errorf("invalid settings for %s: %v", providerType, err)
+		return nil, invalidSettingsErr(providerType, err)
 	}
 
 	if err := settings.Validate(); err != nil {
