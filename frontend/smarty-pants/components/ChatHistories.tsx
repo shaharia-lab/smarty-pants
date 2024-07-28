@@ -1,4 +1,3 @@
-// File: /home/shaharia/Projects/ai-search/frontend/smart-search/components/ChatHistories.tsx
 import React, { useState, useEffect } from 'react';
 
 interface InteractionSummary {

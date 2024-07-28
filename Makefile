@@ -4,7 +4,7 @@ GOBUILD=$(GOCMD) build
 GOCLEAN=$(GOCMD) clean
 GOTEST=$(GOCMD) test
 GOGET=$(GOCMD) get
-BINARY_NAME=smart-search
+BINARY_NAME=smarty-pants
 BINARY_UNIX=$(BINARY_NAME)_unix
 
 # Version
@@ -12,7 +12,7 @@ VERSION=$(shell git describe --tags --always --dirty)
 
 # Directories
 BACKEND_DIR=backend
-FRONTEND_DIR=frontend/smart-search
+FRONTEND_DIR=frontend/smarty-pants
 
 # Frontend parameters
 NPM=npm
