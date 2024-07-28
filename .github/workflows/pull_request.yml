@@ -119,13 +119,15 @@ jobs:
         uses: actions/download-artifact@v2
         with:
           name: frontend_coverage_${{ github.sha }}
-          path: frontend/smarty-pants/coversage/lcov.info
+          path: frontend/smarty-pants/coverage/lcov.info
+        continue-on-error: true
 
       - name: Download backend coverage
         uses: actions/download-artifact@v2
         with:
           name: backend_coverage_${{ github.sha }}
           path: backend/coverage_unit.out
+        continue-on-error: true
 
       - name: SonarCloud Scan
         uses: sonarsource/sonarcloud-github-action@master
