@@ -105,7 +105,7 @@ const EmbeddingProvidersPage: React.FC = () => {
         name: provider.name,
         status: provider.status,
         sourceType: provider.provider,
-        imageUrl: availableEmbeddingProviders.find(p => p.id === provider.provider)?.imageUrl || '/default-provider-icon.png',
+        imageUrl: availableEmbeddingProviders.find(p => p.id === provider.provider)?.imageUrl ?? '/default-provider-icon.png',
         onDelete: handleDelete,
         onActivate: provider.status === 'inactive' ? handleActivate : undefined,
         onDeactivate: provider.status === 'active' ? handleDeactivate : undefined,

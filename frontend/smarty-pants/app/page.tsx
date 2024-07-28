@@ -7,7 +7,7 @@ const DynamicDashboard = dynamic(() => import('../components/Dashboard'), {ssr: 
 
 export default function Home() {
     const headerConfig: HeaderConfig = {
-        title: "Smart Brain Dashboard"
+        title: "Dashboard"
     };
 
     return (

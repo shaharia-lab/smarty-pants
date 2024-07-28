@@ -31,7 +31,7 @@ const SlackEditPage: React.FC = () => {
     const [flashMessage, setFlashMessage] = useState<FlashMessage | null>(null);
 
     const headerConfig: HeaderConfig = {
-        title: `Edit ${slackDatasource?.name || 'Slack'} Datasource`
+        title: `Edit ${slackDatasource?.name ?? 'Slack'} Datasource`
     };
 
     useEffect(() => {

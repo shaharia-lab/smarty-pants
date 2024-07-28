@@ -13,7 +13,7 @@ const SlackConfigPage: React.FC = () => {
     const slackDatasource = getDatasourceById('slack');
 
     const headerConfig: HeaderConfig = {
-        title: `Configure ${slackDatasource?.name || 'Slack'} Datasource`
+        title: `Configure ${slackDatasource?.name ?? 'Slack'} Datasource`
     };
 
     const [formData, setFormData] = useState({
@@ -25,6 +25,8 @@ const SlackConfigPage: React.FC = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [isValidated, setIsValidated] = useState(false);
     const [error, setError] = useState<string | null>(null);
+
+    const buttonText = isLoading ? 'Validating...' : isValidated ? 'Validated' : 'Validate';
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const {name, value} = e.target;
@@ -173,7 +175,7 @@ const SlackConfigPage: React.FC = () => {
                                                     isLoading || isValidated ? 'bg-gray-400' : 'bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500'
                                                 }`}
                                             >
-                                                {isLoading ? 'Validating...' : isValidated ? 'Validated' : 'Validate'}
+                                                {buttonText}
                                             </button>
                                             {isValidated && (
                                                 <button
