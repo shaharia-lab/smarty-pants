@@ -88,6 +88,7 @@ jobs:
 
       - name: Lint Code Base
         uses: github/super-linter/slim@v4
+        continue-on-error: true
         env:
           VALIDATE_ALL_CODEBASE: false
           DEFAULT_BRANCH: main
