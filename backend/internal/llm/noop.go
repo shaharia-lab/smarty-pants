@@ -1,6 +1,6 @@
 package llm
 
-import "github.com/shaharia-lab/smarty-pants-ai/internal/types"
+import "github.com/shaharia-lab/smarty-pants/internal/types"
 
 // NoOpsLLM is a language model provider that does nothing
 type NoOpsLLM struct {

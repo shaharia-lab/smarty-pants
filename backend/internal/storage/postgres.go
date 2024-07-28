@@ -18,10 +18,10 @@ import (
 	"github.com/google/uuid"
 	_ "github.com/lib/pq"
 	"github.com/pgvector/pgvector-go"
-	"github.com/shaharia-lab/smarty-pants-ai/internal/logger"
-	"github.com/shaharia-lab/smarty-pants-ai/internal/observability"
-	"github.com/shaharia-lab/smarty-pants-ai/internal/types"
-	"github.com/shaharia-lab/smarty-pants-ai/internal/util"
+	"github.com/shaharia-lab/smarty-pants/internal/logger"
+	"github.com/shaharia-lab/smarty-pants/internal/observability"
+	"github.com/shaharia-lab/smarty-pants/internal/types"
+	"github.com/shaharia-lab/smarty-pants/internal/util"
 	"github.com/sirupsen/logrus"
 )
 

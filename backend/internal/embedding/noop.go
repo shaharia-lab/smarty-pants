@@ -5,7 +5,7 @@ import (
 	"context"
 
 	"github.com/google/uuid"
-	"github.com/shaharia-lab/smarty-pants-ai/internal/types"
+	"github.com/shaharia-lab/smarty-pants/internal/types"
 )
 
 // Provider is an interface for an embedding provider

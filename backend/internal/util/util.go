@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/shaharia-lab/smarty-pants-ai/internal/types"
+	"github.com/shaharia-lab/smarty-pants/internal/types"
 )
 
 func ParseSettings(sourceType types.DatasourceType, settingsJSON json.RawMessage) (types.DatasourceSettings, error) {

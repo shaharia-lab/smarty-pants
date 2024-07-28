@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/shaharia-lab/smarty-pants-ai/internal/embedding"
-	"github.com/shaharia-lab/smarty-pants-ai/internal/storage"
-	"github.com/shaharia-lab/smarty-pants-ai/internal/types"
+	"github.com/shaharia-lab/smarty-pants/internal/embedding"
+	"github.com/shaharia-lab/smarty-pants/internal/storage"
+	"github.com/shaharia-lab/smarty-pants/internal/types"
 	"github.com/sirupsen/logrus"
 )
 

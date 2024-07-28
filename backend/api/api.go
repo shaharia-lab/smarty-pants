@@ -13,9 +13,9 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
-	"github.com/shaharia-lab/smarty-pants-ai/internal/embedding"
-	"github.com/shaharia-lab/smarty-pants-ai/internal/search"
-	"github.com/shaharia-lab/smarty-pants-ai/internal/storage"
+	"github.com/shaharia-lab/smarty-pants/internal/embedding"
+	"github.com/shaharia-lab/smarty-pants/internal/search"
+	"github.com/shaharia-lab/smarty-pants/internal/storage"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/sync/errgroup"
 )

@@ -5,7 +5,7 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/shaharia-lab/smarty-pants-ai/internal/search"
+	"github.com/shaharia-lab/smarty-pants/internal/search"
 	"github.com/sirupsen/logrus"
 )
 

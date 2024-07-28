@@ -3,7 +3,7 @@ package main
 import (
 	"log"
 
-	"github.com/shaharia-lab/smarty-pants-ai/cmd"
+	"github.com/shaharia-lab/smarty-pants/cmd"
 	"github.com/spf13/cobra"
 )
 

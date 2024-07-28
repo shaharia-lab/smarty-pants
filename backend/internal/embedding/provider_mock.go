@@ -5,7 +5,7 @@ import (
 
 	mock "github.com/stretchr/testify/mock"
 
-	types "github.com/shaharia-lab/smarty-pants-ai/internal/types"
+	types "github.com/shaharia-lab/smarty-pants/internal/types"
 
 	uuid "github.com/google/uuid"
 )

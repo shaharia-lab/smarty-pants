@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/shaharia-lab/smarty-pants-ai/internal/config"
+	"github.com/shaharia-lab/smarty-pants/internal/config"
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"

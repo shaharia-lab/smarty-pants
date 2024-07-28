@@ -4,9 +4,9 @@ package api
 import (
 	"net/http"
 
-	"github.com/shaharia-lab/smarty-pants-ai/internal/observability"
-	"github.com/shaharia-lab/smarty-pants-ai/internal/storage"
-	"github.com/shaharia-lab/smarty-pants-ai/internal/util"
+	"github.com/shaharia-lab/smarty-pants/internal/observability"
+	"github.com/shaharia-lab/smarty-pants/internal/storage"
+	"github.com/shaharia-lab/smarty-pants/internal/util"
 	"github.com/sirupsen/logrus"
 )
 

@@ -8,9 +8,9 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/shaharia-lab/smarty-pants-ai/internal/config"
-	"github.com/shaharia-lab/smarty-pants-ai/internal/observability"
-	"github.com/shaharia-lab/smarty-pants-ai/internal/types"
+	"github.com/shaharia-lab/smarty-pants/internal/config"
+	"github.com/shaharia-lab/smarty-pants/internal/observability"
+	"github.com/shaharia-lab/smarty-pants/internal/types"
 	"github.com/sirupsen/logrus"
 )
 

@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"text/template"
 
-	"github.com/shaharia-lab/smarty-pants-ai/internal/types"
+	"github.com/shaharia-lab/smarty-pants/internal/types"
 	"github.com/sirupsen/logrus"
 )
 

@@ -6,11 +6,11 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
-	"github.com/shaharia-lab/smarty-pants-ai/internal/llm"
-	"github.com/shaharia-lab/smarty-pants-ai/internal/observability"
-	"github.com/shaharia-lab/smarty-pants-ai/internal/search"
-	"github.com/shaharia-lab/smarty-pants-ai/internal/storage"
-	"github.com/shaharia-lab/smarty-pants-ai/internal/types"
+	"github.com/shaharia-lab/smarty-pants/internal/llm"
+	"github.com/shaharia-lab/smarty-pants/internal/observability"
+	"github.com/shaharia-lab/smarty-pants/internal/search"
+	"github.com/shaharia-lab/smarty-pants/internal/storage"
+	"github.com/shaharia-lab/smarty-pants/internal/types"
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel/attribute"
 )

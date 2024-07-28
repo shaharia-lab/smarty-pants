@@ -5,8 +5,8 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/shaharia-lab/smarty-pants-ai/internal/logger"
-	"github.com/shaharia-lab/smarty-pants-ai/internal/util"
+	"github.com/shaharia-lab/smarty-pants/internal/logger"
+	"github.com/shaharia-lab/smarty-pants/internal/util"
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"

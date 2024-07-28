@@ -5,9 +5,9 @@ import (
 	"strconv"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/shaharia-lab/smarty-pants-ai/internal/observability"
-	"github.com/shaharia-lab/smarty-pants-ai/internal/storage"
-	"github.com/shaharia-lab/smarty-pants-ai/internal/types"
+	"github.com/shaharia-lab/smarty-pants/internal/observability"
+	"github.com/shaharia-lab/smarty-pants/internal/storage"
+	"github.com/shaharia-lab/smarty-pants/internal/types"
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"

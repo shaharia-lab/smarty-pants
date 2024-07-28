@@ -1,4 +1,4 @@
-module github.com/shaharia-lab/smarty-pants-ai
+module github.com/shaharia-lab/smarty-pants
 
 go 1.22
 

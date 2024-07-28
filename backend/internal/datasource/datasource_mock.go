@@ -1,7 +1,7 @@
 package datasource
 
 import (
-	types "github.com/shaharia-lab/smarty-pants-ai/internal/types"
+	types "github.com/shaharia-lab/smarty-pants/internal/types"
 	mock "github.com/stretchr/testify/mock"
 )
 

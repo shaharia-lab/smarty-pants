@@ -1,6 +1,6 @@
 package migration
 
-import "github.com/shaharia-lab/smarty-pants-ai/internal/storage"
+import "github.com/shaharia-lab/smarty-pants/internal/storage"
 
 type Provider interface {
 	Up() error
