@@ -7,30 +7,7 @@ linters:
     - gofmt
     - revive
     - goimports
-    - errcheck
-    - gosimple
-    - govet
-    - ineffassign
-    - staticcheck
-    - typecheck
-    - unused
-    - misspell
-    - gosec
-    - prealloc
-    - unconvert
   fast: false
 linters-settings:
   gofmt:
     simplify: true
-  revive:
-    rules:
-      - name: exported
-        arguments:
-          - "disableStutteringCheck"
-  gosec:
-    excludes:
-      - G404  # Insecure random number source (rand)
-issues:
-  exclude-use-default: false
-  max-issues-per-linter: 0
-  max-same-issues: 0

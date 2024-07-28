@@ -17,9 +17,9 @@ FRONTEND_DIR=frontend/smarty-pants
 # Frontend parameters
 NPM=npm
 
-.PHONY: all backend-build backend-build-prod backend-test backend-clean backend-run backend-deps backend-build-linux backend-docker-build backend-migrate-up backend-migrate-down frontend-dev frontend-build frontend-start frontend-lint
+.PHONY: all backend-build backend-build-prod backend-test backend-clean backend-run backend-deps backend-build-linux backend-docker-build backend-migrate-up backend-migrate-down frontend-install frontend-dev frontend-build frontend-start frontend-lint frontend-test dev build clean test
 
-all: backend-test backend-build frontend-build
+all: backend-test backend-build frontend-install frontend-build
 
 # Backend commands
 backend-build:
@@ -29,7 +29,7 @@ backend-build-prod:
 	cd $(BACKEND_DIR) && $(GOBUILD) -o $(BINARY_NAME) -v -ldflags "-X main.Version=$(VERSION)"
 
 backend-test:
-	cd $(BACKEND_DIR) && $(GOTEST) -v ./...
+	cd $(BACKEND_DIR) && $(GOTEST) -v ./... -coverprofile=../coverage_unit.out
 
 backend-clean:
 	cd $(BACKEND_DIR) && $(GOCLEAN)
@@ -59,19 +59,28 @@ backend-lint:
 	cd $(BACKEND_DIR) && golangci-lint run
 
 # Frontend commands
-frontend-dev:
+frontend-install:
+	cd $(FRONTEND_DIR) && $(NPM) install
+
+frontend-install-ci:
+	cd $(FRONTEND_DIR) && $(NPM) ci
+
+frontend-dev: frontend-install
 	cd $(FRONTEND_DIR) && $(NPM) run dev
 
-frontend-build:
+frontend-build: frontend-install
 	cd $(FRONTEND_DIR) && $(NPM) run build
 
-frontend-start:
+frontend-start: frontend-install
 	cd $(FRONTEND_DIR) && $(NPM) run start
 
-frontend-lint:
+frontend-lint: frontend-install
 	cd $(FRONTEND_DIR) && $(NPM) run lint
 
-frontend-test:
+frontend-test: frontend-install
+	cd $(FRONTEND_DIR) && $(NPM) run test
+
+frontend-test-ci: frontend-install-ci
 	cd $(FRONTEND_DIR) && $(NPM) run test
 
 # Combined commands
@@ -82,5 +91,4 @@ build: backend-build frontend-build
 clean: backend-clean
 	cd $(FRONTEND_DIR) && $(NPM) run clean
 
-test: backend-test
-	cd $(FRONTEND_DIR) && $(NPM) run test
+test: backend-test frontend-test
