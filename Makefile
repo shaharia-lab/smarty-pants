@@ -63,7 +63,7 @@ frontend-install:
 	cd $(FRONTEND_DIR) && $(NPM) install
 
 frontend-install-ci:
-	cd $(FRONTEND_DIR) && $(NPM) ci
+	cd $(FRONTEND_DIR) && $(NPM) ci --ignore-scripts
 
 frontend-dev: frontend-install
 	cd $(FRONTEND_DIR) && $(NPM) run dev
