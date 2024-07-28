@@ -48,6 +48,12 @@ jobs:
       - name: Run Backend Tests
         run: make backend-test
 
+      - name: Publish artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: backend_coverage_${{ github.sha }}
+          path: backend/coverage_unit.out
+
   frontend-unit-test:
     needs: check-changes
     if: ${{ needs.check-changes.outputs.frontend == 'true' }}
@@ -65,6 +71,12 @@ jobs:
           npm ci
       - name: Run Frontend Tests
         run: make frontend-test
+
+      - name: Publish artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: frontend_coverage_${{ github.sha }}
+          path: frontend/smarty-pants/coversage/lcov.info
 
   lint:
     name: Linting
@@ -102,6 +114,18 @@ jobs:
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
+
+      - name: Download frontend coverage
+        uses: actions/download-artifact@v2
+        with:
+          name: frontend_coverage_${{ github.sha }}
+          path: frontend/smarty-pants/coversage/lcov.info
+
+      - name: Download backend coverage
+        uses: actions/download-artifact@v2
+        with:
+          name: backend_coverage_${{ github.sha }}
+          path: backend/coverage_unit.out
 
       - name: SonarCloud Scan
         uses: sonarsource/sonarcloud-github-action@master
