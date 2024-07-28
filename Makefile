@@ -29,7 +29,7 @@ backend-build-prod:
 	cd $(BACKEND_DIR) && $(GOBUILD) -o $(BINARY_NAME) -v -ldflags "-X main.Version=$(VERSION)"
 
 backend-test:
-	cd $(BACKEND_DIR) && $(GOTEST) -v ./... -coverprofile=../coverage_unit.out
+	cd $(BACKEND_DIR) && $(GOTEST) -v ./... -coverprofile=coverage_unit.out
 
 backend-clean:
 	cd $(BACKEND_DIR) && $(GOCLEAN)
