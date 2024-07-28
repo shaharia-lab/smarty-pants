@@ -61,7 +61,7 @@ jobs:
           node-version: '20'
       - name: Install Frontend Dependencies
         run: |
-          cd frontend/smart-search
+          cd frontend/smarty-pants
           npm ci
       - name: Run Frontend Tests
         run: make frontend-test

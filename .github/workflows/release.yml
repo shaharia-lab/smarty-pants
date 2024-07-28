@@ -44,6 +44,6 @@ jobs:
         run: |
           TAG="${GITHUB_REF#refs/tags/v}"
           IMAGE_NAME="ghcr.io/shaharia-lab/smarty-pants-frontend:$TAG"
-          cd frontend/smart-search &&
+          cd frontend/smarty-pants &&
           docker build -f Dockerfile -t "$IMAGE_NAME" .
           docker push "$IMAGE_NAME"

@@ -27,7 +27,7 @@ jobs:
           token: ${{ github.token }}
           filters: |
             dockerfile:
-              - 'frontend/smart-search/Dockerfile'
+              - 'frontend/smarty-pants/Dockerfile'
 
   docker-build-and-test:
     needs: check-dockerfile-changes
@@ -44,8 +44,8 @@ jobs:
       - name: Build Docker image
         uses: docker/build-push-action@v4
         with:
-          context: ./frontend/smart-search/
-          file: ./frontend/smart-search/Dockerfile
+          context: ./frontend/smarty-pants/
+          file: ./frontend/smarty-pants/Dockerfile
           push: false
           load: true
           tags: my-nextjs-app:test
