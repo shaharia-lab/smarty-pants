@@ -2,7 +2,7 @@ name: Main Branch Checks
 
 on:
   push:
-    branches: [ master ]
+    branches: [ main ]
 
 jobs:
   backend-test:

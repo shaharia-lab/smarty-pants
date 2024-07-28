@@ -2,7 +2,7 @@ name: Docker Build and Test
 
 on:
   pull_request:
-    branches: [ master ]
+    branches: [ main ]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
