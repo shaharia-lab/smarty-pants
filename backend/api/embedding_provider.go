@@ -46,8 +46,8 @@ func updateEmbeddingProviderHandler(s storage.Storage, l *logrus.Logger) http.Ha
 	return func(w http.ResponseWriter, r *http.Request) {
 		id, err := uuid.Parse(chi.URLParam(r, "uuid"))
 		if err != nil {
-			l.Error("Invalid UUID", "error", err)
-			http.Error(w, "Invalid UUID", http.StatusBadRequest)
+			l.Error(invalidUUIDMsg, "error", err)
+			http.Error(w, invalidUUIDMsg, http.StatusBadRequest)
 			return
 		}
 
@@ -76,8 +76,8 @@ func deleteEmbeddingProviderHandler(s storage.Storage, l *logrus.Logger) http.Ha
 	return func(w http.ResponseWriter, r *http.Request) {
 		id, err := uuid.Parse(chi.URLParam(r, "uuid"))
 		if err != nil {
-			l.Error("Invalid UUID", "error", err)
-			http.Error(w, "Invalid UUID", http.StatusBadRequest)
+			l.Error(invalidUUIDMsg, "error", err)
+			http.Error(w, invalidUUIDMsg, http.StatusBadRequest)
 			return
 		}
 
@@ -96,7 +96,7 @@ func getEmbeddingProviderHandler(s storage.Storage, l *logrus.Logger) http.Handl
 	return func(w http.ResponseWriter, r *http.Request) {
 		id, err := uuid.Parse(chi.URLParam(r, "uuid"))
 		if err != nil {
-			sendJSONError(w, "Invalid UUID", http.StatusBadRequest)
+			sendJSONError(w, invalidUUIDMsg, http.StatusBadRequest)
 			return
 		}
 
@@ -153,8 +153,8 @@ func setActiveEmbeddingProviderHandler(s storage.Storage, l *logrus.Logger) http
 	return func(w http.ResponseWriter, r *http.Request) {
 		id, err := uuid.Parse(chi.URLParam(r, "uuid"))
 		if err != nil {
-			l.WithError(err).Error("Invalid UUID")
-			sendJSONError(w, "Invalid UUID", http.StatusBadRequest)
+			l.WithError(err).Error(invalidUUIDMsg)
+			sendJSONError(w, invalidUUIDMsg, http.StatusBadRequest)
 			return
 		}
 

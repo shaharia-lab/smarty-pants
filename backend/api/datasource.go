@@ -20,6 +20,12 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
+const (
+	datasourceNotFoundMsg            = "Datasource not found"
+	failedToSetDatasourceActiveMsg   = "Failed to set datasource active"
+	datasourceDeletedSuccessfullyMsg = "Datasource has been deleted successfully"
+)
+
 func addDatasourceHandler(st storage.Storage, logging *logrus.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
@@ -86,7 +92,7 @@ func getDatasourceHandler(storage storage.Storage, logging *logrus.Logger) http.
 		if err != nil {
 			span.RecordError(err)
 			span.SetStatus(codes.Error, err.Error())
-			handleError(w, "Invalid UUID", http.StatusBadRequest, logging, span)
+			handleError(w, invalidUUIDMsg, http.StatusBadRequest, logging, span)
 			return
 		}
 
@@ -94,7 +100,7 @@ func getDatasourceHandler(storage storage.Storage, logging *logrus.Logger) http.
 		if err != nil {
 			span.RecordError(err)
 			span.SetStatus(codes.Error, err.Error())
-			handleError(w, "Datasource not found", http.StatusNotFound, logging, span)
+			handleError(w, datasourceNotFoundMsg, http.StatusNotFound, logging, span)
 			return
 		}
 
@@ -110,13 +116,13 @@ func validateDatasourceHandler(storage storage.Storage, logging *logrus.Logger) 
 		dsUUID := chi.URLParam(r, "uuid")
 		dsUUIDParsed, err := uuid.Parse(dsUUID)
 		if err != nil {
-			SendAPIErrorResponse(w, http.StatusBadRequest, util.NewAPIError("Invalid UUID", err))
+			SendAPIErrorResponse(w, http.StatusBadRequest, util.NewAPIError(invalidUUIDMsg, err))
 			return
 		}
 
 		ds, err := storage.GetDatasource(ctx, dsUUIDParsed)
 		if err != nil {
-			SendAPIErrorResponse(w, http.StatusNotFound, util.NewAPIError("Datasource not found", err))
+			SendAPIErrorResponse(w, http.StatusNotFound, util.NewAPIError(datasourceNotFoundMsg, err))
 			return
 		}
 
@@ -189,13 +195,13 @@ func updateDatasourceHandler(st storage.Storage, logging *logrus.Logger) http.Ha
 
 		dsUUIDParsed, err := uuid.Parse(dsUUID)
 		if err != nil {
-			SendAPIErrorResponse(w, http.StatusBadRequest, util.NewAPIError("Invalid UUID", err))
+			SendAPIErrorResponse(w, http.StatusBadRequest, util.NewAPIError(invalidUUIDMsg, err))
 			return
 		}
 
 		existingDS, err := st.GetDatasource(ctx, dsUUIDParsed)
 		if err != nil {
-			SendAPIErrorResponse(w, http.StatusNotFound, util.NewAPIError("Datasource not found", err))
+			SendAPIErrorResponse(w, http.StatusNotFound, util.NewAPIError(datasourceNotFoundMsg, err))
 			return
 		}
 
@@ -250,16 +256,16 @@ func setActiveDatasourceHandler(s storage.Storage, l *logrus.Logger) http.Handle
 	return func(w http.ResponseWriter, r *http.Request) {
 		id, err := uuid.Parse(chi.URLParam(r, "uuid"))
 		if err != nil {
-			l.WithError(err).Error("Invalid UUID")
-			sendJSONError(w, "Invalid UUID", http.StatusBadRequest)
+			l.WithError(err).Error(invalidUUIDMsg)
+			sendJSONError(w, invalidUUIDMsg, http.StatusBadRequest)
 			return
 		}
 
 		err = s.SetActiveDatasource(r.Context(), id)
 		if err != nil {
-			l.WithError(err).Error("Failed to set datasource active")
+			l.WithError(err).Error(failedToSetDatasourceActiveMsg)
 			SendAPIErrorResponse(w, http.StatusInternalServerError, &util.APIError{
-				Message: "Failed to set datasource active",
+				Message: failedToSetDatasourceActiveMsg,
 				Err:     err.Error(),
 			})
 			return
@@ -274,8 +280,8 @@ func setDisableDatasourceHandler(s storage.Storage, l *logrus.Logger) http.Handl
 	return func(w http.ResponseWriter, r *http.Request) {
 		id, err := uuid.Parse(chi.URLParam(r, "uuid"))
 		if err != nil {
-			l.WithError(err).Error("Invalid UUID")
-			sendJSONError(w, "Invalid UUID", http.StatusBadRequest)
+			l.WithError(err).Error(invalidUUIDMsg)
+			sendJSONError(w, invalidUUIDMsg, http.StatusBadRequest)
 			return
 		}
 
@@ -283,7 +289,7 @@ func setDisableDatasourceHandler(s storage.Storage, l *logrus.Logger) http.Handl
 		if err != nil {
 			l.WithError(err).Error("Failed to deactivate datasource")
 			SendAPIErrorResponse(w, http.StatusInternalServerError, &util.APIError{
-				Message: "Failed to set datasource active",
+				Message: failedToSetDatasourceActiveMsg,
 				Err:     err.Error(),
 			})
 			return
@@ -298,8 +304,8 @@ func deleteDatasourceHandler(s storage.Storage, l *logrus.Logger) http.HandlerFu
 	return func(w http.ResponseWriter, r *http.Request) {
 		id, err := uuid.Parse(chi.URLParam(r, "uuid"))
 		if err != nil {
-			l.WithError(err).Error("Invalid UUID")
-			sendJSONError(w, "Invalid UUID", http.StatusBadRequest)
+			l.WithError(err).Error(invalidUUIDMsg)
+			sendJSONError(w, invalidUUIDMsg, http.StatusBadRequest)
 			return
 		}
 
@@ -307,14 +313,14 @@ func deleteDatasourceHandler(s storage.Storage, l *logrus.Logger) http.HandlerFu
 		if err != nil {
 			l.WithError(err).Error("Failed to deactivate datasource")
 			SendAPIErrorResponse(w, http.StatusInternalServerError, &util.APIError{
-				Message: "Failed to set datasource active",
+				Message: failedToSetDatasourceActiveMsg,
 				Err:     err.Error(),
 			})
 			return
 		}
 
-		l.WithField("datasource_id", id).Info("Datasource has been deactivated successfully")
-		SendSuccessResponse(w, http.StatusOK, map[string]string{"message": "Datasource has been deactivated successfully"}, l, nil)
+		l.WithField("datasource_id", id).Info(datasourceDeletedSuccessfullyMsg)
+		SendSuccessResponse(w, http.StatusOK, map[string]string{"message": "Datasource has been deleted successfully"}, l, nil)
 	}
 }
 
@@ -322,8 +328,8 @@ func setDisableEmbeddingProviderHandler(s storage.Storage, l *logrus.Logger) htt
 	return func(w http.ResponseWriter, r *http.Request) {
 		id, err := uuid.Parse(chi.URLParam(r, "uuid"))
 		if err != nil {
-			l.WithError(err).Error("Invalid UUID")
-			sendJSONError(w, "Invalid UUID", http.StatusBadRequest)
+			l.WithError(err).Error(invalidUUIDMsg)
+			sendJSONError(w, invalidUUIDMsg, http.StatusBadRequest)
 			return
 		}
 

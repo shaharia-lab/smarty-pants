@@ -296,14 +296,14 @@ func TestSetActiveEmbeddingProviderHandler(t *testing.T) {
 			},
 		},
 		{
-			name: "Invalid UUID",
+			name: invalidUUIDMsg,
 			uuid: "invalid-uuid",
 			mockBehavior: func(ms *storage.StorageMock) {
 
 			},
 			expectedStatus: http.StatusBadRequest,
 			expectedBody: map[string]string{
-				"error": "Invalid UUID",
+				"error": invalidUUIDMsg,
 			},
 		},
 		{

@@ -20,6 +20,14 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
+const (
+	uuidPath       = "/{uuid}"
+	activatePath   = "/activate"
+	deactivatePath = "/deactivate"
+
+	invalidUUIDMsg = "Invalid UUID"
+)
+
 type API struct {
 	config       Config
 	router       *chi.Mux
@@ -117,30 +125,30 @@ func (a *API) setupRoutes() {
 
 			r.Route("/datasource", func(r chi.Router) {
 				r.Post("/", addDatasourceHandler(a.storage, a.logger))
-				r.Route("/{uuid}", func(r chi.Router) {
+				r.Route(uuidPath, func(r chi.Router) {
 					r.Delete("/", deleteDatasourceHandler(a.storage, a.logger))
 					r.Get("/", getDatasourceHandler(a.storage, a.logger))
 					r.Get("/validate", validateDatasourceHandler(a.storage, a.logger))
 					r.Put("/", updateDatasourceHandler(a.storage, a.logger))
-					r.Put("/activate", setActiveDatasourceHandler(a.storage, a.logger))
-					r.Put("/deactivate", setDisableDatasourceHandler(a.storage, a.logger))
+					r.Put(activatePath, setActiveDatasourceHandler(a.storage, a.logger))
+					r.Put(deactivatePath, setDisableDatasourceHandler(a.storage, a.logger))
 				})
 				r.Get("/", getDatasourcesHandler(a.storage, a.logger))
 			})
 
 			r.Route("/document", func(r chi.Router) {
-				r.Get("/{uuid}", getDocumentHandler(a.storage, a.logger))
+				r.Get(uuidPath, getDocumentHandler(a.storage, a.logger))
 				r.Get("/", getDocumentsHandler(a.storage, a.logger))
 			})
 
 			r.Route("/embedding-provider", func(r chi.Router) {
 				r.Post("/", addEmbeddingProviderHandler(a.storage, a.logger))
-				r.Route("/{uuid}", func(r chi.Router) {
+				r.Route(uuidPath, func(r chi.Router) {
 					r.Delete("/", deleteEmbeddingProviderHandler(a.storage, a.logger))
 					r.Get("/", getEmbeddingProviderHandler(a.storage, a.logger))
 					r.Put("/", updateEmbeddingProviderHandler(a.storage, a.logger))
-					r.Put("/activate", setActiveEmbeddingProviderHandler(a.storage, a.logger))
-					r.Put("/deactivate", setDisableEmbeddingProviderHandler(a.storage, a.logger))
+					r.Put(activatePath, setActiveEmbeddingProviderHandler(a.storage, a.logger))
+					r.Put(deactivatePath, setDisableEmbeddingProviderHandler(a.storage, a.logger))
 				})
 				r.Get("/", getEmbeddingProvidersHandler(a.storage, a.logger))
 			})
@@ -148,7 +156,7 @@ func (a *API) setupRoutes() {
 			r.Route("/interactions", func(r chi.Router) {
 				r.Post("/", createInteractionHandler(a.storage, a.logger))
 				r.Get("/", getInteractionsHandler(a.logger))
-				r.Route("/{uuid}", func(r chi.Router) {
+				r.Route(uuidPath, func(r chi.Router) {
 					r.Get("/", getInteractionHandler(a.logger))
 					r.Post("/message", sendMessageHandler(a.searchSystem, a.storage, a.logger))
 				})
@@ -156,12 +164,12 @@ func (a *API) setupRoutes() {
 
 			r.Route("/llm-provider", func(r chi.Router) {
 				r.Post("/", addLLMProviderHandler(a.storage, a.logger))
-				r.Route("/{uuid}", func(r chi.Router) {
+				r.Route(uuidPath, func(r chi.Router) {
 					r.Delete("/", deleteLLMProviderHandler(a.storage, a.logger))
 					r.Get("/", getLLMProviderHandler(a.storage, a.logger))
 					r.Put("/", updateLLMProviderHandler(a.storage, a.logger))
-					r.Put("/activate", setActiveLLMProviderHandler(a.storage, a.logger))
-					r.Put("/deactivate", setDisableLLMProviderHandler(a.storage, a.logger))
+					r.Put(activatePath, setActiveLLMProviderHandler(a.storage, a.logger))
+					r.Put(deactivatePath, setDisableLLMProviderHandler(a.storage, a.logger))
 				})
 				r.Get("/", getLLMProvidersHandler(a.storage, a.logger))
 			})
