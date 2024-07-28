@@ -1,0 +1,35 @@
+## ignore for frontend
+frontend/smarty-pants/node_modules
+frontend/smarty-pants/.pnp
+frontend/smarty-pants/.pnp.js
+frontend/smarty-pants/.yarn/install-state.gz
+
+frontend/smarty-pants/coverage
+
+frontend/smarty-pants/.next/
+frontend/smarty-pants/out/
+frontend/smarty-pants/build
+
+.DS_Store
+*.pem
+
+frontend/smarty-pants/npm-debug.log*
+frontend/smarty-pants/yarn-debug.log*
+frontend/smarty-pants/yarn-error.log*
+
+.env*.local
+
+frontend/smarty-pants/.vercel
+
+frontend/smarty-pants/*.tsbuildinfo
+frontend/smarty-pants/next-env.d.ts
+
+frontend/smarty-pants/.env.local
+frontend/smarty-pants/.env.development.local
+frontend/smarty-pants/.env.test.local
+frontend/smarty-pants/.env.production.local
+
+
+## ignore for backend
+backend/vendor/*
+backend/smarty-pants
