@@ -18,7 +18,8 @@ import (
 )
 
 const (
-	openAIAPIURL = "https://api.openai.com/v1/chat/completions"
+	openAIAPIURL       = "https://api.openai.com/v1/chat/completions"
+	errDecodingRespMsg = "Error decoding response"
 )
 
 // OpenAILLM is a language model provider that uses OpenAI to generate responses
@@ -85,6 +86,7 @@ func (o *OpenAILLM) GetResponse(prompt Prompt) (string, error) {
 	defer func(Body io.ReadCloser) {
 		err := Body.Close()
 		if err != nil {
+			o.logging.WithError(err).Error("Error closing response body")
 		}
 	}(resp.Body)
 
@@ -136,8 +138,8 @@ func (o *OpenAILLM) parseResponse(span trace.Span, body io.Reader) (string, erro
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
 
-		o.logging.WithField("raw_response_body", body).Debug("Error decoding response")
-		o.logging.WithError(err).Error("Error decoding response")
+		o.logging.WithField("raw_response_body", body).Debug(errDecodingRespMsg)
+		o.logging.WithError(err).Error(errDecodingRespMsg)
 		return "", fmt.Errorf("error decoding response: %w", err)
 	}
 
@@ -145,7 +147,7 @@ func (o *OpenAILLM) parseResponse(span trace.Span, body io.Reader) (string, erro
 		span.RecordError(errors.New("no choices in response"))
 		span.SetStatus(codes.Error, "No choices in response")
 
-		o.logging.WithField("raw_response_body", body).Debug("Error decoding response")
+		o.logging.WithField("raw_response_body", body).Debug(errDecodingRespMsg)
 		o.logging.Error("No choices in response")
 		return "", errors.New("no choices in response")
 	}

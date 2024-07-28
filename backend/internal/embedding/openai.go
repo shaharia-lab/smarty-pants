@@ -145,10 +145,11 @@ func (p *OpenAIProvider) GetEmbedding(ctx context.Context, text string) ([]types
 	}
 
 	if len(openAIResp.Data) == 0 {
-		span.RecordError(fmt.Errorf("no embedding data in response"))
-		span.SetStatus(codes.Error, "no embedding data in response")
+		errMsg := "no embedding data in response"
+		span.RecordError(fmt.Errorf(errMsg))
+		span.SetStatus(codes.Error, errMsg)
 
-		return nil, fmt.Errorf("no embedding data in response")
+		return nil, fmt.Errorf(errMsg)
 	}
 
 	span.SetAttributes(

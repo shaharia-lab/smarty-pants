@@ -30,7 +30,9 @@ func InitTracer(ctx context.Context, serviceName string, logger *logrus.Logger, 
 
 	if !isTracingEnabled {
 		logger.Info("Tracing is disabled")
-		return func() {}, nil
+		return func() {
+			// tracing is disabled
+		}, nil
 	}
 
 	res, err := resource.New(ctx,
