@@ -31,8 +31,5 @@ COPY --from=builder /backend/.next ./.next
 COPY --from=builder /backend/node_modules ./node_modules
 COPY --from=builder /backend/package.json ./package.json
 
-# Expose the port Next.js is running on
-EXPOSE 3000
-
 # Run the Next.js application
 CMD ["npm", "start"]
