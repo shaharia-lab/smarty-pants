@@ -1,5 +1,3 @@
-// File: /app/datasources/page.tsx
-
 'use client';
 
 import React, {useEffect, useState} from 'react';
@@ -107,7 +105,7 @@ const DatasourcesPage: React.FC = () => {
         name: datasource.name,
         sourceType: datasource.source_type,
         status: datasource.status,
-        imageUrl: availableDatasources.find(d => d.id === datasource.source_type)?.imageUrl || '/default-datasource-icon.png',
+        imageUrl: availableDatasources.find(d => d.id === datasource.source_type)?.imageUrl ?? '/default-datasource-icon.png',
         onDelete: handleDelete,
         onActivate: datasource.status === 'inactive' ? handleActivate : undefined,
         onDeactivate: datasource.status === 'active' ? handleDeactivate : undefined,

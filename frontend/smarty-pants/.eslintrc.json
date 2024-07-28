@@ -8,7 +8,9 @@
   ],
   "parser": "@typescript-eslint/parser",
   "plugins": ["@typescript-eslint", "react"],
-  "rules": {},
+  "rules": {
+    "@typescript-eslint/prefer-nullish-coalescing": "warn"
+  },
   "settings": {
     "react": {
       "version": "detect"
