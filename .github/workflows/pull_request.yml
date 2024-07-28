@@ -49,10 +49,11 @@ jobs:
         run: make backend-test
 
       - name: Publish artifacts
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
-          name: backend_coverage_${{ github.sha }}
+          name: backend-coverage-pr${{ github.event.pull_request.number }}-${{ github.sha }}
           path: backend/coverage_unit.out
+          retention-days: 1
 
   frontend-unit-test:
     needs: check-changes
@@ -73,10 +74,11 @@ jobs:
         run: make frontend-test
 
       - name: Publish artifacts
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
-          name: frontend_coverage_${{ github.sha }}
-          path: frontend/smarty-pants/coversage/lcov.info
+          name: frontend-coverage-pr${{ github.event.pull_request.number }}-${{ github.sha }}
+          path: frontend/smarty-pants/coverage/lcov.info
+          retention-days: 1
 
   lint:
     name: Linting
@@ -108,7 +110,8 @@ jobs:
 
   code-analysis:
     runs-on: ubuntu-latest
-    needs: [frontend-unit-test, backend-unit-test]
+    needs: [check-changes, frontend-unit-test, backend-unit-test]
+    if: ${{ needs.check-changes.outputs.backend == 'true' || needs.check-changes.outputs.frontend == 'true' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -116,17 +119,17 @@ jobs:
           fetch-depth: 0
 
       - name: Download frontend coverage
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
-          name: frontend_coverage_${{ github.sha }}
-          path: frontend/smarty-pants/coverage/lcov.info
+          name: frontend-coverage-pr${{ github.event.pull_request.number }}-${{ github.sha }}
+          path: frontend/smarty-pants/coverage
         continue-on-error: true
 
       - name: Download backend coverage
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
-          name: backend_coverage_${{ github.sha }}
-          path: backend/coverage_unit.out
+          name: backend-coverage-pr${{ github.event.pull_request.number }}-${{ github.sha }}
+          path: backend
         continue-on-error: true
 
       - name: SonarCloud Scan
