@@ -1,6 +1,6 @@
 // File: /utils/datasources.ts
 
-import { AvailableDatasource } from '@/types/datasource';
+import {AvailableDatasource} from '@/types/datasource';
 
 export const availableDatasources: AvailableDatasource[] = [
     {

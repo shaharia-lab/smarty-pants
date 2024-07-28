@@ -8,7 +8,7 @@ interface HeaderProps {
     config: HeaderConfig;
 }
 
-const Header: React.FC<HeaderProps> = ({ config }) => {
+const Header: React.FC<HeaderProps> = ({config}) => {
     return (
         <header className="bg-white shadow">
             <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">

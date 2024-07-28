@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { ProviderConfig } from '@/types/provider';
+import React, {useEffect, useState} from 'react';
+import {useRouter} from 'next/navigation';
+import {ProviderConfig} from '@/types/provider';
 
 interface ProviderFormProps {
     providerId?: string;

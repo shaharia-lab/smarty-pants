@@ -1,13 +1,12 @@
 import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
+import {fireEvent, render, screen} from '@testing-library/react';
 import '@testing-library/jest-dom';
 import ListComponent from './ListComponent';
-import '@testing-library/jest-dom';
 
 
 // Mock Next.js Link component
 jest.mock('next/link', () => {
-    return ({ children, href }: { children: React.ReactNode; href: string }) => (
+    return ({children, href}: { children: React.ReactNode; href: string }) => (
         <a href={href}>{children}</a>
     );
 });

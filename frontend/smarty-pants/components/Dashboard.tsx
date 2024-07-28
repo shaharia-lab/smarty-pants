@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
-import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, Title } from 'chart.js';
-import { Pie } from 'react-chartjs-2';
-import { Loader2 } from 'lucide-react';
+import React, {useEffect, useState} from 'react';
+import {ArcElement, BarElement, CategoryScale, Chart as ChartJS, Legend, LinearScale, Title, Tooltip} from 'chart.js';
+import {Pie} from 'react-chartjs-2';
+import {Loader2} from 'lucide-react';
 
 ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, Title);
 
@@ -63,7 +63,7 @@ const Dashboard = () => {
     if (isLoading) {
         return (
             <div className="flex justify-center items-center h-64">
-                <Loader2 className="h-8 w-8 animate-spin text-gray-800" />
+                <Loader2 className="h-8 w-8 animate-spin text-gray-800"/>
             </div>
         );
     }
@@ -117,7 +117,7 @@ const Dashboard = () => {
             },
             tooltip: {
                 callbacks: {
-                    label: function(context: any) {
+                    label: function (context: any) {
                         let label = context.label || '';
                         if (label) {
                             label += ': ';
@@ -177,7 +177,8 @@ const Dashboard = () => {
                                 <li key={index} className="text-sm">
                                     <span className="font-medium text-gray-700">{ds.name}</span>
                                     <span className="text-xs text-gray-500 ml-2">({ds.type})</span>
-                                    <span className={`text-xs ml-2 ${ds.status === 'active' ? 'text-green-500' : 'text-red-500'}`}>
+                                    <span
+                                        className={`text-xs ml-2 ${ds.status === 'active' ? 'text-green-500' : 'text-red-500'}`}>
                                         {ds.status}
                                     </span>
                                 </li>
@@ -190,7 +191,8 @@ const Dashboard = () => {
             </div>
 
             {/* Datasources Overview Charts */}
-            <div className="bg-white p-6 rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300 col-span-1 md:col-span-2 lg:col-span-3">
+            <div
+                className="bg-white p-6 rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300 col-span-1 md:col-span-2 lg:col-span-3">
                 <h2 className="text-xl font-semibold mb-4 text-gray-800">Datasources Overview</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="h-[300px]">
@@ -205,7 +207,8 @@ const Dashboard = () => {
                         )}
                     </div>
                     <div className="h-[300px]">
-                        <h3 className="text-lg font-semibold mb-2 text-gray-700">Documents Fetched by Datasource Type</h3>
+                        <h3 className="text-lg font-semibold mb-2 text-gray-700">Documents Fetched by Datasource
+                            Type</h3>
                         {Object.keys(analyticsData.datasources.total_documents_fetched_by_datasource_type).length > 0 ? (
                             <Pie
                                 data={documentsFetchedData}

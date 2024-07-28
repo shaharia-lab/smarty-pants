@@ -1,4 +1,3 @@
-
 // File: /types/datasource.ts
 
 export interface DatasourceConfig {

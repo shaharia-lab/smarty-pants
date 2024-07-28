@@ -1,12 +1,12 @@
 // File: /components/Filter.tsx
 
-import React, { useState } from 'react';
+import React, {useState} from 'react';
 
 interface FilterProps {
     onFilterApply: (status: string, limit: number) => void;
 }
 
-const Filter: React.FC<FilterProps> = ({ onFilterApply }) => {
+const Filter: React.FC<FilterProps> = ({onFilterApply}) => {
     const [status, setStatus] = useState<string>('');
     const [limit, setLimit] = useState<number>(10);
 

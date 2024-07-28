@@ -22,7 +22,7 @@ interface ListComponentProps {
     type: 'llm' | 'embedding' | string; // Add this line
 }
 
-const ListComponent: React.FC<ListComponentProps> = ({ title, items, loading, error, type }) => {
+const ListComponent: React.FC<ListComponentProps> = ({title, items, loading, error, type}) => {
     const getEditLink = (id: string, sourceType: string) => {
         switch (type) {
             case 'llm':
@@ -48,7 +48,8 @@ const ListComponent: React.FC<ListComponentProps> = ({ title, items, loading, er
                 ) : items.length > 0 ? (
                     items.map((item) => (
                         <div key={item.id} className="border-b border-gray-200 last:border-b-0">
-                            <div className="px-6 py-5 sm:px-6 flex items-center justify-between hover:bg-gray-50 transition-colors duration-200">
+                            <div
+                                className="px-6 py-5 sm:px-6 flex items-center justify-between hover:bg-gray-50 transition-colors duration-200">
                                 <div className="flex items-center">
                                     <Image
                                         src={item.imageUrl || '/default-provider-icon.png'}

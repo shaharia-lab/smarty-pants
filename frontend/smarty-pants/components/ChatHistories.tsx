@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, {useEffect, useState} from 'react';
 
 interface InteractionSummary {
     uuid: string;
@@ -15,7 +15,7 @@ interface ChatHistoriesProps {
     onSelectInteraction: (uuid: string) => void;
 }
 
-const ChatHistories: React.FC<ChatHistoriesProps> = ({ onSelectInteraction }) => {
+const ChatHistories: React.FC<ChatHistoriesProps> = ({onSelectInteraction}) => {
     const [histories, setHistories] = useState<InteractionSummary[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 

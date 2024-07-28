@@ -1,10 +1,10 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, {useEffect, useState} from 'react';
 import Filter from './Filter';
 import DocumentTable from './DocumentTable';
 import Pagination from './Pagination';
-import { Document } from '@/types/document';
+import {Document} from '@/types/document';
 
 const DocumentClient: React.FC = () => {
     const [documents, setDocuments] = useState<Document[]>([]);
@@ -50,14 +50,14 @@ const DocumentClient: React.FC = () => {
 
     return (
         <div className="p-6 bg-white">
-            <Filter onFilterApply={handleFilterApply} />
+            <Filter onFilterApply={handleFilterApply}/>
             {isLoading ? (
                 <p>Loading documents...</p>
             ) : error ? (
                 <p className="text-red-500">{error}</p>
             ) : (
                 <>
-                    <DocumentTable documents={documents} />
+                    <DocumentTable documents={documents}/>
                     <Pagination
                         currentPage={currentPage}
                         totalPages={totalPages}

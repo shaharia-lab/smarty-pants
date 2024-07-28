@@ -6,7 +6,7 @@ interface ProviderDetailsProps {
     isEditMode: boolean;
 }
 
-const ProviderDetails: React.FC<ProviderDetailsProps> = ({ providerType, isEditMode }) => {
+const ProviderDetails: React.FC<ProviderDetailsProps> = ({providerType, isEditMode}) => {
     return (
         <div>
             <div className="bg-white shadow sm:rounded-lg mb-8">
@@ -17,7 +17,8 @@ const ProviderDetails: React.FC<ProviderDetailsProps> = ({ providerType, isEditM
                             <li>Create an OpenAI account if you haven't already.</li>
                             <li>Generate an API key from your OpenAI dashboard.</li>
                             <li>Choose the appropriate {providerType} model for your needs.</li>
-                            <li>Enter a name for this configuration, your API key, and select the model in the form.</li>
+                            <li>Enter a name for this configuration, your API key, and select the model in the form.
+                            </li>
                             {!isEditMode && <li>Click "Validate" to test your configuration.</li>}
                             <li>Click "{isEditMode ? 'Update' : 'Save'} Provider" to complete the setup.</li>
                         </ol>
@@ -44,12 +45,22 @@ const ProviderDetails: React.FC<ProviderDetailsProps> = ({ providerType, isEditM
                             </>
                         )}
                     </ul>
-                    <p className="mb-4 text-sm text-gray-600">For up-to-date pricing, please visit the <a href="https://openai.com/api/pricing/" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800">OpenAI API Pricing page</a>.</p>
-                    <p className="mb-4 text-sm text-gray-600">Read more about OpenAI {providerType === 'embedding' ? 'embeddings' : 'language models'} in the <a href={`https://platform.openai.com/docs/guides/${providerType === 'embedding' ? 'embeddings' : 'language-models'}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800">OpenAI {providerType === 'embedding' ? 'Embeddings' : 'Language Models'} Guide</a>.</p>
+                    <p className="mb-4 text-sm text-gray-600">For up-to-date pricing, please visit the <a
+                        href="https://openai.com/api/pricing/" target="_blank" rel="noopener noreferrer"
+                        className="text-blue-600 hover:text-blue-800">OpenAI API Pricing page</a>.</p>
+                    <p className="mb-4 text-sm text-gray-600">Read more about
+                        OpenAI {providerType === 'embedding' ? 'embeddings' : 'language models'} in the <a
+                            href={`https://platform.openai.com/docs/guides/${providerType === 'embedding' ? 'embeddings' : 'language-models'}`}
+                            target="_blank" rel="noopener noreferrer"
+                            className="text-blue-600 hover:text-blue-800">OpenAI {providerType === 'embedding' ? 'Embeddings' : 'Language Models'} Guide</a>.
+                    </p>
                     {providerType === 'embedding' && (
-                        <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 text-sm" role="alert">
+                        <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 text-sm"
+                             role="alert">
                             <p className="font-bold">Warning: Dimensions</p>
-                            <p>We shouldn't change the embedding dimensions because if we change the dimensions, in the database backend the vector indexing may corrupt and require running embedding on all documents all over again.</p>
+                            <p>We shouldn't change the embedding dimensions because if we change the dimensions, in the
+                                database backend the vector indexing may corrupt and require running embedding on all
+                                documents all over again.</p>
                         </div>
                     )}
                 </div>

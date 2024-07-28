@@ -1,7 +1,7 @@
 import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { ProviderConfig, AvailableProvider } from '@/types/provider';
+import {AvailableProvider, ProviderConfig} from '@/types/provider';
 
 interface ProviderListProps {
     availableProviders: AvailableProvider[];
@@ -23,7 +23,8 @@ const ProviderList: React.FC<ProviderListProps> = ({
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                     {availableProviders.map((provider) => (
                         <Link href={`/${providerType}/${provider.id}/add`} key={provider.id}>
-                            <div className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 overflow-hidden">
+                            <div
+                                className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 overflow-hidden">
                                 <div className="p-6">
                                     <div className="flex items-center mb-4">
                                         <Image
@@ -37,7 +38,8 @@ const ProviderList: React.FC<ProviderListProps> = ({
                                     </div>
                                     <p className="text-gray-600 mb-4">{provider.description}</p>
                                     <div className="flex justify-end">
-                    <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+                    <span
+                        className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
                       Configure
                     </span>
                                     </div>
@@ -53,7 +55,8 @@ const ProviderList: React.FC<ProviderListProps> = ({
                 <div className="bg-white shadow overflow-hidden sm:rounded-lg">
                     {configuredProviders.map((provider) => (
                         <div key={provider.uuid} className="border-b border-gray-200 last:border-b-0">
-                            <div className="px-6 py-5 flex items-center justify-between hover:bg-gray-50 transition-colors duration-200">
+                            <div
+                                className="px-6 py-5 flex items-center justify-between hover:bg-gray-50 transition-colors duration-200">
                                 <div className="flex items-center">
                                     <Image
                                         src={availableProviders.find(p => p.id === provider.provider)?.imageUrl || '/default-provider-icon.png'}

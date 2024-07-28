@@ -16,14 +16,15 @@ interface AvailableProvidersComponentProps {
     providers: AvailableProviderProps[];
 }
 
-const AvailableProvidersComponent: React.FC<AvailableProvidersComponentProps> = ({ title, providers }) => {
+const AvailableProvidersComponent: React.FC<AvailableProvidersComponentProps> = ({title, providers}) => {
     return (
         <div className="w-1/2">
             <h2 className="text-2xl font-semibold text-gray-900 mb-4">{title}</h2>
             <div className="bg-white shadow overflow-hidden sm:rounded-lg h-[calc(100vh-240px)] overflow-y-auto">
                 {providers.map((provider) => (
                     <div key={provider.id} className="border-b border-gray-200 last:border-b-0">
-                        <div className="px-6 py-5 sm:px-6 flex items-center justify-between hover:bg-gray-50 transition-colors duration-200">
+                        <div
+                            className="px-6 py-5 sm:px-6 flex items-center justify-between hover:bg-gray-50 transition-colors duration-200">
                             <div className="flex items-center">
                                 <Image
                                     src={provider.imageUrl || '/default-provider-icon.png'}

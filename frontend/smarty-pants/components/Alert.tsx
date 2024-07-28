@@ -5,7 +5,7 @@ interface AlertProps {
     variant?: 'default' | 'destructive';
 }
 
-export const Alert: React.FC<AlertProps> = ({ children, variant = 'default' }) => {
+export const Alert: React.FC<AlertProps> = ({children, variant = 'default'}) => {
     const baseClasses = 'px-4 py-3 rounded-md mb-4 text-sm';
     const variantClasses = {
         default: 'bg-green-100 text-green-800 border border-green-300',
@@ -19,6 +19,6 @@ export const Alert: React.FC<AlertProps> = ({ children, variant = 'default' }) =
     );
 };
 
-export const AlertDescription: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const AlertDescription: React.FC<{ children: React.ReactNode }> = ({children}) => {
     return <p className="text-sm">{children}</p>;
 };

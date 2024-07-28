@@ -2,13 +2,13 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Document } from '@/types';
+import {Document} from '@/types';
 
 interface DocumentTableProps {
     documents: Document[];
 }
 
-const DocumentTable: React.FC<DocumentTableProps> = ({ documents }) => {
+const DocumentTable: React.FC<DocumentTableProps> = ({documents}) => {
     return (
         <div className="mt-8 flow-root">
             <div className="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
@@ -16,16 +16,23 @@ const DocumentTable: React.FC<DocumentTableProps> = ({ documents }) => {
                     <table className="min-w-full divide-y divide-gray-300">
                         <thead>
                         <tr>
-                            <th scope="col" className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-0">Title</th>
-                            <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Status</th>
-                            <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Created At</th>
+                            <th scope="col"
+                                className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-0">Title
+                            </th>
+                            <th scope="col"
+                                className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Status
+                            </th>
+                            <th scope="col"
+                                className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Created At
+                            </th>
                         </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-200">
                         {documents.map((doc) => (
                             <tr key={doc.uuid}>
                                 <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-0">
-                                    <Link href={`/documents/${doc.uuid}`} className="text-indigo-600 hover:text-indigo-900">
+                                    <Link href={`/documents/${doc.uuid}`}
+                                          className="text-indigo-600 hover:text-indigo-900">
                                         {doc.title}
                                     </Link>
                                 </td>

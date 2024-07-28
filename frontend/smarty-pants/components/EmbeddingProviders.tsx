@@ -1,10 +1,10 @@
 // File: /components/EmbeddingProviders.tsx
 
-import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/router';
+import React, {useEffect, useState} from 'react';
+import {useRouter} from 'next/router';
 import Navbar from './Navbar';
 import Header from './Header';
-import { EmbeddingProviderConfig } from '@/types/embeddingProvider';
+import {EmbeddingProviderConfig} from '@/types/embeddingProvider';
 
 const EmbeddingProviders: React.FC = () => {
     const [embeddingProviders, setEmbeddingProviders] = useState<EmbeddingProviderConfig[]>([]);
@@ -37,8 +37,8 @@ const EmbeddingProviders: React.FC = () => {
 
     return (
         <div className="min-h-screen bg-gray-50">
-            <Navbar />
-            <Header config={{ title: "Embedding Providers" }} />
+            <Navbar/>
+            <Header config={{title: "Embedding Providers"}}/>
             <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
                 <div className="px-4 py-6 sm:px-0">
                     {loading ? (
@@ -68,7 +68,8 @@ const EmbeddingProviders: React.FC = () => {
                                                         {provider.provider}
                                                     </p>
                                                 </div>
-                                                <div className="inline-flex items-center text-base font-semibold text-gray-900">
+                                                <div
+                                                    className="inline-flex items-center text-base font-semibold text-gray-900">
                                                     {provider.status}
                                                 </div>
                                             </div>

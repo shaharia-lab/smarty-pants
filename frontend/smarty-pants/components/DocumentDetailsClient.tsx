@@ -1,12 +1,12 @@
-import React, { useState } from 'react';
-import { Document } from '@/types';
+import React, {useState} from 'react';
+import {Document} from '@/types';
 
 interface DocumentDetailsClientProps {
     document: Document;
 }
 
-const DocumentDetailsClient: React.FC<DocumentDetailsClientProps> = ({ document }) => {
-    const [expandedEmbeddings, setExpandedEmbeddings] = useState<{[key: number]: boolean}>({});
+const DocumentDetailsClient: React.FC<DocumentDetailsClientProps> = ({document}) => {
+    const [expandedEmbeddings, setExpandedEmbeddings] = useState<{ [key: number]: boolean }>({});
 
     const toggleEmbedding = (index: number) => {
         setExpandedEmbeddings(prev => ({...prev, [index]: !prev[index]}));
@@ -32,7 +32,7 @@ const DocumentDetailsClient: React.FC<DocumentDetailsClientProps> = ({ document 
                   <>
                       {isExpanded ? (
                           <>
-                              ,<br />
+                              ,<br/>
                               {remainingLines.join(',\n')}
                           </>
                       ) : ', ...'}

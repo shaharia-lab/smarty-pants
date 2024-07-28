@@ -2,8 +2,8 @@
 
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import React, {useEffect, useState} from 'react';
+import {useRouter} from 'next/navigation';
 import Link from 'next/link';
 
 const SetupGuide: React.FC = () => {
@@ -38,7 +38,8 @@ const SetupGuide: React.FC = () => {
             <div className="text-center">
                 <h2 className="text-2xl font-semibold mb-4">Welcome to SmartyPants AI!</h2>
                 <p className="mb-4">To get started, you need to configure a datasource.</p>
-                <Link href="/datasources" className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                <Link href="/datasources"
+                      className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
                     Configure Datasource
                 </Link>
             </div>
@@ -50,7 +51,8 @@ const SetupGuide: React.FC = () => {
             <div className="text-center">
                 <h2 className="text-2xl font-semibold mb-4">Almost there!</h2>
                 <p className="mb-4">Now, let's configure an embedding provider.</p>
-                <Link href="/embedding-providers" className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                <Link href="/embedding-providers"
+                      className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
                     Configure Embedding Provider
                 </Link>
             </div>

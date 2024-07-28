@@ -17,14 +17,15 @@ interface AvailableItemsProps {
     title: string;
 }
 
-const AvailableItems: React.FC<AvailableItemsProps> = ({ items, title }) => {
+const AvailableItems: React.FC<AvailableItemsProps> = ({items, title}) => {
     return (
         <section className="mb-12">
             <h2 className="text-2xl font-semibold text-gray-900 mb-6">{title}</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {items.map((item) => (
                     <Link href={item.configurationUrl} key={item.id} className="block">
-                        <div className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 overflow-hidden">
+                        <div
+                            className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 overflow-hidden">
                             <div className="p-6">
                                 <div className="flex items-center mb-4">
                                     <Image
@@ -38,7 +39,8 @@ const AvailableItems: React.FC<AvailableItemsProps> = ({ items, title }) => {
                                 </div>
                                 <p className="text-gray-600 mb-4">{item.description}</p>
                                 <div className="flex justify-end">
-                                    <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+                                    <span
+                                        className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
                                         Configure
                                     </span>
                                 </div>
