@@ -34,7 +34,7 @@ jobs:
         with:
           version: '~> v2'
           args: release --clean --rm-dist
-          workdir: app
+          workdir: backend
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

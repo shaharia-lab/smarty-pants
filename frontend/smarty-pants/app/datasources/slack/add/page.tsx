@@ -1,5 +1,3 @@
-// File: /app/datasources/slack/page.tsx
-
 'use client';
 
 import React, {useState} from 'react';
