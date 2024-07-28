@@ -31,6 +31,6 @@ frontend/smarty-pants/.env.production.local
 
 
 ## ignore for backend
-/backend/vendor/*
-/backend/smarty-pants
-/backend/coverage_*.out
+/app/vendor/*
+/app/smarty-pants
+/app/coverage_*.out

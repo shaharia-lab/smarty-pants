@@ -15,7 +15,7 @@ jobs:
       contents: read
       pull-requests: read
     outputs:
-      backend: ${{ steps.filter.outputs.backend }}
+      app: ${{ steps.filter.outputs.app }}
       frontend: ${{ steps.filter.outputs.frontend }}
     steps:
       - name: Checkout
@@ -27,14 +27,14 @@ jobs:
         with:
           token: ${{ github.token }}
           filters: |
-            backend:
-              - 'backend/**'
+            app:
+              - 'app/**'
             frontend:
               - 'frontend/**'
 
-  backend-unit-test:
+  app-unit-test:
     needs: check-changes
-    if: ${{ needs.check-changes.outputs.backend == 'true' }}
+    if: ${{ needs.check-changes.outputs.app == 'true' }}
     name: Backend Unit Tests
     runs-on: ubuntu-latest
     steps:
@@ -46,13 +46,13 @@ jobs:
         with:
           go-version: '1.22'
       - name: Run Backend Tests
-        run: make backend-test
+        run: make app-test
 
       - name: Publish artifacts
         uses: actions/upload-artifact@v3
         with:
-          name: backend-coverage-pr${{ github.event.pull_request.number }}-${{ github.sha }}
-          path: backend/coverage_unit.out
+          name: app-coverage-pr${{ github.event.pull_request.number }}-${{ github.sha }}
+          path: app/coverage_unit.out
           retention-days: 1
 
   frontend-unit-test:
@@ -96,9 +96,9 @@ jobs:
           go-version: '^1.22'
           check-latest: true
           cache: true
-          go-version-file: 'backend/go.mod'
+          go-version-file: 'app/go.mod'
           cache-dependency-path: |
-            backend/go.sum
+            app/go.sum
 
       - name: Lint Code Base
         uses: github/super-linter/slim@v4
@@ -110,8 +110,8 @@ jobs:
 
   code-analysis:
     runs-on: ubuntu-latest
-    needs: [check-changes, frontend-unit-test, backend-unit-test]
-    if: ${{ needs.check-changes.outputs.backend == 'true' || needs.check-changes.outputs.frontend == 'true' }}
+    needs: [check-changes, frontend-unit-test, app-unit-test]
+    if: ${{ needs.check-changes.outputs.app == 'true' || needs.check-changes.outputs.frontend == 'true' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -125,11 +125,11 @@ jobs:
           path: frontend/smarty-pants/coverage
         continue-on-error: true
 
-      - name: Download backend coverage
+      - name: Download app coverage
         uses: actions/download-artifact@v3
         with:
-          name: backend-coverage-pr${{ github.event.pull_request.number }}-${{ github.sha }}
-          path: backend
+          name: app-coverage-pr${{ github.event.pull_request.number }}-${{ github.sha }}
+          path: app
         continue-on-error: true
 
       - name: SonarCloud Scan
