@@ -38,7 +38,7 @@ const DatasourcesPage: React.FC = () => {
 
     const fetchDatasources = async () => {
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/datasources`);
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/datasources`);
             if (!response.ok) {
                 throw new Error('Failed to fetch datasources');
             }
@@ -54,7 +54,7 @@ const DatasourcesPage: React.FC = () => {
     const handleDelete = async (datasourceId: string) => {
         if (window.confirm('Are you sure you want to delete this datasource?')) {
             try {
-                const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/datasource/${datasourceId}`, {
+                const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/datasource/${datasourceId}`, {
                     method: 'DELETE',
                 });
                 if (!response.ok) {
@@ -70,7 +70,7 @@ const DatasourcesPage: React.FC = () => {
 
     const handleActivate = async (datasourceId: string) => {
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/datasource/${datasourceId}/activate`, {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/datasource/${datasourceId}/activate`, {
                 method: 'PUT',
             });
             const data = await response.json();
@@ -86,7 +86,7 @@ const DatasourcesPage: React.FC = () => {
 
     const handleDeactivate = async (datasourceId: string) => {
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/datasource/${datasourceId}/deactivate`, {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/datasource/${datasourceId}/deactivate`, {
                 method: 'PUT',
             });
             const data = await response.json();

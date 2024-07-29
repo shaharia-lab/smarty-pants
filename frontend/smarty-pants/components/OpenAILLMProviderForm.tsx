@@ -35,7 +35,7 @@ const OpenAILLMProviderForm: React.FC<OpenAILLMProviderFormProps> = ({providerId
     const fetchProviderData = async () => {
         setIsLoading(true);
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/llm-provider/${providerId}`);
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/llm-provider/${providerId}`);
             if (!response.ok) {
                 throw new Error('Failed to fetch provider data');
             }
@@ -61,8 +61,8 @@ const OpenAILLMProviderForm: React.FC<OpenAILLMProviderFormProps> = ({providerId
         setError(null);
 
         const url = isEditMode
-            ? `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/llm-provider/${providerId}`
-            : `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/llm-provider`;
+            ? `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/llm-provider/${providerId}`
+            : `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/llm-provider`;
 
         const method = isEditMode ? 'PUT' : 'POST';
 
@@ -241,7 +241,7 @@ const OpenAILLMProviderForm: React.FC<OpenAILLMProviderFormProps> = ({providerId
                                         <li>ada v2: $0.10 / 1M tokens</li>
                                     </ul>
                                     <p className="mb-4 text-sm text-gray-600">For up-to-date pricing, please visit
-                                        the <a href="https://openai.com/api/pricing/" target="_blank"
+                                        the <a href="https://openai.com/api/v1/pricing/" target="_blank"
                                                rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800">OpenAI
                                             API Pricing page</a>.</p>
                                     <p className="mb-4 text-sm text-gray-600">Read more about OpenAI llms in the <a

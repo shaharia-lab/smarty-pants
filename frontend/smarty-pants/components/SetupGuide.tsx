@@ -14,11 +14,11 @@ const SetupGuide: React.FC = () => {
     useEffect(() => {
         const checkConfiguration = async () => {
             try {
-                const datasourcesResponse = await fetch('http://localhost:8080/api/datasources?limit=1');
+                const datasourcesResponse = await fetch('http://localhost:8080/api/v1/datasources?limit=1');
                 const datasourcesData = await datasourcesResponse.json();
                 setHasDatasource(datasourcesData.total > 0);
 
-                const embeddingProvidersResponse = await fetch('http://localhost:8080/api/embedding-providers?limit=1');
+                const embeddingProvidersResponse = await fetch('http://localhost:8080/api/v1/embedding-providers?limit=1');
                 const embeddingProvidersData = await embeddingProvidersResponse.json();
                 setHasEmbeddingProvider(embeddingProvidersData.total > 0);
             } catch (error) {

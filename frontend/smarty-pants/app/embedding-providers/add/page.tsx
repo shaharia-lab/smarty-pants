@@ -24,7 +24,7 @@ const AddEmbeddingProviderPage: React.FC = () => {
         setError(null);
 
         try {
-            const response = await fetch('http://localhost:8080/api/embedding-provider', {
+            const response = await fetch('http://localhost:8080/api/v1/embedding-provider', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

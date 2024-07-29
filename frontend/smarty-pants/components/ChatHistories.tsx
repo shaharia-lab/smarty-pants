@@ -26,7 +26,7 @@ const ChatHistories: React.FC<ChatHistoriesProps> = ({onSelectInteraction}) => {
     const fetchHistories = async () => {
         setIsLoading(true);
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/interactions`);
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/interactions`);
             const data: InteractionsResponse = await response.json();
             setHistories(data.interactions);
         } catch (error) {

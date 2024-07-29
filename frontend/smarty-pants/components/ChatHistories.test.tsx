@@ -105,7 +105,7 @@ describe('ChatHistories', () => {
         render(<ChatHistories onSelectInteraction={mockOnSelectInteraction} />);
 
         await waitFor(() => {
-            expect(global.fetch).toHaveBeenCalledWith('http://test-api.com/api/interactions');
+            expect(global.fetch).toHaveBeenCalledWith('http://test-api.com/api/v1/interactions');
         });
     });
 

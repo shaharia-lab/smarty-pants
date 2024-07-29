@@ -38,7 +38,7 @@ const LLMProvidersPage: React.FC = () => {
 
     const fetchLLMProviders = async () => {
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/llm-providers`);
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/llm-providers`);
             if (!response.ok) {
                 throw new Error('Failed to fetch LLM providers');
             }
@@ -54,7 +54,7 @@ const LLMProvidersPage: React.FC = () => {
     const handleDelete = async (providerId: string) => {
         if (window.confirm('Are you sure you want to delete this provider?')) {
             try {
-                const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/llm-provider/${providerId}`, {
+                const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/llm-provider/${providerId}`, {
                     method: 'DELETE',
                 });
                 if (!response.ok) {
@@ -70,7 +70,7 @@ const LLMProvidersPage: React.FC = () => {
 
     const handleActivate = async (providerId: string) => {
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/llm-provider/${providerId}/activate`, {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/llm-provider/${providerId}/activate`, {
                 method: 'PUT',
             });
             const data = await response.json();
@@ -89,7 +89,7 @@ const LLMProvidersPage: React.FC = () => {
 
     const handleDeactivate = async (providerId: string) => {
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/llm-provider/${providerId}/deactivate`, {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/llm-provider/${providerId}/deactivate`, {
                 method: 'PUT',
             });
             const data = await response.json();

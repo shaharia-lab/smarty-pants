@@ -18,7 +18,7 @@ const DocumentClient: React.FC = () => {
         setIsLoading(true);
         setError(null);
         try {
-            const response = await fetch(`http://localhost:8080/api/documents?page=${page}&status=${status}&limit=${limit}`);
+            const response = await fetch(`http://localhost:8080/api/v1/documents?page=${page}&status=${status}&limit=${limit}`);
             if (!response.ok) {
                 throw new Error('Failed to fetch documents');
             }

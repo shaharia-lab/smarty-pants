@@ -25,7 +25,7 @@ const EmbeddingProviderDetailsPage: React.FC = () => {
     useEffect(() => {
         const fetchProviderDetails = async () => {
             try {
-                const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/embedding-provider/${uuid}`);
+                const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/embedding-provider/${uuid}`);
                 if (!response.ok) {
                     throw new Error('Failed to fetch embedding provider details');
                 }
@@ -46,7 +46,7 @@ const EmbeddingProviderDetailsPage: React.FC = () => {
         setError(null);
 
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/embedding-provider/${uuid}`, {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/embedding-provider/${uuid}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',

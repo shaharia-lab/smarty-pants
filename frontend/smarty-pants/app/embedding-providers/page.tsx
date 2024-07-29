@@ -38,7 +38,7 @@ const EmbeddingProvidersPage: React.FC = () => {
 
     const fetchEmbeddingProviders = async () => {
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/embedding-providers`);
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/embedding-providers`);
             if (!response.ok) {
                 throw new Error('Failed to fetch embedding providers');
             }
@@ -54,7 +54,7 @@ const EmbeddingProvidersPage: React.FC = () => {
     const handleDelete = async (providerId: string) => {
         if (window.confirm('Are you sure you want to delete this provider?')) {
             try {
-                const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/embedding-provider/${providerId}`, {
+                const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/embedding-provider/${providerId}`, {
                     method: 'DELETE',
                 });
                 if (!response.ok) {
@@ -70,7 +70,7 @@ const EmbeddingProvidersPage: React.FC = () => {
 
     const handleActivate = async (providerId: string) => {
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/embedding-provider/${providerId}/activate`, {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/embedding-provider/${providerId}/activate`, {
                 method: 'PUT',
             });
             const data = await response.json();
@@ -86,7 +86,7 @@ const EmbeddingProvidersPage: React.FC = () => {
 
     const handleDeactivate = async (providerId: string) => {
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/embedding-provider/${providerId}/deactivate`, {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/embedding-provider/${providerId}/deactivate`, {
                 method: 'PUT',
             });
             const data = await response.json();

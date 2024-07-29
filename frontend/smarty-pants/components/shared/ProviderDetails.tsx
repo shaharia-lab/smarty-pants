@@ -46,7 +46,7 @@ const ProviderDetails: React.FC<ProviderDetailsProps> = ({providerType, isEditMo
                         )}
                     </ul>
                     <p className="mb-4 text-sm text-gray-600">For up-to-date pricing, please visit the <a
-                        href="https://openai.com/api/pricing/" target="_blank" rel="noopener noreferrer"
+                        href="https://openai.com/api/v1/pricing/" target="_blank" rel="noopener noreferrer"
                         className="text-blue-600 hover:text-blue-800">OpenAI API Pricing page</a>.</p>
                     <p className="mb-4 text-sm text-gray-600">Read more about
                         OpenAI {providerType === 'embedding' ? 'embeddings' : 'language models'} in the <a

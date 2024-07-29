@@ -22,7 +22,7 @@ export default function DocumentDetailsPage() {
 
         async function fetchDocument() {
             try {
-                const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/document/${uuid}`);
+                const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/document/${uuid}`);
                 if (!response.ok) {
                     throw new Error('Failed to fetch document');
                 }

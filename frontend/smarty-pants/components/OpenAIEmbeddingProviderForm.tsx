@@ -36,7 +36,7 @@ const OpenAIEmbeddingProviderForm: React.FC<OpenAIEmbeddingProviderFormProps> = 
     const fetchProviderData = async () => {
         setIsLoading(true);
         try {
-            const response = await fetch(`http://localhost:8080/api/embedding-provider/${providerId}`);
+            const response = await fetch(`http://localhost:8080/api/v1/embedding-provider/${providerId}`);
             if (!response.ok) {
                 throw new Error('Failed to fetch provider data');
             }
@@ -62,8 +62,8 @@ const OpenAIEmbeddingProviderForm: React.FC<OpenAIEmbeddingProviderFormProps> = 
         setError(null);
 
         const url = isEditMode
-            ? `http://localhost:8080/api/embedding-provider/${providerId}`
-            : 'http://localhost:8080/api/embedding-provider';
+            ? `http://localhost:8080/api/v1/embedding-provider/${providerId}`
+            : 'http://localhost:8080/api/v1/embedding-provider';
 
         const method = isEditMode ? 'PUT' : 'POST';
 
@@ -249,7 +249,7 @@ const OpenAIEmbeddingProviderForm: React.FC<OpenAIEmbeddingProviderFormProps> = 
                                         <li>ada v2: $0.10 / 1M tokens</li>
                                     </ul>
                                     <p className="mb-4 text-sm text-gray-600">For up-to-date pricing, please visit
-                                        the <a href="https://openai.com/api/pricing/" target="_blank"
+                                        the <a href="https://openai.com/api/v1/pricing/" target="_blank"
                                                rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800">OpenAI
                                             API Pricing page</a>.</p>
                                     <p className="mb-4 text-sm text-gray-600">Read more about OpenAI embeddings in

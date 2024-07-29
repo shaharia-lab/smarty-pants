@@ -38,7 +38,7 @@ const SettingsPage: React.FC = () => {
     const fetchSettings = async () => {
         setIsLoading(true);
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/settings`);
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/settings`);
             if (!response.ok) {
                 throw new Error('Failed to fetch settings');
             }
@@ -65,7 +65,7 @@ const SettingsPage: React.FC = () => {
         e.preventDefault();
         setError(null);
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/settings`, {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/settings`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',

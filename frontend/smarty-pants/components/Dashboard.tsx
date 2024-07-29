@@ -47,7 +47,7 @@ const Dashboard = () => {
     useEffect(() => {
         const fetchAnalytics = async () => {
             try {
-                const response = await fetch('http://localhost:8080/api/analytics/overview');
+                const response = await fetch('http://localhost:8080/api/v1/analytics/overview');
                 const data = await response.json();
                 setAnalyticsData(data);
             } catch (error) {

@@ -15,7 +15,7 @@ const EmbeddingProviders: React.FC = () => {
     useEffect(() => {
         const fetchEmbeddingProviders = async () => {
             try {
-                const response = await fetch('http://localhost:8080/api/embedding-providers');
+                const response = await fetch('http://localhost:8080/api/v1/embedding-providers');
                 if (!response.ok) {
                     throw new Error('Failed to fetch embedding providers');
                 }

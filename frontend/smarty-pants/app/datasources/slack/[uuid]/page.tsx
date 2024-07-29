@@ -41,7 +41,7 @@ const SlackEditPage: React.FC = () => {
     const fetchDatasourceDetails = async () => {
         console.log("Fetching datasource details for UUID:", uuid);
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/datasource/${uuid}`);
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/datasource/${uuid}`);
             console.log("API Response:", response);
             if (!response.ok) {
                 throw new Error(`Failed to fetch datasource details: ${response.statusText}`);
@@ -89,7 +89,7 @@ const SlackEditPage: React.FC = () => {
                 }
             };
 
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/datasource/${uuid}`, {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/datasource/${uuid}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
