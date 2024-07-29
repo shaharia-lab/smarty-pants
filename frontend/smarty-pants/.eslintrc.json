@@ -20,7 +20,8 @@
     "project": "./tsconfig.json"
   },
   "rules": {
-    "@typescript-eslint/prefer-nullish-coalescing": "warn"
+    "react/no-unescaped-entities": "off",
+    "@typescript-eslint/no-explicit-any": "off"
   },
   "settings": {
     "react": {

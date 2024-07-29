@@ -1,6 +1,6 @@
 'use client';
 
-import React, {useEffect, useState} from 'react';
+import React, {useCallback, useEffect, useState} from 'react';
 import {useParams, useRouter} from 'next/navigation';
 import Image from 'next/image';
 import Navbar from '../../../../components/Navbar';
@@ -34,11 +34,7 @@ const SlackEditPage: React.FC = () => {
         title: `Edit ${slackDatasource?.name ?? 'Slack'} Datasource`
     };
 
-    useEffect(() => {
-        fetchDatasourceDetails();
-    }, [uuid]);
-
-    const fetchDatasourceDetails = async () => {
+    const fetchDatasourceDetails  = useCallback(async () => {
         console.log("Fetching datasource details for UUID:", uuid);
         try {
             const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/datasource/${uuid}`);
@@ -65,7 +61,11 @@ const SlackEditPage: React.FC = () => {
         } finally {
             setIsLoading(false);
         }
-    };
+    }, [uuid]);
+
+    useEffect(() => {
+        fetchDatasourceDetails();
+    }, [fetchDatasourceDetails]);
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const {name, value} = e.target;
@@ -241,7 +241,7 @@ const SlackEditPage: React.FC = () => {
                                             <li>Update the Channel ID if you want to change or set a specific channel
                                                 for indexing.
                                             </li>
-                                            <li>Click "Update Datasource" to save your changes.</li>
+                                            <li>Click Update Datasource to save your changes.</li>
                                         </ol>
                                     </div>
                                 </div>

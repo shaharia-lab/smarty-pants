@@ -25,11 +25,11 @@ WORKDIR /app
 ENV NODE_ENV production
 
 # Copy necessary files from builder stage
-COPY --from=builder /backend/next.config.mjs ./
-COPY --from=builder /backend/public ./public
-COPY --from=builder /backend/.next ./.next
-COPY --from=builder /backend/node_modules ./node_modules
-COPY --from=builder /backend/package.json ./package.json
+COPY --from=builder next.config.mjs ./
+COPY --from=builder public ./public
+COPY --from=builder .next ./.next
+COPY --from=builder node_modules ./node_modules
+COPY --from=builder package.json ./package.json
 
 # Run the Next.js application
 CMD ["npm", "start"]
