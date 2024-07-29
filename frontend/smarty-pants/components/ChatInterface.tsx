@@ -46,7 +46,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({interactionId}) => {
     const fetchInteraction = async (id: string) => {
         setIsLoading(true);
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/interactions/${id}`);
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/interactions/${id}`);
             const data: Interaction = await response.json();
             setInteraction(data);
         } catch (error) {
@@ -59,7 +59,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({interactionId}) => {
     const startNewSession = async () => {
         setIsLoading(true);
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/interactions`, {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/interactions`, {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({query: 'Start new session'}),
@@ -104,7 +104,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({interactionId}) => {
 
         setIsLoading(true);
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/interactions/${interaction.uuid}/message`, {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/interactions/${interaction.uuid}/message`, {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({query: inputMessage}),

@@ -38,7 +38,7 @@ const DatasourcesPage: React.FC = () => {
 
     const fetchDatasources = async () => {
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/datasources`);
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/datasource`);
             if (!response.ok) {
                 throw new Error('Failed to fetch datasources');
             }

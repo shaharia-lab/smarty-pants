@@ -38,7 +38,7 @@ const LLMProvidersPage: React.FC = () => {
 
     const fetchLLMProviders = async () => {
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/llm-providers`);
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/llm-provider`);
             if (!response.ok) {
                 throw new Error('Failed to fetch LLM providers');
             }
