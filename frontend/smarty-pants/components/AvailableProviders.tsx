@@ -16,7 +16,7 @@ interface AvailableProvidersComponentProps {
     providers: AvailableProviderProps[];
 }
 
-const AvailableProvidersComponent: React.FC<AvailableProvidersComponentProps> = ({title, providers}) => {
+const AvailableProviders: React.FC<AvailableProvidersComponentProps> = ({title, providers}) => {
     return (
         <div className="w-1/2">
             <h2 className="text-2xl font-semibold text-gray-900 mb-4">{title}</h2>
@@ -52,4 +52,4 @@ const AvailableProvidersComponent: React.FC<AvailableProvidersComponentProps> = 
     );
 };
 
-export default AvailableProvidersComponent;
+export default AvailableProviders;

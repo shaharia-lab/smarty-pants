@@ -7,7 +7,7 @@ import {DatasourceConfig} from '@/types/datasource';
 import {availableDatasources} from '@/utils/datasources';
 import {Alert, AlertDescription} from '@/components/Alert';
 import ListComponent from '../../components/ListComponent';
-import AvailableProvidersComponent from '../../components/AvailableProvidersComponent';
+import AvailableProviders from '../../components/AvailableProviders';
 
 interface DatasourcesApiResponse {
     datasources: DatasourceConfig[];
@@ -131,7 +131,7 @@ const DatasourcesPage: React.FC = () => {
                             error={error}
                             type="datasource"
                         />
-                        <AvailableProvidersComponent
+                        <AvailableProviders
                             title="Available Datasources"
                             providers={availableDatasources.map(datasource => ({
                                 id: datasource.id,

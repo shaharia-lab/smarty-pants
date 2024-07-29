@@ -7,7 +7,7 @@ import {EmbeddingProviderConfig} from '@/types/embeddingProvider';
 import {availableEmbeddingProviders} from '@/utils/embeddingProviders';
 import {Alert, AlertDescription} from '@/components/Alert';
 import ListComponent from '../../components/ListComponent';
-import AvailableProvidersComponent from '../../components/AvailableProvidersComponent';
+import AvailableProviders from '../../components/AvailableProviders';
 
 interface EmbeddingProvidersApiResponse {
     embedding_providers: EmbeddingProviderConfig[];
@@ -131,7 +131,7 @@ const EmbeddingProvidersPage: React.FC = () => {
                             loading={loading}
                             error={error}
                         />
-                        <AvailableProvidersComponent
+                        <AvailableProviders
                             title="Available Providers"
                             providers={availableEmbeddingProviders.map(provider => ({
                                 ...provider,

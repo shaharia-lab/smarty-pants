@@ -7,7 +7,7 @@ import {LLMProviderConfig} from '@/types/llmProvider';
 import {availableLLMProviders} from '@/utils/llmProviders';
 import {Alert, AlertDescription} from '@/components/Alert';
 import ListComponent from "@/components/ListComponent";
-import AvailableProvidersComponent from "@/components/AvailableProvidersComponent";
+import AvailableProviders from "@/components/AvailableProviders";
 
 interface LLMProvidersApiResponse {
     llm_providers: LLMProviderConfig[];
@@ -137,7 +137,7 @@ const LLMProvidersPage: React.FC = () => {
                             loading={loading}
                             error={error}
                         />
-                        <AvailableProvidersComponent
+                        <AvailableProviders
                             title="Available Providers"
                             providers={availableLLMProviders}
                         />
