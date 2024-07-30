@@ -25,7 +25,7 @@ RUN echo "nonroot:x:65532:65532:nonroot:/:" > /tmp/passwd && \
 RUN CGO_ENABLED=0 GOOS=linux \
     go build -a -installsuffix cgo \
     -ldflags="-s -w -X main.Version=${VERSION}" \
-    -o smarty-pants-ai .
+    -o smarty-pants .
 
 # Runtime stage
 FROM scratch
@@ -37,7 +37,7 @@ COPY --from=builder /tmp/passwd /tmp/group /etc/
 COPY --from=alpine:latest /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 
 # Copy the built application
-COPY --from=builder /backend/smarty-pants-ai /app/smarty-pants-ai
+COPY --from=builder /app/smarty-pants /app/smarty-pants
 
 # Use the non-root user
 USER nonroot:nonroot
@@ -46,4 +46,4 @@ USER nonroot:nonroot
 WORKDIR /app
 
 # Run the binary
-CMD ["/app/smarty-pants-ai", "start"]
+CMD ["/app/smarty-pants", "start"]
