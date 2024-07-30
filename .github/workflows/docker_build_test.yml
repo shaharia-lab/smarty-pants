@@ -15,7 +15,8 @@ jobs:
       contents: read
       pull-requests: read
     outputs:
-      dockerfile_changed: ${{ steps.filter.outputs.dockerfile }}
+      dockerfile_backend_changed: ${{ steps.filter.outputs.dockerfile_backend }}
+      dockerfile_frontend_changed: ${{ steps.filter.outputs.dockerfile_frontend }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
