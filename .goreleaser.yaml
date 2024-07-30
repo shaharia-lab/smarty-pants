@@ -1,0 +1,31 @@
+---
+project_name: smarty-pants
+builds:
+  - env: [CGO_ENABLED=0]
+    goos:
+      - linux
+      - windows
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+dockers:
+  - image_templates: ["ghcr.io/shaharia-lab/smarty-pants:{{ .Version }}"]
+    dockerfile: goreleaser.dockerfile
+    build_flag_templates:
+      - --label=org.opencontainers.image.title={{ .ProjectName }}
+      - --label=org.opencontainers.image.description={{ .ProjectName }}
+      - --label=org.opencontainers.image.url=https://github.com/shaharia-lab/smarty-pants
+      - --label=org.opencontainers.image.source=https://github.com/shaharia-lab/smarty-pants
+      - --label=org.opencontainers.image.version={{ .Version }}
+      - --label=org.opencontainers.image.revision={{ .FullCommit }}
+      - --label=org.opencontainers.image.licenses=MIT
+nfpms:
+  - maintainer: Shaharia Lab OÜ <hello@shaharialab.com>
+    description: SmartyPants is an open source application that can help you to build AI solution
+    homepage: https://github.com/shaharia-lab/smarty-pants
+    license: MIT
+    formats:
+      - deb
+      - rpm
+      - apk
