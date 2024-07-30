@@ -75,3 +75,67 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+  docker-build-and-test-frontend:
+    needs: check-dockerfile-changes
+    name: Frontend Docker Build and Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Build Docker image
+        uses: docker/build-push-action@v4
+        with:
+          context: ./frontend/smarty-pants/
+          file: ./frontend/smarty-pants/Dockerfile
+          push: false
+          load: true
+          tags: frontend:${{ github.sha }}
+
+      - name: Test Docker image
+        run: |
+          docker run --name test-container -d -p 3000:3000 frontend:${{ github.sha }}
+          sleep 10  # Give the container time to start up
+
+          # Basic test to check if the server is responding
+          if curl -sSf http://localhost:3000 > /dev/null; then
+            echo "Docker image test passed: Server is responding"
+          else
+            echo "Docker image test failed: Server is not responding"
+            exit 1
+          fi
+
+          docker stop test-container
+          docker rm test-container
+
+      - name: Cleanup
+        if: always()
+        run: docker image rm frontend:${{ github.sha }}
+
+  docker-build-backend:
+    needs: check-dockerfile-changes
+    name: Backend Docker Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Build Docker image
+        uses: docker/build-push-action@v4
+        with:
+          context: ./backend
+          file: ./backend/Dockerfile
+          push: false
+          load: true
+          tags: backend:${{ github.sha }}
+
+      - name: Cleanup
+        if: always()
+        run: docker image rm backend:${{ github.sha }}
