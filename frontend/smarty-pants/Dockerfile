@@ -22,14 +22,14 @@ FROM node:20-alpine AS runner
 WORKDIR /app
 
 # Set environment to production
-ENV NODE_ENV production
+ENV NODE_ENV=production
 
 # Copy necessary files from builder stage
-COPY --from=builder next.config.mjs ./
-COPY --from=builder public ./public
-COPY --from=builder .next ./.next
-COPY --from=builder node_modules ./node_modules
-COPY --from=builder package.json ./package.json
+COPY --from=builder /app/next.config.mjs ./
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/.next ./.next
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/package.json ./package.json
 
 # Run the Next.js application
 CMD ["npm", "start"]

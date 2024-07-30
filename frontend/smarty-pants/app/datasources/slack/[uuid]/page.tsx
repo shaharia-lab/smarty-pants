@@ -1,6 +1,6 @@
 'use client';
 
-import React, {useCallback, useEffect, useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import {useParams, useRouter} from 'next/navigation';
 import Image from 'next/image';
 import Navbar from '../../../../components/Navbar';
@@ -34,10 +34,14 @@ const SlackEditPage: React.FC = () => {
         title: `Edit ${slackDatasource?.name ?? 'Slack'} Datasource`
     };
 
-    const fetchDatasourceDetails  = useCallback(async () => {
+    useEffect(() => {
+        fetchDatasourceDetails();
+    }, [uuid]);
+
+    const fetchDatasourceDetails = async () => {
         console.log("Fetching datasource details for UUID:", uuid);
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/datasource/${uuid}`);
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/datasource/${uuid}`);
             console.log("API Response:", response);
             if (!response.ok) {
                 throw new Error(`Failed to fetch datasource details: ${response.statusText}`);
@@ -61,11 +65,7 @@ const SlackEditPage: React.FC = () => {
         } finally {
             setIsLoading(false);
         }
-    }, [uuid]);
-
-    useEffect(() => {
-        fetchDatasourceDetails();
-    }, [fetchDatasourceDetails]);
+    };
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const {name, value} = e.target;
@@ -89,7 +89,7 @@ const SlackEditPage: React.FC = () => {
                 }
             };
 
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/datasource/${uuid}`, {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/datasource/${uuid}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -241,7 +241,7 @@ const SlackEditPage: React.FC = () => {
                                             <li>Update the Channel ID if you want to change or set a specific channel
                                                 for indexing.
                                             </li>
-                                            <li>Click Update Datasource to save your changes.</li>
+                                            <li>Click &quot;Update Datasource&quot; to save your changes.</li>
                                         </ol>
                                     </div>
                                 </div>

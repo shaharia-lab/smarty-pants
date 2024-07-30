@@ -1,8 +1,10 @@
+/* eslint-disable react/display-name */
+/* eslint-disable @next/next/no-img-element */
+
 import React from 'react';
 import {fireEvent, render, screen} from '@testing-library/react';
 import '@testing-library/jest-dom';
 import ListComponent from './ListComponent';
-
 
 // Mock Next.js Link component
 jest.mock('next/link', () => {
