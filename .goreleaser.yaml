@@ -10,7 +10,7 @@ builds:
       - amd64
       - arm64
 dockers:
-  - image_templates: ["ghcr.io/shaharia-lab/smarty-pants:{{ .Version }}"]
+  - image_templates: ["ghcr.io/shaharia-lab/smarty-pants-backend:{{ .Version }}"]
     dockerfile: Dockerfile
     build_flag_templates:
       - --label=org.opencontainers.image.title={{ .ProjectName }}
