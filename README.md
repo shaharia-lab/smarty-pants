@@ -19,8 +19,7 @@ com/shaharia-lab/smarty-pants/actions/workflows/base_branch.yml/badge.svg" heigh
 </p><br/><br/>
 
 <p align="center">
-  <a href="https://github.com/shaharia-lab/smarty-pants"><img src="https://github.
-com/user-attachments/assets/999b1cc2-dbcc-448d-9cfc-d2a77bfdcf6b"/></a>
+  <a href="https://github.com/shaharia-lab/smarty-pants"><img src="https://github.com/user-attachments/assets/999b1cc2-dbcc-448d-9cfc-d2a77bfdcf6b" height="225"/></a>
 </p><br/>
 
 ## What is SmartyPants?
