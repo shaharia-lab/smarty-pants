@@ -72,10 +72,10 @@ jobs:
         if: always()
         run: docker image rm frontend:test
 
-  docker-build-and-test-backend:
+  docker-build-backend:
     needs: check-dockerfile-changes
     if: ${{ needs.check-dockerfile-changes.outputs.dockerfile_backend_changed == 'true' }}
-    name: Backend Docker Build and Test
+    name: Backend Docker Build
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
