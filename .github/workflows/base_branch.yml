@@ -1,0 +1,141 @@
+name: Main Branch Checks
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  backend-test:
+    name: Backend Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.22'
+      - name: Run Backend Tests
+        run: make backend-test
+
+      - name: Publish artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: backend-coverage-${{ github.sha }}
+          path: backend/coverage_unit.out
+          retention-days: 1
+
+  frontend-test:
+    name: Frontend Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+      - name: Install Frontend Dependencies
+        run: |
+          cd frontend/smarty-pants
+          npm ci
+      - name: Run Frontend Tests
+        run: make frontend-test
+
+      - name: Publish artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: frontend-coverage-${{ github.sha }}
+          path: frontend/smarty-pants/coverage/lcov.info
+          retention-days: 1
+
+  code-analysis:
+    runs-on: ubuntu-latest
+    needs: [ backend-test, frontend-test ]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Download frontend coverage
+        uses: actions/download-artifact@v3
+        with:
+          name: frontend-coverage-${{ github.sha }}
+          path: frontend/smarty-pants/coverage
+        continue-on-error: true
+
+      - name: Download backend coverage
+        uses: actions/download-artifact@v3
+        with:
+          name: backend-coverage-${{ github.sha }}
+          path: backend
+        continue-on-error: true
+
+      - name: SonarCloud Scan
+        uses: sonarsource/sonarcloud-github-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+  docker-build-and-test-frontend:
+    needs: check-dockerfile-changes
+    name: Frontend Docker Build and Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Build Docker image
+        uses: docker/build-push-action@v4
+        with:
+          context: ./frontend/smarty-pants/
+          file: ./frontend/smarty-pants/Dockerfile
+          push: false
+          load: true
+          tags: frontend:${{ github.sha }}
+
+      - name: Test Docker image
+        run: |
+          docker run --name test-container -d -p 3000:3000 frontend:${{ github.sha }}
+          sleep 10  # Give the container time to start up
+
+          # Basic test to check if the server is responding
+          if curl -sSf http://localhost:3000 > /dev/null; then
+            echo "Docker image test passed: Server is responding"
+          else
+            echo "Docker image test failed: Server is not responding"
+            exit 1
+          fi
+
+          docker stop test-container
+          docker rm test-container
+
+      - name: Cleanup
+        if: always()
+        run: docker image rm frontend:${{ github.sha }}
+
+  docker-build-backend:
+    needs: check-dockerfile-changes
+    name: Backend Docker Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Build Docker image
+        uses: docker/build-push-action@v4
+        with:
+          context: ./backend
+          file: ./backend/Dockerfile
+          push: false
+          load: true
+          tags: backend:${{ github.sha }}
+
+      - name: Cleanup
+        if: always()
+        run: docker image rm backend:${{ github.sha }}
