@@ -77,6 +77,8 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
   docker-build-and-test-frontend:
+    needs:
+      - frontend-test
     name: Frontend Docker Build and Test
     runs-on: ubuntu-latest
     steps:
@@ -116,6 +118,8 @@ jobs:
         run: docker image rm frontend:${{ github.sha }}
 
   docker-build-backend:
+    needs:
+      - backend-test
     name: Backend Docker Build
     runs-on: ubuntu-latest
     steps:
