@@ -40,8 +40,9 @@ Empower your projects with SmartyPants – where AI meets simplicity!
 ## Installation
 
 - Pre-requisites:
-  - [PostgreSQL](https://www.postgresql.org/download/) 13 or higher with [pgvector](https://github.
-    com/pgvector/pgvector) extension enabled for [vector search](https://www.elastic.co/what-is/vector-search) capabilities.
+    - [PostgreSQL](https://www.postgresql.org/download/) 13 or higher
+      with [pgvector](https://github.com/pgvector/pgvector) extension enabled
+      for [vector search](https://www.elastic.co/what-is/vector-search) capabilities.
 
 ### Use as a Docker Image
 
@@ -59,7 +60,8 @@ To use this application with Docker, follow these steps:
    docker pull ghcr.io/shaharia-lab/smarty-pants-frontend:$VERSION
    ```
 
-Replace `$VERSION` with the desired version tag.
+Replace `$VERSION` with the desired version tag. All available versions can be
+found [here](https://github.com/shaharia-lab/smarty-pants/releases).
 
 #### Running the Backend
 
@@ -70,7 +72,6 @@ To run the backend, you need to set the following environment variables:
 - `DB_USER`: Database user
 - `DB_PASS`: Database password
 - `DB_NAME`: Database name
-- `DB_MIGRATION_PATH`: Database migration path
 
 Run the backend with this command:
 
@@ -105,41 +106,107 @@ Make sure to configure any necessary network settings to allow the frontend to c
 
 ## Environment Variables
 
-| Variable                             | Required | Default value             | Description                                                   |
-|--------------------------------------|----------|---------------------------|---------------------------------------------------------------|
-| `APP_NAME`                           | No       | `"smarty-pants-ai"`       | Name of the application                                       |
-| `DB_ENGINE`                          | No       | `"postgres"`              | Database engine to use. Currently it only supports `postgres` |
-| `DB_HOST`                            | No       | `"localhost"`             | Database host address                                         |
-| `DB_PORT`                            | No       | `5432`                    | Database port number                                          |
-| `DB_USER`                            | No       | `"app"`                   | Database user name                                            |
-| `DB_PASS`                            | No       | `"pass"`                  | Database password                                             |
-| `DB_NAME`                            | No       | `"app"`                   | Database name                                                 |
-| `DB_MIGRATION_PATH`                  | No       | `"migrations"`            | Path to database migration files                              |
-| `API_PORT`                           | No       | `8080`                    | Port number for the API server                                |
-| `API_SERVER_READ_TIMEOUT_IN_SECS`    | No       | `10`                      | API server read timeout in seconds                            |
-| `API_SERVER_WRITE_TIMEOUT_IN_SECS`   | No       | `30`                      | API server write timeout in seconds                           |
-| `API_SERVER_IDLE_TIMEOUT_IN_SECS`    | No       | `120`                     | API server idle timeout in seconds                            |
-| `TRACING_ENABLED`                    | No       | `false`                   | Enable or disable tracing                                     |
-| `OTLP_TRACER_HOST`                   | No       | `"localhost"`             | OpenTelemetry Protocol (OTLP) tracer host                     |
-| `OTLP_TRACER_PORT`                   | No       | `4317`                    | OTLP tracer port                                              |
-| `OTEL_METRICS_ENABLED`               | No       | `false`                   | Enable or disable OpenTelemetry metrics                       |
-| `OTEL_METRICS_EXPOSED_PORT`          | No       | `2223`                    | Port to expose OpenTelemetry metrics                          |
-| `COLLECTOR_WORKER_COUNT`             | No       | `1`                       | Number of collector workers                                   |
-| `GRACEFUL_SHUTDOWN_TIMEOUT_IN_SECS`  | No       | `30`                      | Graceful shutdown timeout in seconds                          |
-| `PROCESSOR_WORKER_COUNT`             | No       | `1`                       | Number of processor workers                                   |
-| `PROCESSOR_BATCH_SIZE`               | No       | `2`                       | Batch size for the processor                                  |
-| `PROCESSOR_INTERVAL_IN_SECS`         | No       | `10`                      | Processor interval in seconds                                 |
-| `PROCESSOR_RETRY_ATTEMPTS`           | No       | `3`                       | Number of processor retry attempts                            |
-| `PROCESSOR_RETRY_DELAY_IN_SECS`      | No       | `5`                       | Delay between processor retry attempts in seconds             |
-| `PROCESSOR_SHUTDOWN_TIMEOUT_IN_SECS` | No       | `10`                      | Processor shutdown timeout in seconds                         |
-| `PROCESSOR_REFRESH_INTERVAL_IN_SECS` | No       | `60`                      | Processor refresh interval in seconds                         |
+| Variable                             | Required | Default value       | Description                                       |
+|--------------------------------------|----------|---------------------|---------------------------------------------------|
+| `APP_NAME`                           | No       | `"smarty-pants-ai"` | Name of the application                           |
+| `DB_HOST`                            | Yes      | `"localhost"`       | Database host address                             |
+| `DB_PORT`                            | Yes      | `5432`              | Database port number                              |
+| `DB_USER`                            | Yes      | `"app"`             | Database user name                                |
+| `DB_PASS`                            | Yes      | `"pass"`            | Database password                                 |
+| `DB_NAME`                            | Yes      | `"app"`             | Database name                                     |
+| `DB_MIGRATION_PATH`                  | Yes      | `"migrations"`      | Path to database migration files                  |
+| `API_PORT`                           | No       | `8080`              | Port number for the API server                    |
+| `API_SERVER_READ_TIMEOUT_IN_SECS`    | No       | `10`                | API server read timeout in seconds                |
+| `API_SERVER_WRITE_TIMEOUT_IN_SECS`   | No       | `30`                | API server write timeout in seconds               |
+| `API_SERVER_IDLE_TIMEOUT_IN_SECS`    | No       | `120`               | API server idle timeout in seconds                |
+| `TRACING_ENABLED`                    | No       | `false`             | Enable or disable tracing                         |
+| `OTLP_TRACER_HOST`                   | No       | `"localhost"`       | OpenTelemetry Protocol (OTLP) tracer host         |
+| `OTLP_TRACER_PORT`                   | No       | `4317`              | OTLP tracer port                                  |
+| `OTEL_METRICS_ENABLED`               | No       | `false`             | Enable or disable OpenTelemetry metrics           |
+| `OTEL_METRICS_EXPOSED_PORT`          | No       | `2223`              | Port to expose OpenTelemetry metrics              |
+| `COLLECTOR_WORKER_COUNT`             | No       | `1`                 | Number of collector workers                       |
+| `GRACEFUL_SHUTDOWN_TIMEOUT_IN_SECS`  | No       | `30`                | Graceful shutdown timeout in seconds              |
+| `PROCESSOR_WORKER_COUNT`             | No       | `1`                 | Number of processor workers                       |
+| `PROCESSOR_BATCH_SIZE`               | No       | `2`                 | Batch size for the processor                      |
+| `PROCESSOR_INTERVAL_IN_SECS`         | No       | `10`                | Processor interval in seconds                     |
+| `PROCESSOR_RETRY_ATTEMPTS`           | No       | `3`                 | Number of processor retry attempts                |
+| `PROCESSOR_RETRY_DELAY_IN_SECS`      | No       | `5`                 | Delay between processor retry attempts in seconds |
+| `PROCESSOR_SHUTDOWN_TIMEOUT_IN_SECS` | No       | `10`                | Processor shutdown timeout in seconds             |
+| `PROCESSOR_REFRESH_INTERVAL_IN_SECS` | No       | `60`                | Processor refresh interval in seconds             |
 
+## 📋 Development
 
+### Prerequisites
 
-### 🤝 Contributing
+#### Backend
+
+- [Go](https://golang.org/doc/install) 1.22 or higher
+- [PostgreSQL](https://www.postgresql.org/download/) 13 or higher with [pgvector](https://github.com/pgvector/pgvector)
+  extension enabled
+
+#### Frontend
+
+- [Node.js](https://nodejs.org/en/download/) 20 or higher
+
+### Running Locally
+
+- Clone the repository and navigate to the project directory.
+    ```bash
+  git clone git@github.com:shaharia-lab/smarty-pants.git
+  cd smarty-pants
+    ```
+- Start a compatible PostgreSQL database with the `pgvector` extension enabled. We have included a `docker-compose.yml`
+  file in the root directory to help you set up the database. Run the following command to start the database:
+    ```bash
+  docker-compose -f docker-compose.yml up -d
+    ```
+
+- Create a `.env` file in the root directory and add the required environment variables. Load the environment variables
+  using the following command:
+    ```bash
+  export $(grep -v '^#' .env | xargs)
+    ```
+
+- Run the backend:
+    ```bash
+    go run . start
+    ```
+
+If you want to run the frontend, follow these steps:
+
+- Install the dependencies:
+
+    ```bash
+    cd frontend
+    npm install
+    ```
+
+- Start the frontend:
+
+    ```bash
+    npm run dev
+    ```
+
+## 🚀 Observability
+
+To enable observability, set the `TRACING_ENABLED` environment variable to `true`. This will enable tracing. You can also
+enable metrics by setting the `OTEL_METRICS_ENABLED` environment variable to `true`. The metrics will be exposed on the `OTEL_METRICS_EXPOSED_PORT` port.
+
+You can run any OpenTelemetry Protocol (OTLP) compatible tools to visualize the trace. We recommend using [Jaeger](https://www.jaegertracing.io/docs/1.25/getting-started/).
+
+```bash
+docker run -d --name jaeger \                   
+  -e COLLECTOR_OTLP_ENABLED=true \
+  -p 16686:16686 \
+  -p 4317:4317 \
+  -p 4318:4318 \
+  jaegertracing/all-in-one:latest
+```
+
+## 🤝 Contributing
 
 Contributions are welcome! Please follow the guidelines outlined in the [CONTRIBUTING](https://github.com/shaharia-lab/smarty-pants/blob/master/CONTRIBUTING.md) file.
 
-### 📝 License
+## 📝 License
 
 This project is licensed under the MIT License - see the [LICENSE](https://github.com/shaharia-lab/smarty-pants/blob/master/LICENSE) file for details.
