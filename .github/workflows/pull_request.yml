@@ -163,6 +163,12 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Create temporary tag
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git tag -a v${{ github.run_number }}.0.0 -m "Test tag for GoReleaser"
+
       - uses: goreleaser/goreleaser-action@v6
         with:
           version: '~> v2'
