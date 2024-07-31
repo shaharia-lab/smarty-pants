@@ -8,13 +8,15 @@ import (
 )
 
 var (
-	Version = "dev"
+	version = "dev"
+	commit  = "none"
+	date    = "unknown"
 )
 
 func main() {
 	rootCmd := &cobra.Command{
-		Use:     "smarty-pants-ai",
-		Version: Version,
+		Use:     "smarty-pants",
+		Version: formatVersion(),
 	}
 
 	rootCmd.AddCommand(cmd.NewStartCommand())
@@ -22,4 +24,8 @@ func main() {
 	if err := rootCmd.Execute(); err != nil {
 		log.Fatalf("could not run the application: %v", err)
 	}
+}
+
+func formatVersion() string {
+	return version + " (commit: " + commit + ", built at: " + date + ")"
 }
