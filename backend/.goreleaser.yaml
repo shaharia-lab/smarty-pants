@@ -21,6 +21,8 @@ dockers:
       - --label=org.opencontainers.image.version={{ .Version }}
       - --label=org.opencontainers.image.revision={{ .FullCommit }}
       - --label=org.opencontainers.image.licenses=MIT
+    extra_files:
+      - migrations
 nfpms:
   - maintainer: Shaharia Lab OÜ <hello@shaharialab.com>
     description: SmartyPants is an open source application that can help you to build AI solution

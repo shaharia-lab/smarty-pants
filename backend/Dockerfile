@@ -38,6 +38,7 @@ COPY --from=alpine:latest /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 
 # Copy the built application
 COPY --from=builder /app/smarty-pants /app/smarty-pants
+COPY --from=builder /app/migrations /app/migrations
 
 # Use the non-root user
 USER nonroot:nonroot
