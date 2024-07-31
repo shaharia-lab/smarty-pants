@@ -37,13 +37,71 @@ We named this project **SmartyPants**. A lighthearted name implying the system i
 
 Empower your projects with SmartyPants – where AI meets simplicity!
 
-## Getting Started
+## Installation
 
 - Pre-requisites:
   - [PostgreSQL](https://www.postgresql.org/download/) 13 or higher with [pgvector](https://github.
     com/pgvector/pgvector) extension enabled for [vector search](https://www.elastic.co/what-is/vector-search) capabilities.
-- You can simply download the latest release from the [release page](https://github.com/shaharia-lab/smarty-pants/releases).
-- Make the binary executable and run it with `smarty-pants start` command.
+
+### Use as a Docker Image
+
+To use this application with Docker, follow these steps:
+
+#### Pulling the Docker Images
+
+1. For the backend:
+   ```
+   docker pull ghcr.io/shaharia-lab/smarty-pants-backend:$VERSION
+   ```
+
+2. For the frontend:
+   ```
+   docker pull ghcr.io/shaharia-lab/smarty-pants-frontend:$VERSION
+   ```
+
+Replace `$VERSION` with the desired version tag.
+
+#### Running the Backend
+
+To run the backend, you need to set the following environment variables:
+
+- `DB_HOST`: Database host
+- `DB_PORT`: Database port
+- `DB_USER`: Database user
+- `DB_PASS`: Database password
+- `DB_NAME`: Database name
+- `DB_MIGRATION_PATH`: Database migration path
+
+Run the backend with this command:
+
+```
+docker run \
+  --name smarty-pants-backend \
+  -p 8080:8080 \
+  -e DB_HOST=<value> \
+  -e DB_PORT=<value> \
+  -e DB_USER=<value> \
+  -e DB_PASS=<value> \
+  -e DB_NAME=<value> \
+  -e DB_MIGRATION_PATH=<value> \
+  ghcr.io/shaharia-lab/smarty-pants-backend:$VERSION start
+```
+
+Replace `<value>` with the appropriate values for your environment.
+
+#### Running the Frontend
+
+To run the frontend, use this command:
+
+```
+docker run \
+  --name smarty-pants-frontend \
+  -e NEXT_PUBLIC_API_BASE_URL="http://localhost:8080" \
+  -p 3000:3000 \
+  ghcr.io/shaharia-lab/smarty-pants-frontend:$VERSION
+```
+
+Make sure to configure any necessary network settings to allow the frontend to communicate with the backend.
 
 ## Environment Variables
 
