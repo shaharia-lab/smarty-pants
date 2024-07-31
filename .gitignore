@@ -34,3 +34,5 @@ frontend/smarty-pants/.env.production.local
 /backend/vendor/*
 /backend/smarty-pants
 /backend/coverage_*.out
+
+/backend/dist/*

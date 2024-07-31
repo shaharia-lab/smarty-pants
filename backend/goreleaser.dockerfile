@@ -1,4 +1,4 @@
 FROM scratch
 COPY smarty-pants /app/smarty-pants
-COPY backend/migrations /app/migrations
-CMD ["/app/smarty-pants"]
+COPY migrations /app/migrations
+ENTRYPOINT ["/app/smarty-pants", "start"]
