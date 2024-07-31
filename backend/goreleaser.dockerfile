@@ -1,3 +1,4 @@
 FROM scratch
 COPY smarty-pants /app/smarty-pants
-ENTRYPOINT ["/app/smarty-pants", "start"]
+COPY migrations /app/migrations
+CMD ["/app/smarty-pants"]
