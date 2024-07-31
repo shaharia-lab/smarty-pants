@@ -7,9 +7,8 @@ import (
 
 // Config contains configuration options for the application
 type Config struct {
-	AppName string `envconfig:"APP_NAME" default:"smarty-pants-ai"`
+	AppName string `envconfig:"APP_NAME" default:"smarty-pants"`
 
-	DBEngine        string `envconfig:"DB_ENGINE" default:"postgres"`
 	DBHost          string `envconfig:"DB_HOST" default:"localhost"`
 	DBPort          int    `envconfig:"DB_PORT" default:"5432"`
 	DBUser          string `envconfig:"DB_USER" default:"app"`
