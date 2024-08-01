@@ -114,28 +114,25 @@ jobs:
 
   code-analysis:
     runs-on: ubuntu-latest
-    needs: [check-changes, backend-unit-test, frontend-unit-test]
+    needs: [ check-changes, backend-unit-test, frontend-unit-test ]
     if: ${{ needs.check-changes.outputs.backend == 'true' || needs.check-changes.outputs.frontend == 'true' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
-
       - name: Download frontend coverage
         uses: actions/download-artifact@v3
         with:
           name: frontend-coverage-pr${{ github.event.pull_request.number }}-${{ github.sha }}
           path: frontend/smarty-pants/coverage
         continue-on-error: true
-
       - name: Download backend coverage
         uses: actions/download-artifact@v3
         with:
           name: backend-coverage-pr${{ github.event.pull_request.number }}-${{ github.sha }}
           path: backend
         continue-on-error: true
-
       - name: SonarCloud Scan
         uses: sonarsource/sonarcloud-github-action@master
         env:
