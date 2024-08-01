@@ -648,12 +648,12 @@ func (p *Postgres) GetForProcessing(ctx context.Context, _ types.DocumentFilter,
 
 // AddDatasource adds a new datasource to the database
 func (p *Postgres) AddDatasource(ctx context.Context, dsConfig types.DatasourceConfig) error {
-	settingsJson, err := json.Marshal(dsConfig.Settings)
+	settingsJSON, err := json.Marshal(dsConfig.Settings)
 	if err != nil {
 		return err
 	}
 
-	stateJson, err := json.Marshal(dsConfig.State)
+	stateJSON, err := json.Marshal(dsConfig.State)
 	if err != nil {
 		return err
 	}
@@ -662,7 +662,7 @@ func (p *Postgres) AddDatasource(ctx context.Context, dsConfig types.DatasourceC
 		INSERT INTO datasources (uuid, name, source_type, settings, status, state)
 		VALUES ($1, $2, $3, $4, $5, $6)
 	`
-	_, err = p.db.Exec(query, dsConfig.UUID, dsConfig.Name, dsConfig.SourceType, settingsJson, dsConfig.Status, stateJson)
+	_, err = p.db.Exec(query, dsConfig.UUID, dsConfig.Name, dsConfig.SourceType, settingsJSON, dsConfig.Status, stateJSON)
 	return err
 }
 
