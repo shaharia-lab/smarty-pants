@@ -114,7 +114,7 @@ jobs:
 
   code-analysis:
     runs-on: ubuntu-latest
-    needs: [check-changes, frontend-unit-test, backend-unit-test]
+    needs: [check-changes]
     if: ${{ needs.check-changes.outputs.backend == 'true' || needs.check-changes.outputs.frontend == 'true' }}
     steps:
       - name: Checkout
