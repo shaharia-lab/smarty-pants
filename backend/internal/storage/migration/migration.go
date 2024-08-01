@@ -1,20 +1,21 @@
 package migration
 
-import "github.com/shaharia-lab/smarty-pants/backend/internal/storage"
+import "database/sql"
 
-type Provider interface {
-	Up() error
-	Down() error
+// MockMigrator interface defines methods for database migration
+type Migrator interface {
+	Migrate(migrations []Migration) error
+	Rollback(migrations []Migration) error
+	GetCurrentVersion() (string, error)
+	EnsureMigrationTableExists() error
 }
 
+// Func MigrationFunc represents a function that performs a migration
+type Func func(*sql.Tx) error
+
+// Migration represents a single migration
 type Migration struct {
-	storage storage.Storage
-}
-
-func (m *Migration) Up() error {
-	return m.storage.MigrationUp()
-}
-
-func (m *Migration) Down() error {
-	return m.storage.MigrationDown()
+	Version string
+	Up      Func
+	Down    Func
 }
