@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/golang-migrate/migrate/v4/database/postgres"
 	"github.com/shaharia-lab/smarty-pants/backend/api"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/collector"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/config"
@@ -19,17 +18,19 @@ import (
 	"github.com/shaharia-lab/smarty-pants/backend/internal/search"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/shutdown"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/storage"
+	"github.com/shaharia-lab/smarty-pants/backend/internal/storage/migration"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/types"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"go.opentelemetry.io/otel"
 )
 
-func NewStartCommand() *cobra.Command {
+func NewStartCommand(version string) *cobra.Command {
 	return &cobra.Command{
-		Use:   "start",
-		Short: "Start the application",
-		RunE:  runStart,
+		Use:     "start",
+		Short:   "Start the application",
+		Version: version,
+		RunE:    runStart,
 	}
 }
 
@@ -54,8 +55,10 @@ func runStart(_ *cobra.Command, _ []string) error {
 		return err
 	}
 
-	if err := runMigration(st, l); err != nil {
-		return err
+	migrationManager := migration.NewMigrationManager(st, migration.PostgreSQLMigrations)
+	if err := migrationManager.RunMigrations(); err != nil {
+		l.WithError(err).Error("Failed to run migration")
+		return fmt.Errorf("failed to run migration: %w", err)
 	}
 
 	_, logging, err := setupAppSettings(ctx, st, l)
@@ -127,10 +130,9 @@ func initializeStorage(cfg *config.Config, l *logrus.Logger) (storage.Storage, e
 		User:     cfg.DBUser,
 		Password: cfg.DBPass,
 		DBName:   cfg.DBName,
-		Config:   postgres.Config{},
 	}
 
-	st, err := storage.NewPostgres(pc, cfg.DBMigrationPath, l)
+	st, err := storage.NewPostgres(pc, l)
 	if err != nil {
 		l.Fatalf("Failed to create storage: %v", err)
 		return nil, err
@@ -138,17 +140,6 @@ func initializeStorage(cfg *config.Config, l *logrus.Logger) (storage.Storage, e
 
 	l.Info("Storage initialized successfully")
 	return st, nil
-}
-
-func runMigration(st storage.Storage, l *logrus.Logger) error {
-	l.Info("Running migration for database")
-	err := st.MigrationUp()
-	if err != nil {
-		l.WithError(err).Error("Failed to migrate")
-		return fmt.Errorf("failed to migrate: %w", err)
-	}
-	l.Info("Database migration completed successfully")
-	return nil
 }
 
 func setupAppSettings(ctx context.Context, st storage.Storage, l *logrus.Logger) (types.Settings, *logrus.Logger, error) {

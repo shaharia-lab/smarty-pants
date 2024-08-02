@@ -8,18 +8,17 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/golang-migrate/migrate/v4"
-	"github.com/golang-migrate/migrate/v4/database/postgres"
-	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/google/uuid"
-	_ "github.com/lib/pq"
+	_ "github.com/lib/pq" // Import the Postgres driver
 	"github.com/pgvector/pgvector-go"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/logger"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/observability"
+	"github.com/shaharia-lab/smarty-pants/backend/internal/storage/migration"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/types"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/util"
 	"github.com/sirupsen/logrus"
@@ -40,7 +39,6 @@ type PostgresConfig struct {
 	User     string
 	Password string
 	DBName   string
-	Config   postgres.Config
 }
 
 // NewPostgresDB creates a new Postgres database connection
@@ -63,57 +61,23 @@ func NewPostgresDB(cfg PostgresConfig) (*sql.DB, error) {
 
 // Postgres is a storage system that uses a Postgres database
 type Postgres struct {
-	db                 *sql.DB
-	migrationDirectory string
-	logger             *logrus.Logger
+	db     *sql.DB
+	logger *logrus.Logger
 }
 
 // NewPostgres creates a new Postgres storage system
-func NewPostgres(cfg PostgresConfig, migrationDir string, logger *logrus.Logger) (Storage, error) {
+func NewPostgres(cfg PostgresConfig, logger *logrus.Logger) (Storage, error) {
 	db, err := NewPostgresDB(cfg)
 	if err != nil {
 		return nil, err
 	}
 
-	return &Postgres{db: db, migrationDirectory: migrationDir, logger: logger}, nil
+	return &Postgres{db: db, logger: logger}, nil
 }
 
 // HealthCheck checks the health of the storage system
 func (p *Postgres) HealthCheck() error {
 	return nil
-}
-
-// MigrationUp runs the database migrations
-func (p *Postgres) MigrationUp() error {
-	p.logger.Debug("Preparing migrations")
-	m, err := p.prepareMigration()
-	if err != nil {
-		return err
-	}
-
-	p.logger.Debug("Running migrations UP")
-	err = m.Up()
-	if errors.Is(err, migrate.ErrNoChange) {
-		p.logger.Debug("No migrations to run")
-		return nil
-	}
-
-	return err
-}
-
-// MigrationDown rolls back the last database migration
-func (p *Postgres) MigrationDown() error {
-	m, err := p.prepareMigration()
-	if err != nil {
-		return err
-	}
-
-	err = m.Down()
-	if errors.Is(err, migrate.ErrNoChange) {
-		return nil
-	}
-
-	return err
 }
 
 // Store the document in the database
@@ -682,29 +646,14 @@ func (p *Postgres) GetForProcessing(ctx context.Context, _ types.DocumentFilter,
 	return docUUIDs, nil
 }
 
-func (p *Postgres) prepareMigration() (*migrate.Migrate, error) {
-	driver, err := postgres.WithInstance(p.db, &postgres.Config{})
-	if err != nil {
-		return nil, fmt.Errorf("failed to create driver during migration: %w", err)
-	}
-
-	m, err := migrate.NewWithDatabaseInstance(
-		fmt.Sprintf("file://%s", p.migrationDirectory),
-		"postgres", driver)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create migration instance: %w", err)
-	}
-	return m, nil
-}
-
 // AddDatasource adds a new datasource to the database
 func (p *Postgres) AddDatasource(ctx context.Context, dsConfig types.DatasourceConfig) error {
-	settingsJson, err := json.Marshal(dsConfig.Settings)
+	settingsJSON, err := json.Marshal(dsConfig.Settings)
 	if err != nil {
 		return err
 	}
 
-	stateJson, err := json.Marshal(dsConfig.State)
+	stateJSON, err := json.Marshal(dsConfig.State)
 	if err != nil {
 		return err
 	}
@@ -713,7 +662,7 @@ func (p *Postgres) AddDatasource(ctx context.Context, dsConfig types.DatasourceC
 		INSERT INTO datasources (uuid, name, source_type, settings, status, state)
 		VALUES ($1, $2, $3, $4, $5, $6)
 	`
-	_, err = p.db.Exec(query, dsConfig.UUID, dsConfig.Name, dsConfig.SourceType, settingsJson, dsConfig.Status, stateJson)
+	_, err = p.db.Exec(query, dsConfig.UUID, dsConfig.Name, dsConfig.SourceType, settingsJSON, dsConfig.Status, stateJSON)
 	return err
 }
 
@@ -1729,4 +1678,120 @@ func (p *Postgres) GetAnalyticsOverview(ctx context.Context) (types.AnalyticsOve
 	}
 
 	return overview, nil
+}
+
+// Migrate implements the Migrate method for PostgresMigrator
+func (p *Postgres) Migrate(migrations []migration.Migration) error {
+	currentVersion, err := p.GetCurrentVersion()
+	if err != nil {
+		return err
+	}
+
+	migrationsToRun := p.getMigrationsToRun(currentVersion, migrations)
+	if len(migrationsToRun) == 0 {
+		return nil
+	}
+
+	for _, m := range migrationsToRun {
+		tx, err := p.db.Begin()
+		if err != nil {
+			return err
+		}
+
+		err = m.Up(tx)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+
+		_, err = tx.Exec("UPDATE schema_migrations SET version = $1, updated_at = $2", m.Version, time.Now())
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+
+		err = tx.Commit()
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// Rollback implements the Rollback method for PostgresMigrator
+func (p *Postgres) Rollback(migrations []migration.Migration) error {
+	currentVersion, err := p.GetCurrentVersion()
+	if err != nil {
+		return err
+	}
+
+	if currentVersion == "" {
+		return errors.New("no migrations to rollback")
+	}
+
+	var migrationToRollback migration.Migration
+	for i := len(migrations) - 1; i >= 0; i-- {
+		if migrations[i].Version == currentVersion {
+			migrationToRollback = migrations[i]
+			break
+		}
+	}
+
+	tx, err := p.db.Begin()
+	if err != nil {
+		return err
+	}
+
+	err = migrationToRollback.Down(tx)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	previousVersion := ""
+	if len(migrations) > 1 {
+		previousVersion = migrations[len(migrations)-2].Version
+	}
+
+	_, err = tx.Exec("UPDATE schema_migrations SET version = $1, updated_at = $2", previousVersion, time.Now())
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	return tx.Commit()
+}
+
+// GetCurrentVersion implements the GetCurrentVersion method for PostgresMigrator
+func (p *Postgres) GetCurrentVersion() (string, error) {
+	var version string
+	err := p.db.QueryRow("SELECT version FROM schema_migrations").Scan(&version)
+	if errors.Is(err, sql.ErrNoRows) {
+		return "", nil
+	}
+	return version, err
+}
+
+func (p *Postgres) getMigrationsToRun(currentVersion string, migrations []migration.Migration) []migration.Migration {
+	var migrationsToRun []migration.Migration
+	for _, mgn := range migrations {
+		if util.CompareVersions(mgn.Version, currentVersion) > 0 {
+			migrationsToRun = append(migrationsToRun, mgn)
+		}
+	}
+	sort.Slice(migrationsToRun, func(i, j int) bool {
+		return util.CompareVersions(migrationsToRun[i].Version, migrationsToRun[j].Version) < 0
+	})
+	return migrationsToRun
+}
+
+func (p *Postgres) EnsureMigrationTableExists() error {
+	_, err := p.db.Exec(`
+		CREATE TABLE IF NOT EXISTS schema_migrations (
+			version TEXT PRIMARY KEY,
+			updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+		)
+	`)
+	return err
 }

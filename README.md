@@ -114,7 +114,6 @@ Make sure to configure any necessary network settings to allow the frontend to c
 | `DB_USER`                            | Yes      | `"app"`             | Database user name                                |
 | `DB_PASS`                            | Yes      | `"pass"`            | Database password                                 |
 | `DB_NAME`                            | Yes      | `"app"`             | Database name                                     |
-| `DB_MIGRATION_PATH`                  | Yes      | `"migrations"`      | Path to database migration files                  |
 | `API_PORT`                           | No       | `8080`              | Port number for the API server                    |
 | `API_SERVER_READ_TIMEOUT_IN_SECS`    | No       | `10`                | API server read timeout in seconds                |
 | `API_SERVER_WRITE_TIMEOUT_IN_SECS`   | No       | `30`                | API server write timeout in seconds               |

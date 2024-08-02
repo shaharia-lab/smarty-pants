@@ -5,6 +5,7 @@ import (
 	"database/sql"
 
 	"github.com/google/uuid"
+	"github.com/shaharia-lab/smarty-pants/backend/internal/storage/migration"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/types"
 )
 
@@ -18,9 +19,8 @@ type DatasourceConfig struct {
 }
 
 type Storage interface {
+	migration.Migrator
 	HealthCheck() error
-	MigrationUp() error
-	MigrationDown() error
 
 	Store(ctx context.Context, document types.Document) error
 	Update(ctx context.Context, document types.Document) error

@@ -9,12 +9,11 @@ import (
 type Config struct {
 	AppName string `envconfig:"APP_NAME" default:"smarty-pants"`
 
-	DBHost          string `envconfig:"DB_HOST" default:"localhost"`
-	DBPort          int    `envconfig:"DB_PORT" default:"5432"`
-	DBUser          string `envconfig:"DB_USER" default:"app"`
-	DBPass          string `envconfig:"DB_PASS" default:"pass"`
-	DBName          string `envconfig:"DB_NAME" default:"app"`
-	DBMigrationPath string `envconfig:"DB_MIGRATION_PATH" default:"migrations"`
+	DBHost string `envconfig:"DB_HOST" default:"localhost"`
+	DBPort int    `envconfig:"DB_PORT" default:"5432"`
+	DBUser string `envconfig:"DB_USER" default:"app"`
+	DBPass string `envconfig:"DB_PASS" default:"pass"`
+	DBName string `envconfig:"DB_NAME" default:"app"`
 
 	APIPort                     int `envconfig:"API_PORT" default:"8080"`
 	APIServerReadTimeoutInSecs  int `envconfig:"API_SERVER_READ_TIMEOUT_IN_SECS" default:"10"`

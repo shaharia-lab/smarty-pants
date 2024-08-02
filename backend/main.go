@@ -19,7 +19,7 @@ func main() {
 		Version: formatVersion(),
 	}
 
-	rootCmd.AddCommand(cmd.NewStartCommand())
+	rootCmd.AddCommand(cmd.NewStartCommand(version))
 
 	if err := rootCmd.Execute(); err != nil {
 		log.Fatalf("could not run the application: %v", err)
