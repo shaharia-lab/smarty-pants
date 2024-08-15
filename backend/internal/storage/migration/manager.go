@@ -38,8 +38,9 @@ func (mm *Manager) RunMigrations() error {
 	mm.logger.Info("Migration lock acquired. Running migrations... Ensuring migration table exists")
 	err = mm.migrator.EnsureMigrationTableExists()
 	if err != nil {
-		mm.logger.WithError(err).Error("Failed to ensure migration table exists")
-		return err
+		errMsg := "Failed to ensure migration table exists"
+		mm.logger.WithError(err).Error(errMsg)
+		return fmt.Errorf("%s. Error: %w", errMsg, err)
 	}
 
 	mm.logger.Info("Migration table ready. Running migrations")

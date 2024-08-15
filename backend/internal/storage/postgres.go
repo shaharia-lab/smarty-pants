@@ -1773,6 +1773,7 @@ func (p *Postgres) GetCurrentVersion() (string, error) {
 	return version, err
 }
 
+// AcquireMigrationLock to lock the migration tabe
 func (p *Postgres) AcquireMigrationLock() (bool, error) {
 	tx, err := p.db.Begin()
 	if err != nil {
@@ -1809,6 +1810,7 @@ func (p *Postgres) AcquireMigrationLock() (bool, error) {
 	return tx.Commit() == nil, nil
 }
 
+// ReleaseMigrationLock release the migration lock
 func (p *Postgres) ReleaseMigrationLock() error {
 	_, err := p.db.Exec(`
 		UPDATE schema_migrations
@@ -1831,6 +1833,7 @@ func (p *Postgres) getMigrationsToRun(currentVersion string, migrations []migrat
 	return migrationsToRun
 }
 
+// EnsureMigrationTableExists to ensure that the migration table exists
 func (p *Postgres) EnsureMigrationTableExists() error {
 	_, err := p.db.Exec(`
 		CREATE TABLE IF NOT EXISTS schema_migrations (
