@@ -20,6 +20,34 @@ type StorageMock struct {
 	mock.Mock
 }
 
+// AcquireMigrationLock provides a mock function with given fields:
+func (_m *StorageMock) AcquireMigrationLock() (bool, error) {
+	ret := _m.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for AcquireMigrationLock")
+	}
+
+	var r0 bool
+	var r1 error
+	if rf, ok := ret.Get(0).(func() (bool, error)); ok {
+		return rf()
+	}
+	if rf, ok := ret.Get(0).(func() bool); ok {
+		r0 = rf()
+	} else {
+		r0 = ret.Get(0).(bool)
+	}
+
+	if rf, ok := ret.Get(1).(func() error); ok {
+		r1 = rf()
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // AddConversationTx provides a mock function with given fields: ctx, tx, interactionUUID, conversation
 func (_m *StorageMock) AddConversationTx(ctx context.Context, tx *sql.Tx, interactionUUID string, conversation types.Conversation) (types.Conversation, error) {
 	ret := _m.Called(ctx, tx, interactionUUID, conversation)
@@ -657,6 +685,24 @@ func (_m *StorageMock) RecordAIOpsUsage(ctx context.Context, usage types.AIUsage
 	var r0 error
 	if rf, ok := ret.Get(0).(func(context.Context, types.AIUsage) error); ok {
 		r0 = rf(ctx, usage)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// ReleaseMigrationLock provides a mock function with given fields:
+func (_m *StorageMock) ReleaseMigrationLock() error {
+	ret := _m.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for ReleaseMigrationLock")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func() error); ok {
+		r0 = rf()
 	} else {
 		r0 = ret.Error(0)
 	}

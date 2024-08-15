@@ -8,6 +8,8 @@ type Migrator interface {
 	Rollback(migrations []Migration) error
 	GetCurrentVersion() (string, error)
 	EnsureMigrationTableExists() error
+	AcquireMigrationLock() (bool, error)
+	ReleaseMigrationLock() error
 }
 
 // Func MigrationFunc represents a function that performs a migration

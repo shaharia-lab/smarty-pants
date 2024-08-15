@@ -1773,6 +1773,51 @@ func (p *Postgres) GetCurrentVersion() (string, error) {
 	return version, err
 }
 
+func (p *Postgres) AcquireMigrationLock() (bool, error) {
+	tx, err := p.db.Begin()
+	if err != nil {
+		return false, err
+	}
+	defer tx.Rollback()
+
+	// Try to insert a lock row
+	_, err = tx.Exec(`
+		INSERT INTO schema_migrations (version, dirty)
+		VALUES ('lock', false)
+		ON CONFLICT (version) DO NOTHING
+	`)
+	if err != nil {
+		return false, err
+	}
+
+	// Try to acquire the lock
+	var locked bool
+	err = tx.QueryRow(`
+		UPDATE schema_migrations
+		SET dirty = true, created_at = NOW()
+		WHERE version = 'lock' AND dirty = false
+		RETURNING true
+	`).Scan(&locked)
+
+	if err == sql.ErrNoRows {
+		return false, nil // Lock was not acquired
+	}
+	if err != nil {
+		return false, err
+	}
+
+	return tx.Commit() == nil, nil
+}
+
+func (p *Postgres) ReleaseMigrationLock() error {
+	_, err := p.db.Exec(`
+		UPDATE schema_migrations
+		SET dirty = false
+		WHERE version = 'lock'
+	`)
+	return err
+}
+
 func (p *Postgres) getMigrationsToRun(currentVersion string, migrations []migration.Migration) []migration.Migration {
 	var migrationsToRun []migration.Migration
 	for _, mgn := range migrations {

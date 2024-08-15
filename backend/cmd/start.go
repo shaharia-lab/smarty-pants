@@ -55,7 +55,7 @@ func runStart(_ *cobra.Command, _ []string) error {
 		return err
 	}
 
-	migrationManager := migration.NewMigrationManager(st, migration.PostgreSQLMigrations)
+	migrationManager := migration.NewMigrationManager(st, migration.PostgreSQLMigrations, l)
 	if err := migrationManager.RunMigrations(); err != nil {
 		l.WithError(err).Error("Failed to run migration")
 		return fmt.Errorf("failed to run migration: %w", err)
