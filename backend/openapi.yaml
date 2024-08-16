@@ -1,25 +1,226 @@
 openapi: 3.0.0
 info:
-  title: SmartyPants AI API
+  title: Smarty Pants AI API
   version: 1.0.0
-  description: API for managing documents, datasources, and embedding providers in the SmartyPants AI system.
+  description: API for the Smarty Pants AI application
+
+servers:
+  - url: http://localhost:8080/api/v1
+    description: Main API endpoints
+  - url: http://localhost:8080
+    description: System endpoints
 
 paths:
-  /:
+  /system/ping:
     get:
-      summary: Welcome message
+      summary: Ping the system
       responses:
         '200':
           description: Successful response
           content:
-            text/plain:
+            application/json:
               schema:
-                type: string
-                example: "Welcome to the API"
+                $ref: '#/components/schemas/PingResponse'
 
-  /api/documents:
+  /system/probes/liveness:
     get:
-      summary: Get documents
+      summary: Check system liveness
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LivenessResponse'
+
+  /system/probes/readiness:
+    get:
+      summary: Check system readiness
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReadinessResponse'
+  /analytics/overview:
+    get:
+      summary: Get analytics overview
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnalyticsOverview'
+
+  /datasource:
+    post:
+      summary: Add a new datasource
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DatasourcePayload'
+      responses:
+        '201':
+          description: Datasource created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  uuid:
+                    type: string
+                    format: uuid
+
+    get:
+      summary: Get all datasources
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+        - in: query
+          name: per_page
+          schema:
+            type: integer
+            default: 10
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedDatasources'
+
+  /datasource/{uuid}:
+    get:
+      summary: Get a specific datasource
+      parameters:
+        - in: path
+          name: uuid
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DatasourceConfig'
+
+    put:
+      summary: Update a datasource
+      parameters:
+        - in: path
+          name: uuid
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DatasourcePayload'
+      responses:
+        '204':
+          description: Datasource updated successfully
+
+    delete:
+      summary: Delete a datasource
+      parameters:
+        - in: path
+          name: uuid
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Datasource deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+
+  /datasource/{uuid}/validate:
+    get:
+      summary: Validate a datasource
+      parameters:
+        - in: path
+          name: uuid
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Datasource validated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  result:
+                    type: string
+
+  /datasource/{uuid}/activate:
+    put:
+      summary: Activate a datasource
+      parameters:
+        - in: path
+          name: uuid
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Datasource activated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+
+  /datasource/{uuid}/deactivate:
+    put:
+      summary: Deactivate a datasource
+      parameters:
+        - in: path
+          name: uuid
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Datasource deactivated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+
+  /document:
+    get:
+      summary: Get all documents
       parameters:
         - in: query
           name: uuid
@@ -29,7 +230,6 @@ paths:
           name: status
           schema:
             type: string
-            enum: [pending, ready_to_search, error_processing]
         - in: query
           name: source_uuid
           schema:
@@ -52,7 +252,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/PaginatedDocuments'
 
-  /api/document/{uuid}:
+  /document/{uuid}:
     get:
       summary: Get a specific document
       parameters:
@@ -61,6 +261,7 @@ paths:
           required: true
           schema:
             type: string
+            format: uuid
       responses:
         '200':
           description: Successful response
@@ -68,93 +269,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Document'
-        '404':
-          description: Document not found
 
-  /api/datasource:
-    post:
-      summary: Add a new datasource
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/DatasourcePayload'
-      responses:
-        '201':
-          description: Datasource created successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/DatasourceConfig'
-        '400':
-          description: Invalid request body
-
-  /api/datasource/{uuid}:
-    get:
-      summary: Get a specific datasource
-      parameters:
-        - in: path
-          name: uuid
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Successful response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/DatasourceConfig'
-        '404':
-          description: Datasource not found
-
-  /api/datasource/{uuid}/validate:
-    get:
-      summary: Validate a specific datasource
-      parameters:
-        - in: path
-          name: uuid
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Datasource validated successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  result:
-                    type: string
-                    example: "success"
-        '400':
-          description: Validation failed
-
-  /api/datasources:
-    get:
-      summary: Get all datasources
-      parameters:
-        - in: query
-          name: page
-          schema:
-            type: integer
-            default: 1
-        - in: query
-          name: per_page
-          schema:
-            type: integer
-            default: 10
-      responses:
-        '200':
-          description: Successful response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PaginatedDatasources'
-
-  /api/embedding-provider:
+  /embedding-provider:
     post:
       summary: Add a new embedding provider
       requestBody:
@@ -164,72 +280,20 @@ paths:
             schema:
               $ref: '#/components/schemas/EmbeddingProviderConfig'
       responses:
-        '200':
+        '201':
           description: Embedding provider created successfully
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/EmbeddingProviderConfig'
-        '400':
-          description: Invalid request body
 
-  /api/embedding-provider/{uuid}:
-    put:
-      summary: Update an embedding provider
-      parameters:
-        - in: path
-          name: uuid
-          required: true
-          schema:
-            type: string
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/EmbeddingProviderConfig'
-      responses:
-        '200':
-          description: Embedding provider updated successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/EmbeddingProviderConfig'
-        '400':
-          description: Invalid request body
-    delete:
-      summary: Delete an embedding provider
-      parameters:
-        - in: path
-          name: uuid
-          required: true
-          schema:
-            type: string
-      responses:
-        '204':
-          description: Embedding provider deleted successfully
-    get:
-      summary: Get a specific embedding provider
-      parameters:
-        - in: path
-          name: uuid
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Successful response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/EmbeddingProviderConfig'
-        '404':
-          description: Embedding provider not found
-
-  /api/embedding-providers:
     get:
       summary: Get all embedding providers
       parameters:
+        - in: query
+          name: status
+          schema:
+            type: string
         - in: query
           name: page
           schema:
@@ -248,8 +312,62 @@ paths:
               schema:
                 $ref: '#/components/schemas/PaginatedEmbeddingProviders'
 
-  /api/embedding-provider/{uuid}/activate:
-    post:
+  /embedding-provider/{uuid}:
+    get:
+      summary: Get a specific embedding provider
+      parameters:
+        - in: path
+          name: uuid
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmbeddingProviderConfig'
+
+    put:
+      summary: Update an embedding provider
+      parameters:
+        - in: path
+          name: uuid
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmbeddingProviderConfig'
+      responses:
+        '200':
+          description: Embedding provider updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmbeddingProviderConfig'
+
+    delete:
+      summary: Delete an embedding provider
+      parameters:
+        - in: path
+          name: uuid
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Embedding provider deleted successfully
+
+  /embedding-provider/{uuid}/activate:
+    put:
       summary: Activate an embedding provider
       parameters:
         - in: path
@@ -257,6 +375,7 @@ paths:
           required: true
           schema:
             type: string
+            format: uuid
       responses:
         '200':
           description: Embedding provider activated successfully
@@ -267,14 +386,261 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: "Embedding provider activated successfully"
-        '400':
-          description: Invalid UUID
-        '500':
-          description: Failed to activate embedding provider
-  /api/settings:
+
+  /embedding-provider/{uuid}/deactivate:
+    put:
+      summary: Deactivate an embedding provider
+      parameters:
+        - in: path
+          name: uuid
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Embedding provider deactivated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+
+  /interactions:
+    post:
+      summary: Create a new interaction
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                query:
+                  type: string
+      responses:
+        '200':
+          description: Interaction created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Interaction'
+
     get:
-      summary: Get current settings
+      summary: Get all interactions
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InteractionsResponse'
+
+  /interactions/{uuid}:
+    get:
+      summary: Get a specific interaction
+      parameters:
+        - in: path
+          name: uuid
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Interaction'
+
+  /interactions/{uuid}/message:
+    post:
+      summary: Send a message in an interaction
+      parameters:
+        - in: path
+          name: uuid
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                query:
+                  type: string
+      responses:
+        '200':
+          description: Message sent successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+
+  /llm-provider:
+    post:
+      summary: Add a new LLM provider
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LLMProviderConfig'
+      responses:
+        '201':
+          description: LLM provider created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LLMProviderConfig'
+
+    get:
+      summary: Get all LLM providers
+      parameters:
+        - in: query
+          name: status
+          schema:
+            type: string
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+        - in: query
+          name: per_page
+          schema:
+            type: integer
+            default: 10
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedLLMProviders'
+
+  /llm-provider/{uuid}:
+    get:
+      summary: Get a specific LLM provider
+      parameters:
+        - in: path
+          name: uuid
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LLMProviderConfig'
+
+    put:
+      summary: Update an LLM provider
+      parameters:
+        - in: path
+          name: uuid
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LLMProviderConfig'
+      responses:
+        '200':
+          description: LLM provider updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LLMProviderConfig'
+
+    delete:
+      summary: Delete an LLM provider
+      parameters:
+        - in: path
+          name: uuid
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: LLM provider deleted successfully
+
+  /llm-provider/{uuid}/activate:
+    put:
+      summary: Activate an LLM provider
+      parameters:
+        - in: path
+          name: uuid
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: LLM provider activated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+
+  /llm-provider/{uuid}/deactivate:
+    put:
+      summary: Deactivate an LLM provider
+      parameters:
+        - in: path
+          name: uuid
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: LLM provider deactivated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+
+  /search:
+    post:
+      summary: Perform a search
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SearchRequest'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SearchResults'
+
+  /settings:
+    get:
+      summary: Get application settings
       responses:
         '200':
           description: Successful response
@@ -282,10 +648,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Settings'
-        '500':
-          description: Internal server error
+
     put:
-      summary: Update settings
+      summary: Update application settings
       requestBody:
         required: true
         content:
@@ -299,92 +664,104 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Settings'
-        '400':
-          description: Invalid request body
-        '500':
-          description: Internal server error
 
 components:
   schemas:
-    Document:
+    PingResponse:
       type: object
       properties:
-        uuid:
+        message:
           type: string
-        title:
-          type: string
-        body:
-          type: string
-        embedding:
-          $ref: '#/components/schemas/Embedding'
-        metadata:
-          type: array
-          items:
-            $ref: '#/components/schemas/Metadata'
-        status:
-          type: string
-          enum: [pending, ready_to_search, error_processing]
-        created_at:
-          type: string
-          format: date-time
-        updated_at:
-          type: string
-          format: date-time
-        source:
-          $ref: '#/components/schemas/Source'
+          example: "Pong"
 
-    Embedding:
+    LivenessResponse:
       type: object
       properties:
-        embedding:
-          type: array
-          items:
-            $ref: '#/components/schemas/ContentPart'
+        message:
+          type: string
+          example: "I am alive"
 
-    ContentPart:
+    ReadinessResponse:
       type: object
       properties:
-        content:
+        message:
           type: string
-        embedding:
-          type: array
-          items:
-            type: number
-            format: float
+          example: "I am ready"
 
-    Metadata:
+    AnalyticsOverview:
       type: object
       properties:
-        key:
-          type: string
-        value:
-          type: string
+        embedding_providers:
+          $ref: '#/components/schemas/EmbeddingProvidersOverview'
+        llm_providers:
+          $ref: '#/components/schemas/LLMProvidersOverview'
+        datasources:
+          $ref: '#/components/schemas/DatasourcesOverview'
 
-    Source:
+    EmbeddingProvidersOverview:
       type: object
       properties:
-        uuid:
-          type: string
+        total_providers:
+          type: integer
+        total_active_providers:
+          type: integer
+        active_provider:
+          $ref: '#/components/schemas/ProviderInfo'
+
+    LLMProvidersOverview:
+      type: object
+      properties:
+        total_providers:
+          type: integer
+        total_active_providers:
+          type: integer
+        active_provider:
+          $ref: '#/components/schemas/ProviderInfo'
+
+    ProviderInfo:
+      type: object
+      properties:
         name:
           type: string
         type:
           type: string
+        model:
+          type: string
 
-    PaginatedDocuments:
+    DatasourcesOverview:
       type: object
       properties:
-        documents:
+        configured_datasources:
           type: array
           items:
-            $ref: '#/components/schemas/Document'
-        total:
+            $ref: '#/components/schemas/DatasourceInfo'
+        total_datasources:
           type: integer
-        page:
-          type: integer
-        per_page:
-          type: integer
-        total_pages:
-          type: integer
+        total_datasources_by_type:
+          type: object
+          additionalProperties:
+            type: integer
+        total_datasources_by_status:
+          type: object
+          additionalProperties:
+            type: integer
+        total_documents_fetched_by_datasource_type:
+          type: object
+          additionalProperties:
+            type: integer
+
+    DatasourceInfo:
+      type: object
+      properties:
+        name:
+          type: string
+        type:
+          type: string
+        status:
+          type: string
+        created_at:
+          type: string
+          format: date-time
 
     DatasourcePayload:
       type: object
@@ -395,60 +772,6 @@ components:
           type: string
         settings:
           type: object
-
-    DatasourceConfig:
-      type: object
-      properties:
-        uuid:
-          type: string
-        name:
-          type: string
-        status:
-          type: string
-        source_type:
-          type: string
-        settings:
-          oneOf:
-            - $ref: '#/components/schemas/SlackSettings'
-            - $ref: '#/components/schemas/GitHubSettings'
-        state:
-          oneOf:
-            - $ref: '#/components/schemas/SlackState'
-            - $ref: '#/components/schemas/GitHubState'
-
-    SlackSettings:
-      type: object
-      properties:
-        token:
-          type: string
-        channel_id:
-          type: string
-        workspace:
-          type: string
-
-    GitHubSettings:
-      type: object
-      properties:
-        org:
-          type: string
-
-    SlackState:
-      type: object
-      properties:
-        type:
-          type: string
-          enum: [slack]
-        next_cursor:
-          type: string
-
-    GitHubState:
-      type: object
-      properties:
-        type:
-          type: string
-          enum: [github]
-        next_cursor:
-          type: string
 
     PaginatedDatasources:
       type: object
@@ -466,27 +789,130 @@ components:
         total_pages:
           type: integer
 
+    DatasourceConfig:
+      type: object
+      properties:
+        uuid:
+          type: string
+          format: uuid
+        name:
+          type: string
+        status:
+          type: string
+        source_type:
+          type: string
+        settings:
+          type: object
+        state:
+          type: object
+
+    PaginatedDocuments:
+      type: object
+      properties:
+        documents:
+          type: array
+          items:
+            $ref: '#/components/schemas/Document'
+        total:
+          type: integer
+        page:
+          type: integer
+        per_page:
+          type: integer
+        total_pages:
+          type: integer
+
+    Document:
+      type: object
+      properties:
+        uuid:
+          type: string
+          format: uuid
+        url:
+          type: string
+        title:
+          type: string
+        body:
+          type: string
+        embedding:
+          $ref: '#/components/schemas/Embedding'
+        metadata:
+          type: array
+          items:
+            $ref: '#/components/schemas/Metadata'
+        status:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        fetched_at:
+          type: string
+          format: date-time
+        source:
+          $ref: '#/components/schemas/Source'
+
+    Embedding:
+      type: object
+      properties:
+        embedding:
+          type: array
+          items:
+            $ref: '#/components/schemas/ContentPart'
+
+    Metadata:
+      type: object
+      properties:
+        key:
+          type: string
+        value:
+          type: string
+
+    Source:
+      type: object
+      properties:
+        uuid:
+          type: string
+          format: uuid
+        name:
+          type: string
+        type:
+          type: string
+
+    ContentPart:
+      type: object
+      properties:
+        content:
+          type: string
+        embedding:
+          type: array
+          items:
+            type: number
+            format: float
+        embedding_provider_uuid:
+          type: string
+          format: uuid
+        embedding_prompt_token:
+          type: integer
+        generated_at:
+          type: string
+          format: date-time
+
     EmbeddingProviderConfig:
       type: object
       properties:
         uuid:
           type: string
+          format: uuid
         name:
           type: string
         provider:
           type: string
         configuration:
-          oneOf:
-            - $ref: '#/components/schemas/OpenAISettings'
+          type: object
         status:
-          type: string
-
-    OpenAISettings:
-      type: object
-      properties:
-        api_key:
-          type: string
-        model_id:
           type: string
 
     PaginatedEmbeddingProviders:
@@ -505,34 +931,160 @@ components:
         total_pages:
           type: integer
 
+    Interaction:
+      type: object
+      properties:
+        uuid:
+          type: string
+          format: uuid
+        query:
+          type: string
+        conversations:
+          type: array
+          items:
+            $ref: '#/components/schemas/Conversation'
+        created_at:
+          type: string
+          format: date-time
+
+    Conversation:
+      type: object
+      properties:
+        uuid:
+          type: string
+          format: uuid
+        role:
+          type: string
+        text:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+
+    InteractionsResponse:
+      type: object
+      properties:
+        interactions:
+          type: array
+          items:
+            $ref: '#/components/schemas/InteractionSummary'
+        limit:
+          type: integer
+        per_page:
+          type: integer
+
+    InteractionSummary:
+      type: object
+      properties:
+        uuid:
+          type: string
+          format: uuid
+        title:
+          type: string
+
+    MessageResponse:
+      type: object
+      properties:
+        response:
+          type: string
+
+    LLMProviderConfig:
+      type: object
+      properties:
+        uuid:
+          type: string
+          format: uuid
+        name:
+          type: string
+        provider:
+          type: string
+        configuration:
+          type: object
+        status:
+          type: string
+
+    PaginatedLLMProviders:
+      type: object
+      properties:
+        llm_providers:
+          type: array
+          items:
+            $ref: '#/components/schemas/LLMProviderConfig'
+        total:
+          type: integer
+        page:
+          type: integer
+        per_page:
+          type: integer
+        total_pages:
+          type: integer
+
+    SearchRequest:
+      type: object
+      properties:
+        query:
+          type: string
+
+    SearchResults:
+      type: object
+      properties:
+        documents:
+          type: array
+          items:
+            $ref: '#/components/schemas/SearchResultsDocument'
+        query_text:
+          type: string
+        limit:
+          type: integer
+        page:
+          type: integer
+        total_pages:
+          type: integer
+        total_results:
+          type: integer
+
+    SearchResultsDocument:
+      type: object
+      properties:
+        content_part:
+          type: string
+        content_part_id:
+          type: integer
+        original_document_uuid:
+          type: string
+          format: uuid
+        relevant_score:
+          type: number
+          format: float
+
     Settings:
       type: object
       properties:
         general:
-          type: object
-          properties:
-            application_name:
-              type: string
+          $ref: '#/components/schemas/GeneralSettings'
         debugging:
-          type: object
-          properties:
-            log_level:
-              type: string
-              enum: [debug, info, warn, error]
-            log_format:
-              type: string
-              enum: [json, text]
-            log_output:
-              type: string
-              enum: [stdout, stderr, file]
+          $ref: '#/components/schemas/DebuggingSettings'
         search:
-          type: object
-          properties:
-            per_page:
-              type: integer
-              minimum: 1
-              maximum: 100
-      required:
-        - general
-        - debugging
-        - search
+          $ref: '#/components/schemas/SearchSettings'
+
+    GeneralSettings:
+      type: object
+      properties:
+        application_name:
+          type: string
+
+    DebuggingSettings:
+      type: object
+      properties:
+        log_level:
+          type: string
+        log_format:
+          type: string
+        log_output:
+          type: string
+
+    SearchSettings:
+      type: object
+      properties:
+        per_page:
+          type: integer
