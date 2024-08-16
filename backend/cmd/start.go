@@ -85,6 +85,7 @@ func runStart(_ *cobra.Command, _ []string) error {
 
 	apiServer := setupAPIServer(cfg, logging, st)
 	shutdownManager.RegisterShutdownFn(apiServer.Shutdown)
+	shutdownManager.RegisterShutdownFn(dbMigration.ShutdownFn)
 
 	go shutdownManager.Start(ctx)
 	go startAPIServer(cfg, apiServer, logging)
