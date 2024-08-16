@@ -4,7 +4,8 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/shaharia-lab/smarty-pants/backend/internal/logger"
+	"github.com/sirupsen/logrus"
+	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -12,73 +13,100 @@ import (
 func TestRunMigrations(t *testing.T) {
 	tests := []struct {
 		name              string
+		ensureTableErr    error
 		acquireLockResult bool
 		acquireLockErr    error
-		ensureTableErr    error
 		migrateErr        error
+		releaseLockErr    error
 		wantErr           bool
 		expectedErrMsg    string
+		expectLockRelease bool
 	}{
 		{
 			name:              "Successful migration",
+			ensureTableErr:    nil,
 			acquireLockResult: true,
 			acquireLockErr:    nil,
-			ensureTableErr:    nil,
 			migrateErr:        nil,
+			releaseLockErr:    nil,
 			wantErr:           false,
+			expectLockRelease: true,
 		},
 		{
 			name:              "Failed to acquire lock",
+			ensureTableErr:    nil,
 			acquireLockResult: false,
 			acquireLockErr:    nil,
-			ensureTableErr:    nil,
 			migrateErr:        nil,
+			releaseLockErr:    nil,
 			wantErr:           false,
+			expectLockRelease: false,
 		},
 		{
 			name:              "Error acquiring lock",
+			ensureTableErr:    nil,
 			acquireLockResult: false,
 			acquireLockErr:    errors.New("failed to acquire lock"),
-			ensureTableErr:    nil,
 			migrateErr:        nil,
+			releaseLockErr:    nil,
 			wantErr:           true,
 			expectedErrMsg:    "failed to acquire migration lock: failed to acquire lock",
+			expectLockRelease: false,
 		},
 		{
 			name:              "EnsureMigrationTableExists fails",
+			ensureTableErr:    errors.New("table creation failed"),
 			acquireLockResult: true,
 			acquireLockErr:    nil,
-			ensureTableErr:    errors.New("table creation failed"),
 			migrateErr:        nil,
+			releaseLockErr:    nil,
 			wantErr:           true,
-			expectedErrMsg:    "table creation failed",
+			expectedErrMsg:    "Failed to ensure migration table exists: table creation failed",
+			expectLockRelease: false,
 		},
 		{
 			name:              "Migrate fails",
+			ensureTableErr:    nil,
 			acquireLockResult: true,
 			acquireLockErr:    nil,
-			ensureTableErr:    nil,
 			migrateErr:        errors.New("migration failed"),
+			releaseLockErr:    nil,
 			wantErr:           true,
-			expectedErrMsg:    "migration failed",
+			expectedErrMsg:    "failed to run migrations: migration failed",
+			expectLockRelease: true,
+		},
+		{
+			name:              "ReleaseMigrationLock fails",
+			ensureTableErr:    nil,
+			acquireLockResult: true,
+			acquireLockErr:    nil,
+			migrateErr:        nil,
+			releaseLockErr:    errors.New("failed to release lock"),
+			wantErr:           false,
+			expectLockRelease: true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mockMigrator := NewMockMigrator(t)
-			mockMigrator.On("AcquireMigrationLock").Return(tt.acquireLockResult, tt.acquireLockErr)
+			mockMigrator := new(MockMigrator)
+			mockMigrator.On("EnsureMigrationTableExists").Return(tt.ensureTableErr)
 
-			if tt.acquireLockResult {
-				mockMigrator.On("ReleaseMigrationLock").Return(nil)
-				mockMigrator.On("EnsureMigrationTableExists").Return(tt.ensureTableErr)
+			if tt.ensureTableErr == nil {
+				mockMigrator.On("AcquireMigrationLock").Return(tt.acquireLockResult, tt.acquireLockErr)
 
-				if tt.ensureTableErr == nil {
+				if tt.acquireLockResult {
 					mockMigrator.On("Migrate", mock.Anything).Return(tt.migrateErr)
+					if tt.expectLockRelease {
+						mockMigrator.On("ReleaseMigrationLock").Return(tt.releaseLockErr)
+					}
 				}
 			}
 
-			manager := NewMigrationManager(mockMigrator, []Migration{}, logger.NoOpsLogger())
+			logger, hook := test.NewNullLogger()
+			logger.SetLevel(logrus.DebugLevel)
+
+			manager := NewMigrationManager(mockMigrator, []Migration{}, logger)
 
 			err := manager.RunMigrations()
 
@@ -90,6 +118,11 @@ func TestRunMigrations(t *testing.T) {
 			}
 
 			mockMigrator.AssertExpectations(t)
+
+			// Check log messages if needed
+			for _, entry := range hook.AllEntries() {
+				t.Logf("LOG [%s]: %s", entry.Level, entry.Message)
+			}
 		})
 	}
 }
@@ -117,7 +150,10 @@ func TestRollbackMigration(t *testing.T) {
 			mockMigrator := NewMockMigrator(t)
 			mockMigrator.On("Rollback", mock.Anything).Return(tt.rollbackErr)
 
-			manager := NewMigrationManager(mockMigrator, []Migration{}, logger.NoOpsLogger())
+			testLogger := logrus.New()
+			testLogger.Out = nil // Disable logging output for tests
+
+			manager := NewMigrationManager(mockMigrator, []Migration{}, testLogger)
 
 			err := manager.RollbackMigration()
 
@@ -162,7 +198,10 @@ func TestGetCurrentVersion(t *testing.T) {
 			mockMigrator := NewMockMigrator(t)
 			mockMigrator.On("GetCurrentVersion").Return(tt.version, tt.versionErr)
 
-			manager := NewMigrationManager(mockMigrator, []Migration{}, logger.NoOpsLogger())
+			testLogger := logrus.New()
+			testLogger.Out = nil // Disable logging output for tests
+
+			manager := NewMigrationManager(mockMigrator, []Migration{}, testLogger)
 
 			gotVersion, err := manager.GetCurrentVersion()
 

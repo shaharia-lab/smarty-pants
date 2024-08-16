@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/lib/pq"
 	_ "github.com/lib/pq" // Import the Postgres driver
 	"github.com/pgvector/pgvector-go"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/logger"
@@ -1693,18 +1694,41 @@ func (p *Postgres) Migrate(migrations []migration.Migration) error {
 	}
 
 	for _, m := range migrationsToRun {
+		// Check if migration is already marked as dirty
+		var dirty bool
+		err = p.db.QueryRow("SELECT dirty FROM schema_migrations WHERE version = $1", m.Version).Scan(&dirty)
+		if err == nil && dirty {
+			// Found a dirty migration
+			return &migration.DirtyMigrationError{
+				Version: m.Version,
+				Message: fmt.Sprintf("Migration %s is marked as dirty. This could indicate a partially applied migration. Manual intervention may be required.", m.Version),
+			}
+		}
+
 		tx, err := p.db.Begin()
 		if err != nil {
+			return err
+		}
+
+		// Mark migration as dirty before applying
+		_, err = tx.Exec("INSERT INTO schema_migrations (version, dirty) VALUES ($1, true) ON CONFLICT (version) DO UPDATE SET dirty = true", m.Version)
+		if err != nil {
+			tx.Rollback()
 			return err
 		}
 
 		err = m.Up(tx)
 		if err != nil {
 			tx.Rollback()
-			return err
+			return &migration.MigrationError{
+				Version: m.Version,
+				Err:     err,
+				Message: fmt.Sprintf("Failed to apply migration %s. The database may be in an inconsistent state.", m.Version),
+			}
 		}
 
-		_, err = tx.Exec("UPDATE schema_migrations SET version = $1, updated_at = $2", m.Version, time.Now())
+		// Mark migration as completed
+		_, err = tx.Exec("UPDATE schema_migrations SET version = $1, dirty = false, updated_at = $2", m.Version, time.Now())
 		if err != nil {
 			tx.Rollback()
 			return err
@@ -1743,6 +1767,13 @@ func (p *Postgres) Rollback(migrations []migration.Migration) error {
 		return err
 	}
 
+	// Mark migration as dirty before rolling back
+	_, err = tx.Exec("UPDATE schema_migrations SET dirty = true WHERE version = $1", currentVersion)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
 	err = migrationToRollback.Down(tx)
 	if err != nil {
 		tx.Rollback()
@@ -1754,7 +1785,8 @@ func (p *Postgres) Rollback(migrations []migration.Migration) error {
 		previousVersion = migrations[len(migrations)-2].Version
 	}
 
-	_, err = tx.Exec("UPDATE schema_migrations SET version = $1, updated_at = $2", previousVersion, time.Now())
+	// Mark migration as rolled back
+	_, err = tx.Exec("UPDATE schema_migrations SET version = $1, dirty = false, updated_at = $2", previousVersion, time.Now())
 	if err != nil {
 		tx.Rollback()
 		return err
@@ -1766,7 +1798,7 @@ func (p *Postgres) Rollback(migrations []migration.Migration) error {
 // GetCurrentVersion implements the GetCurrentVersion method for PostgresMigrator
 func (p *Postgres) GetCurrentVersion() (string, error) {
 	var version string
-	err := p.db.QueryRow("SELECT version FROM schema_migrations").Scan(&version)
+	err := p.db.QueryRow("SELECT version FROM schema_migrations WHERE version != 'lock' AND NOT dirty ORDER BY created_at DESC LIMIT 1").Scan(&version)
 	if errors.Is(err, sql.ErrNoRows) {
 		return "", nil
 	}
@@ -1775,39 +1807,27 @@ func (p *Postgres) GetCurrentVersion() (string, error) {
 
 // AcquireMigrationLock to lock the migration tabe
 func (p *Postgres) AcquireMigrationLock() (bool, error) {
-	tx, err := p.db.Begin()
-	if err != nil {
-		return false, err
-	}
-	defer tx.Rollback()
-
-	// Try to insert a lock row
-	_, err = tx.Exec(`
+	var acquired bool
+	err := p.db.QueryRow(`
 		INSERT INTO schema_migrations (version, dirty)
-		VALUES ('lock', false)
-		ON CONFLICT (version) DO NOTHING
-	`)
+		VALUES ('lock', true)
+		ON CONFLICT (version) DO UPDATE
+		SET dirty = true
+		WHERE schema_migrations.version = 'lock' AND NOT schema_migrations.dirty
+		RETURNING (xmax = 0) AS inserted
+	`).Scan(&acquired)
+
 	if err != nil {
+		// Check if the error is because the table doesn't exist
+		if pqErr, ok := err.(*pq.Error); ok && pqErr.Code == "42P01" {
+			// Table doesn't exist, which means no migrations have run yet
+			// We can consider this as having acquired the lock
+			return true, nil
+		}
 		return false, err
 	}
 
-	// Try to acquire the lock
-	var locked bool
-	err = tx.QueryRow(`
-		UPDATE schema_migrations
-		SET dirty = true, created_at = NOW()
-		WHERE version = 'lock' AND dirty = false
-		RETURNING true
-	`).Scan(&locked)
-
-	if err == sql.ErrNoRows {
-		return false, nil // Lock was not acquired
-	}
-	if err != nil {
-		return false, err
-	}
-
-	return tx.Commit() == nil, nil
+	return acquired, nil
 }
 
 // ReleaseMigrationLock release the migration lock
@@ -1838,6 +1858,8 @@ func (p *Postgres) EnsureMigrationTableExists() error {
 	_, err := p.db.Exec(`
 		CREATE TABLE IF NOT EXISTS schema_migrations (
 			version TEXT PRIMARY KEY,
+			dirty BOOLEAN NOT NULL DEFAULT false,
+			created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
 			updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 		)
 	`)

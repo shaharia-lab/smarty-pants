@@ -3,6 +3,7 @@ module github.com/shaharia-lab/smarty-pants/backend
 go 1.22
 
 require (
+	github.com/DATA-DOG/go-sqlmock v1.5.2
 	github.com/chi-middleware/logrus-logger v0.3.0
 	github.com/go-chi/chi/v5 v5.1.0
 	github.com/go-chi/cors v1.2.1
