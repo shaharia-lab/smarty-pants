@@ -55,10 +55,10 @@ func runStart(_ *cobra.Command, _ []string) error {
 		return err
 	}
 
-	dsn := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
-		cfg.DBHost, cfg.DBPort, cfg.DBUser, cfg.DBPass, cfg.DBName)
-
-	db, err := sql.Open("postgres", dsn)
+	db, err := sql.Open("postgres",
+		fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
+			cfg.DBHost, cfg.DBPort, cfg.DBUser, cfg.DBPass, cfg.DBName),
+	)
 	if err != nil {
 		return fmt.Errorf("failed to open database connection: %w", err)
 	}
