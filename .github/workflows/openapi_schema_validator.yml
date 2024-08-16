@@ -1,0 +1,42 @@
+name: OpenAPI Schema Validation
+
+on:
+  pull_request:
+    paths:
+      - 'backend/openapi.yml'
+  push:
+    branches:
+      - main
+    paths:
+      - 'backend/openapi.yml'
+
+jobs:
+  validate-openapi:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '14'
+
+      - name: Install OpenAPI validator
+        run: npm install -g @openapitools/openapi-generator-cli
+
+      - name: Validate OpenAPI schema
+        run: openapi-generator-cli validate -i backend/openapi.yml
+
+      - name: Comment PR on failure
+        uses: actions/github-script@v6
+        if: failure()
+        with:
+          github-token: ${{secrets.GITHUB_TOKEN}}
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: 'OpenAPI schema validation failed. Please check the workflow logs for more details.'
+            })
