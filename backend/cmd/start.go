@@ -3,6 +3,7 @@ package cmd
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"log"
@@ -18,7 +19,6 @@ import (
 	"github.com/shaharia-lab/smarty-pants/backend/internal/search"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/shutdown"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/storage"
-	"github.com/shaharia-lab/smarty-pants/backend/internal/storage/migration"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/types"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -55,11 +55,16 @@ func runStart(_ *cobra.Command, _ []string) error {
 		return err
 	}
 
-	migrationManager := migration.NewMigrationManager(st, l)
-	if err := migrationManager.Run(); err != nil {
-		l.WithError(err).Fatal("Migration process failed")
-		return err
+	dsn := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
+		cfg.DBHost, cfg.DBPort, cfg.DBUser, cfg.DBPass, cfg.DBName)
+
+	db, err := sql.Open("postgres", dsn)
+	if err != nil {
+		return fmt.Errorf("failed to open database connection: %w", err)
 	}
+
+	dbMigration := storage.NewMigration(db, l)
+	dbMigration.Run()
 
 	_, logging, err := setupAppSettings(ctx, st, l)
 	if err != nil {
