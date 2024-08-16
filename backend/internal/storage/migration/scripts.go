@@ -4,8 +4,8 @@ import (
 	"database/sql"
 )
 
-// PostgreSQLMigrations represents a lists of migrations for PostgreSQL
-var PostgreSQLMigrations = []Migration{
+// postgreSQLMigrations represents a lists of migrations for PostgreSQL
+var postgreSQLMigrations = []Migration{
 	{
 		Version: "0.0.1",
 		Up: func(tx *sql.Tx) error {

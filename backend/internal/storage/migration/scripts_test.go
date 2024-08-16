@@ -8,8 +8,8 @@ import (
 )
 
 func TestPostgreSQLMigrations(t *testing.T) {
-	assert.NotEmpty(t, PostgreSQLMigrations)
-	assert.Equal(t, "0.0.1", PostgreSQLMigrations[0].Version)
+	assert.NotEmpty(t, postgreSQLMigrations)
+	assert.Equal(t, "0.0.1", postgreSQLMigrations[0].Version)
 
 	// Test Up migration
 	db, mock, err := sqlmock.New()
@@ -37,7 +37,7 @@ func TestPostgreSQLMigrations(t *testing.T) {
 	tx, err := db.Begin()
 	assert.NoError(t, err)
 
-	err = PostgreSQLMigrations[0].Up(tx)
+	err = postgreSQLMigrations[0].Up(tx)
 	assert.NoError(t, err)
 
 	err = tx.Commit()
@@ -58,7 +58,7 @@ func TestPostgreSQLMigrations(t *testing.T) {
 	tx, err = db.Begin()
 	assert.NoError(t, err)
 
-	err = PostgreSQLMigrations[0].Down(tx)
+	err = postgreSQLMigrations[0].Down(tx)
 	assert.NoError(t, err)
 
 	err = tx.Commit()
