@@ -3,12 +3,12 @@ name: OpenAPI Schema Validation
 on:
   pull_request:
     paths:
-      - 'backend/openapi.yml'
+      - 'backend/openapi.yaml'
   push:
     branches:
       - main
     paths:
-      - 'backend/openapi.yml'
+      - 'backend/openapi.yaml'
 
 jobs:
   validate-openapi:
