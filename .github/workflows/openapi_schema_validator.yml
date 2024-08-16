@@ -27,16 +27,3 @@ jobs:
 
       - name: Validate OpenAPI schema
         run: openapi-generator-cli validate -i backend/openapi.yml
-
-      - name: Comment PR on failure
-        uses: actions/github-script@v6
-        if: failure()
-        with:
-          github-token: ${{secrets.GITHUB_TOKEN}}
-          script: |
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: 'OpenAPI schema validation failed. Please check the workflow logs for more details.'
-            })
