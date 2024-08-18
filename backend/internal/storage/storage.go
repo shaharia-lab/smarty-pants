@@ -5,6 +5,7 @@ import (
 	"database/sql"
 
 	"github.com/google/uuid"
+	"github.com/shaharia-lab/smarty-pants/backend/internal/oauth"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/types"
 )
 
@@ -18,6 +19,7 @@ type DatasourceConfig struct {
 }
 
 type Storage interface {
+	oauth.Storage
 	HealthCheck() error
 
 	Store(ctx context.Context, document types.Document) error

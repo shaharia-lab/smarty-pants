@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"os"
 	"runtime"
 	"runtime/debug"
 	"time"
@@ -18,6 +19,7 @@ import (
 	"github.com/shaharia-lab/smarty-pants/backend/internal/datasource"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/document"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/embedding"
+	"github.com/shaharia-lab/smarty-pants/backend/internal/oauth"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/interaction"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/llm"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/search"
@@ -126,6 +128,12 @@ func (a *API) setupRoutes() {
 	type gResponse struct {
 		Message string `json:"message"`
 	}
+
+	oauthManager := oauth.NewOAuthManager(a.storage, a.logger)
+	oauthManager.RegisterProvider(oauth.Google, os.Getenv("GOOGLE_CLIENT_ID"), os.Getenv("GOOGLE_CLIENT_SECRET"), "http://localhost:8080/auth/google/callback")
+
+	oauthHandlers := oauth.NewOAuthHandlers(oauthManager, a.logger)
+	oauthHandlers.RegisterRoutes(a.router)
 
 	a.router.Get("/", func(w http.ResponseWriter, r *http.Request) {
 		util.SendSuccessResponse(w, http.StatusOK, gResponse{Message: "Smart assistant!"}, a.logger, nil)
