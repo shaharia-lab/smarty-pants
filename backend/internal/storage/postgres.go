@@ -1697,6 +1697,7 @@ func (p *Postgres) RunMigration() error {
 			return fmt.Errorf("failed to create database migrator")
 		}
 
+		p.logger.Debug("migrator has been configured")
 		p.migrator = migrator
 	}
 
@@ -1752,14 +1753,17 @@ func (p *Postgres) newMigrator() (*migrate.Migrate, error) {
 
 	p.logger.Debug("getting current migration status")
 	version, isDirty, err := migrator.Version()
+	if err != nil && errors.Is(err, migrate.ErrNilVersion) {
+		p.logger.Debug("no migration exists. this will be the first migration")
+		return migrator, nil
+	}
+
 	if err != nil {
 		errMsg := "failed to get current migration version"
 		p.logger.WithError(err).Error(errMsg)
 		return nil, fmt.Errorf("%s : %w", errMsg, err)
 	}
 	p.logger.WithFields(logrus.Fields{"migration_version": version, "migration_is_dirty": isDirty, "migration_verbose_logging": verboseLogging}).Debug("current migration status")
-
-	p.logger.Debug("migrator has been configured")
 	return migrator, nil
 }
 
