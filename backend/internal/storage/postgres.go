@@ -66,9 +66,9 @@ func NewPostgresDB(cfg PostgresConfig) (*sql.DB, error) {
 
 // Postgres is a storage system that uses a Postgres database
 type Postgres struct {
-	db     *sql.DB
-	logger *logrus.Logger
-	m      *migrate.Migrate
+	db       *sql.DB
+	logger   *logrus.Logger
+	migrator *migrate.Migrate
 }
 
 // NewPostgres creates a new Postgres storage system
@@ -1690,18 +1690,18 @@ func (p *Postgres) GetAnalyticsOverview(ctx context.Context) (types.AnalyticsOve
 func (p *Postgres) RunMigration() error {
 	p.logger.Info("Preparing to run migration")
 
-	if p.m == nil {
+	if p.migrator == nil {
 		p.logger.Debug("creating new database migrator")
 		migrator, err := p.newMigrator()
 		if err != nil {
 			return fmt.Errorf("failed to create database migrator")
 		}
 
-		p.m = migrator
+		p.migrator = migrator
 	}
 
 	p.logger.Debug("Running migration.up")
-	err := p.m.Up()
+	err := p.migrator.Up()
 
 	if err != nil && errors.Is(err, migrate.ErrNoChange) {
 		p.logger.Info("No new changes found for migration")
@@ -1765,14 +1765,14 @@ func (p *Postgres) newMigrator() (*migrate.Migrate, error) {
 
 // HandleShutdown handle graceful shutdown for db migration
 func (p *Postgres) HandleShutdown(ctx context.Context) error {
-	if p.m != nil {
+	if p.migrator != nil {
 		p.logger.Info("Gracefully stopping migration process")
-		p.m.GracefulStop <- true
+		p.migrator.GracefulStop <- true
 		select {
 		case <-ctx.Done():
 			p.logger.Warn("Migration shutdown timed out")
 			return ctx.Err()
-		case <-p.m.GracefulStop:
+		case <-p.migrator.GracefulStop:
 			p.logger.Info("Migration process stopped gracefully")
 		}
 	}
