@@ -6,12 +6,13 @@ info:
 
 servers:
   - url: http://localhost:8080/api/v1
-    description: Main API endpoints
-  - url: http://localhost:8080
-    description: System endpoints
+    description: Main API endpoints for v1
 
 paths:
   /system/ping:
+    servers:
+      - url: http://localhost:8080
+        description: System endpoints
     get:
       summary: Ping the system
       responses:
@@ -23,6 +24,9 @@ paths:
                 $ref: '#/components/schemas/PingResponse'
 
   /system/probes/liveness:
+    servers:
+      - url: http://localhost:8080
+        description: System endpoints
     get:
       summary: Check system liveness
       responses:
@@ -34,6 +38,9 @@ paths:
                 $ref: '#/components/schemas/LivenessResponse'
 
   /system/probes/readiness:
+    servers:
+      - url: http://localhost:8080
+        description: System endpoints
     get:
       summary: Check system readiness
       responses:
