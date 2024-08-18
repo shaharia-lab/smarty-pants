@@ -3,7 +3,6 @@ package cmd
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"fmt"
 	"log"
@@ -55,16 +54,10 @@ func runStart(_ *cobra.Command, _ []string) error {
 		return err
 	}
 
-	db, err := sql.Open("postgres",
-		fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
-			cfg.DBHost, cfg.DBPort, cfg.DBUser, cfg.DBPass, cfg.DBName),
-	)
+	err = st.RunMigration()
 	if err != nil {
-		return fmt.Errorf("failed to open database connection: %w", err)
+		return err
 	}
-
-	dbMigration := storage.NewMigration(db, l)
-	dbMigration.Run()
 
 	_, logging, err := setupAppSettings(ctx, st, l)
 	if err != nil {
@@ -85,7 +78,7 @@ func runStart(_ *cobra.Command, _ []string) error {
 
 	apiServer := setupAPIServer(cfg, logging, st)
 	shutdownManager.RegisterShutdownFn(apiServer.Shutdown)
-	shutdownManager.RegisterShutdownFn(dbMigration.ShutdownFn)
+	shutdownManager.RegisterShutdownFn(st.HandleShutdown)
 
 	go shutdownManager.Start(ctx)
 	go startAPIServer(cfg, apiServer, logging)

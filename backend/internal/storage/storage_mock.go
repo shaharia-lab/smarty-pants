@@ -562,6 +562,24 @@ func (_m *StorageMock) GetSettings(ctx context.Context) (types.Settings, error) 
 	return r0, r1
 }
 
+// HandleShutdown provides a mock function with given fields: ctx
+func (_m *StorageMock) HandleShutdown(ctx context.Context) error {
+	ret := _m.Called(ctx)
+
+	if len(ret) == 0 {
+		panic("no return value specified for HandleShutdown")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context) error); ok {
+		r0 = rf(ctx)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // HealthCheck provides a mock function with given fields:
 func (_m *StorageMock) HealthCheck() error {
 	ret := _m.Called()
@@ -591,6 +609,24 @@ func (_m *StorageMock) RecordAIOpsUsage(ctx context.Context, usage types.AIUsage
 	var r0 error
 	if rf, ok := ret.Get(0).(func(context.Context, types.AIUsage) error); ok {
 		r0 = rf(ctx, usage)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// RunMigration provides a mock function with given fields:
+func (_m *StorageMock) RunMigration() error {
+	ret := _m.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for RunMigration")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func() error); ok {
+		r0 = rf()
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -846,7 +882,7 @@ func (_m *StorageMock) UpdateSettings(ctx context.Context, settings types.Settin
 
 // NewStorage creates a new instance of StorageMock. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
 // The first argument is typically a *testing.T value.
-func NewStorageMock(t interface {
+func NewStorage(t interface {
 	mock.TestingT
 	Cleanup(func())
 }) *StorageMock {

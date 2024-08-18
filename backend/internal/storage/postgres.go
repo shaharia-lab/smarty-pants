@@ -4,6 +4,7 @@ package storage
 import (
 	"context"
 	"database/sql"
+	"embed"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -12,6 +13,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/golang-migrate/migrate/v4"
+	"github.com/golang-migrate/migrate/v4/database/postgres"
+	"github.com/golang-migrate/migrate/v4/source/iofs"
 	"github.com/google/uuid"
 	_ "github.com/lib/pq" // Import the Postgres driver
 	"github.com/pgvector/pgvector-go"
@@ -21,6 +25,9 @@ import (
 	"github.com/shaharia-lab/smarty-pants/backend/internal/util"
 	"github.com/sirupsen/logrus"
 )
+
+//go:embed migrations/*.sql
+var migrationsFS embed.FS
 
 const (
 	failedToBeginTxnErrFmt      = "failed to begin transaction: %w"
@@ -61,6 +68,7 @@ func NewPostgresDB(cfg PostgresConfig) (*sql.DB, error) {
 type Postgres struct {
 	db     *sql.DB
 	logger *logrus.Logger
+	m      *migrate.Migrate
 }
 
 // NewPostgres creates a new Postgres storage system
@@ -1676,4 +1684,97 @@ func (p *Postgres) GetAnalyticsOverview(ctx context.Context) (types.AnalyticsOve
 	}
 
 	return overview, nil
+}
+
+// RunMigration run database migration
+func (p *Postgres) RunMigration() error {
+	p.logger.Info("Preparing to run migration")
+
+	if p.m == nil {
+		p.logger.Debug("creating new database migrator")
+		migrator, err := p.newMigrator()
+		if err != nil {
+			return fmt.Errorf("failed to create database migrator")
+		}
+
+		p.m = migrator
+	}
+
+	p.logger.Debug("Running migration.up")
+	err := p.m.Up()
+
+	if err != nil && errors.Is(err, migrate.ErrNoChange) {
+		p.logger.Info("No new changes found for migration")
+		return nil
+	}
+
+	if err != nil {
+		errMsg := "failed to run migrations"
+		p.logger.WithError(err).Error(errMsg)
+		return fmt.Errorf("%s: %w", errMsg, err)
+	}
+
+	p.logger.Info("database migration has been completed successfully")
+	return nil
+}
+
+func (p *Postgres) newMigrator() (*migrate.Migrate, error) {
+	p.logger.Debug("creating driver instance for migration")
+	driver, err := postgres.WithInstance(p.db, &postgres.Config{})
+	if err != nil {
+		errMsg := "failed to create driver instance"
+		p.logger.WithError(err).Error(errMsg)
+		return nil, fmt.Errorf("%s: %w", errMsg, err)
+	}
+
+	p.logger.Debug("preparing source for migration using in-memory file systems")
+	source, err := iofs.New(migrationsFS, "migrations")
+	if err != nil {
+		errMsg := "failed to create source instance"
+		p.logger.WithError(err).Error(errMsg)
+		return nil, fmt.Errorf("%s: %w", errMsg, err)
+	}
+
+	p.logger.Debug("configuring migrator instance")
+	migrator, err := migrate.NewWithInstance("iofs", source, "postgres", driver)
+	if err != nil {
+		errMsg := "failed to create migrator instance"
+		p.logger.WithError(err).Error(errMsg)
+		return nil, fmt.Errorf("%s: %w", errMsg, err)
+	}
+
+	var verboseLogging bool
+	if p.logger.Level == logrus.DebugLevel {
+		verboseLogging = true
+	}
+
+	migrator.Log = logger.NewMigrationLogger(p.logger, verboseLogging)
+
+	p.logger.Debug("getting current migration status")
+	version, isDirty, err := migrator.Version()
+	if err != nil {
+		errMsg := "failed to get current migration version"
+		p.logger.WithError(err).Error(errMsg)
+		return nil, fmt.Errorf("%s : %w", errMsg, err)
+	}
+	p.logger.WithFields(logrus.Fields{"migration_version": version, "migration_is_dirty": isDirty, "migration_verbose_logging": verboseLogging}).Debug("current migration status")
+
+	p.logger.Debug("migrator has been configured")
+	return migrator, nil
+}
+
+// HandleShutdown handle graceful shutdown for db migration
+func (p *Postgres) HandleShutdown(ctx context.Context) error {
+	if p.m != nil {
+		p.logger.Info("Gracefully stopping migration process")
+		p.m.GracefulStop <- true
+		select {
+		case <-ctx.Done():
+			p.logger.Warn("Migration shutdown timed out")
+			return ctx.Err()
+		case <-p.m.GracefulStop:
+			p.logger.Info("Migration process stopped gracefully")
+		}
+	}
+	return nil
 }
