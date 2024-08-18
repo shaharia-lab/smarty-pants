@@ -5,7 +5,6 @@ import (
 	"database/sql"
 
 	"github.com/google/uuid"
-	"github.com/shaharia-lab/smarty-pants/backend/internal/storage/migration"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/types"
 )
 
@@ -19,7 +18,6 @@ type DatasourceConfig struct {
 }
 
 type Storage interface {
-	migration.Migrator
 	HealthCheck() error
 
 	Store(ctx context.Context, document types.Document) error
@@ -65,4 +63,7 @@ type Storage interface {
 	GetConversation(ctx context.Context, interactionUUID uuid.UUID) ([]types.Conversation, error)
 
 	GetAnalyticsOverview(ctx context.Context) (types.AnalyticsOverview, error)
+
+	RunMigration() error
+	HandleShutdown(ctx context.Context) error
 }

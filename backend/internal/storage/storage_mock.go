@@ -4,11 +4,9 @@ package storage
 
 import (
 	context "context"
-
-	migration "github.com/shaharia-lab/smarty-pants/backend/internal/storage/migration"
-	mock "github.com/stretchr/testify/mock"
-
 	sql "database/sql"
+
+	mock "github.com/stretchr/testify/mock"
 
 	types "github.com/shaharia-lab/smarty-pants/backend/internal/types"
 
@@ -177,24 +175,6 @@ func (_m *StorageMock) DeleteLLMProvider(ctx context.Context, _a1 uuid.UUID) err
 	var r0 error
 	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID) error); ok {
 		r0 = rf(ctx, _a1)
-	} else {
-		r0 = ret.Error(0)
-	}
-
-	return r0
-}
-
-// EnsureMigrationTableExists provides a mock function with given fields:
-func (_m *StorageMock) EnsureMigrationTableExists() error {
-	ret := _m.Called()
-
-	if len(ret) == 0 {
-		panic("no return value specified for EnsureMigrationTableExists")
-	}
-
-	var r0 error
-	if rf, ok := ret.Get(0).(func() error); ok {
-		r0 = rf()
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -408,34 +388,6 @@ func (_m *StorageMock) GetConversation(ctx context.Context, interactionUUID uuid
 	return r0, r1
 }
 
-// GetCurrentVersion provides a mock function with given fields:
-func (_m *StorageMock) GetCurrentVersion() (string, error) {
-	ret := _m.Called()
-
-	if len(ret) == 0 {
-		panic("no return value specified for GetCurrentVersion")
-	}
-
-	var r0 string
-	var r1 error
-	if rf, ok := ret.Get(0).(func() (string, error)); ok {
-		return rf()
-	}
-	if rf, ok := ret.Get(0).(func() string); ok {
-		r0 = rf()
-	} else {
-		r0 = ret.Get(0).(string)
-	}
-
-	if rf, ok := ret.Get(1).(func() error); ok {
-		r1 = rf()
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
 // GetDatasource provides a mock function with given fields: ctx, _a1
 func (_m *StorageMock) GetDatasource(ctx context.Context, _a1 uuid.UUID) (types.DatasourceConfig, error) {
 	ret := _m.Called(ctx, _a1)
@@ -610,6 +562,24 @@ func (_m *StorageMock) GetSettings(ctx context.Context) (types.Settings, error) 
 	return r0, r1
 }
 
+// HandleShutdown provides a mock function with given fields: ctx
+func (_m *StorageMock) HandleShutdown(ctx context.Context) error {
+	ret := _m.Called(ctx)
+
+	if len(ret) == 0 {
+		panic("no return value specified for HandleShutdown")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context) error); ok {
+		r0 = rf(ctx)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // HealthCheck provides a mock function with given fields:
 func (_m *StorageMock) HealthCheck() error {
 	ret := _m.Called()
@@ -621,24 +591,6 @@ func (_m *StorageMock) HealthCheck() error {
 	var r0 error
 	if rf, ok := ret.Get(0).(func() error); ok {
 		r0 = rf()
-	} else {
-		r0 = ret.Error(0)
-	}
-
-	return r0
-}
-
-// Migrate provides a mock function with given fields: migrations
-func (_m *StorageMock) Migrate(migrations []migration.Migration) error {
-	ret := _m.Called(migrations)
-
-	if len(ret) == 0 {
-		panic("no return value specified for Migrate")
-	}
-
-	var r0 error
-	if rf, ok := ret.Get(0).(func([]migration.Migration) error); ok {
-		r0 = rf(migrations)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -664,17 +616,17 @@ func (_m *StorageMock) RecordAIOpsUsage(ctx context.Context, usage types.AIUsage
 	return r0
 }
 
-// Rollback provides a mock function with given fields: migrations
-func (_m *StorageMock) Rollback(migrations []migration.Migration) error {
-	ret := _m.Called(migrations)
+// RunMigration provides a mock function with given fields:
+func (_m *StorageMock) RunMigration() error {
+	ret := _m.Called()
 
 	if len(ret) == 0 {
-		panic("no return value specified for Rollback")
+		panic("no return value specified for RunMigration")
 	}
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func([]migration.Migration) error); ok {
-		r0 = rf(migrations)
+	if rf, ok := ret.Get(0).(func() error); ok {
+		r0 = rf()
 	} else {
 		r0 = ret.Error(0)
 	}

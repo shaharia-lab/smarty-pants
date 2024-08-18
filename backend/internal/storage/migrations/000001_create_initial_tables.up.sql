@@ -1,4 +1,3 @@
--- Enable pgvector extension
 CREATE EXTENSION IF NOT EXISTS vector;
 
 CREATE TABLE IF NOT EXISTS datasources (
@@ -58,7 +57,6 @@ CREATE TABLE IF NOT EXISTS metadata (
     value TEXT NOT NULL
 );
 
-
 CREATE TABLE IF NOT EXISTS llm_providers (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name VARCHAR(255) NOT NULL,
@@ -105,8 +103,8 @@ CREATE TABLE IF NOT EXISTS conversations (
 );
 
 -- Indexes for efficient searching
-CREATE UNIQUE INDEX idx_embedding_providers_name ON embedding_providers (name);
-CREATE UNIQUE INDEX idx_llm_providers_name ON llm_providers (name);
-CREATE INDEX idx_documents_title ON documents (title);
-CREATE INDEX idx_documents_body ON documents (body);
-CREATE INDEX idx_metadata_key_value ON metadata (key, value);
+CREATE INDEX IF NOT EXISTS idx_embedding_providers_name ON embedding_providers (name);
+CREATE INDEX IF NOT EXISTS idx_llm_providers_name ON llm_providers (name);
+CREATE INDEX IF NOT EXISTS idx_documents_title ON documents (title);
+CREATE INDEX IF NOT EXISTS idx_documents_body ON documents (body);
+CREATE INDEX IF NOT EXISTS idx_metadata_key_value ON metadata (key, value);

@@ -4,25 +4,30 @@ package storage
 import (
 	"context"
 	"database/sql"
+	"embed"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"net/url"
-	"sort"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/golang-migrate/migrate/v4"
+	"github.com/golang-migrate/migrate/v4/database/postgres"
+	"github.com/golang-migrate/migrate/v4/source/iofs"
 	"github.com/google/uuid"
 	_ "github.com/lib/pq" // Import the Postgres driver
 	"github.com/pgvector/pgvector-go"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/logger"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/observability"
-	"github.com/shaharia-lab/smarty-pants/backend/internal/storage/migration"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/types"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/util"
 	"github.com/sirupsen/logrus"
 )
+
+//go:embed migrations/*.sql
+var migrationsFS embed.FS
 
 const (
 	failedToBeginTxnErrFmt      = "failed to begin transaction: %w"
@@ -61,8 +66,9 @@ func NewPostgresDB(cfg PostgresConfig) (*sql.DB, error) {
 
 // Postgres is a storage system that uses a Postgres database
 type Postgres struct {
-	db     *sql.DB
-	logger *logrus.Logger
+	db       *sql.DB
+	logger   *logrus.Logger
+	migrator *migrate.Migrate
 }
 
 // NewPostgres creates a new Postgres storage system
@@ -1680,118 +1686,99 @@ func (p *Postgres) GetAnalyticsOverview(ctx context.Context) (types.AnalyticsOve
 	return overview, nil
 }
 
-// Migrate implements the Migrate method for PostgresMigrator
-func (p *Postgres) Migrate(migrations []migration.Migration) error {
-	currentVersion, err := p.GetCurrentVersion()
-	if err != nil {
-		return err
+// RunMigration run database migration
+func (p *Postgres) RunMigration() error {
+	p.logger.Info("Preparing to run migration")
+
+	if p.migrator == nil {
+		p.logger.Debug("creating new database migrator")
+		migrator, err := p.newMigrator()
+		if err != nil {
+			return fmt.Errorf("failed to create database migrator")
+		}
+
+		p.logger.Debug("migrator has been configured")
+		p.migrator = migrator
 	}
 
-	migrationsToRun := p.getMigrationsToRun(currentVersion, migrations)
-	if len(migrationsToRun) == 0 {
+	p.logger.Debug("Running migration.up")
+	err := p.migrator.Up()
+
+	if err != nil && errors.Is(err, migrate.ErrNoChange) {
+		p.logger.Info("No new changes found for migration")
 		return nil
 	}
 
-	for _, m := range migrationsToRun {
-		tx, err := p.db.Begin()
-		if err != nil {
-			return err
-		}
-
-		err = m.Up(tx)
-		if err != nil {
-			tx.Rollback()
-			return err
-		}
-
-		_, err = tx.Exec("UPDATE schema_migrations SET version = $1, updated_at = $2", m.Version, time.Now())
-		if err != nil {
-			tx.Rollback()
-			return err
-		}
-
-		err = tx.Commit()
-		if err != nil {
-			return err
-		}
+	if err != nil {
+		errMsg := "failed to run migrations"
+		p.logger.WithError(err).Error(errMsg)
+		return fmt.Errorf("%s: %w", errMsg, err)
 	}
 
+	p.logger.Info("database migration has been completed successfully")
 	return nil
 }
 
-// Rollback implements the Rollback method for PostgresMigrator
-func (p *Postgres) Rollback(migrations []migration.Migration) error {
-	currentVersion, err := p.GetCurrentVersion()
+func (p *Postgres) newMigrator() (*migrate.Migrate, error) {
+	p.logger.Debug("creating driver instance for migration")
+	driver, err := postgres.WithInstance(p.db, &postgres.Config{})
 	if err != nil {
-		return err
+		errMsg := "failed to create driver instance"
+		p.logger.WithError(err).Error(errMsg)
+		return nil, fmt.Errorf("%s: %w", errMsg, err)
 	}
 
-	if currentVersion == "" {
-		return errors.New("no migrations to rollback")
+	p.logger.Debug("preparing source for migration using in-memory file systems")
+	source, err := iofs.New(migrationsFS, "migrations")
+	if err != nil {
+		errMsg := "failed to create source instance"
+		p.logger.WithError(err).Error(errMsg)
+		return nil, fmt.Errorf("%s: %w", errMsg, err)
 	}
 
-	var migrationToRollback migration.Migration
-	for i := len(migrations) - 1; i >= 0; i-- {
-		if migrations[i].Version == currentVersion {
-			migrationToRollback = migrations[i]
-			break
+	p.logger.Debug("configuring migrator instance")
+	migrator, err := migrate.NewWithInstance("iofs", source, "postgres", driver)
+	if err != nil {
+		errMsg := "failed to create migrator instance"
+		p.logger.WithError(err).Error(errMsg)
+		return nil, fmt.Errorf("%s: %w", errMsg, err)
+	}
+
+	var verboseLogging bool
+	if p.logger.Level == logrus.DebugLevel {
+		verboseLogging = true
+	}
+
+	migrator.Log = logger.NewMigrationLogger(p.logger, verboseLogging)
+
+	p.logger.Debug("getting current migration status")
+	version, isDirty, err := migrator.Version()
+	if err != nil && errors.Is(err, migrate.ErrNilVersion) {
+		p.logger.Debug("no migration exists. this will be the first migration")
+		return migrator, nil
+	}
+
+	if err != nil {
+		errMsg := "failed to get current migration version"
+		p.logger.WithError(err).Error(errMsg)
+		return nil, fmt.Errorf("%s : %w", errMsg, err)
+	}
+	p.logger.WithFields(logrus.Fields{"migration_version": version, "migration_is_dirty": isDirty, "migration_verbose_logging": verboseLogging}).Debug("current migration status")
+	return migrator, nil
+}
+
+// HandleShutdown handle graceful shutdown for db migration
+func (p *Postgres) HandleShutdown(ctx context.Context) error {
+	if p.migrator != nil {
+		p.logger.Info("Gracefully stopping migration process")
+		p.migrator.GracefulStop <- true
+		select {
+		case <-ctx.Done():
+			p.logger.Warn("Migration shutdown timed out")
+			return ctx.Err()
+		case <-p.migrator.GracefulStop:
+			p.logger.Info("Migration process stopped gracefully")
 		}
 	}
-
-	tx, err := p.db.Begin()
-	if err != nil {
-		return err
-	}
-
-	err = migrationToRollback.Down(tx)
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	previousVersion := ""
-	if len(migrations) > 1 {
-		previousVersion = migrations[len(migrations)-2].Version
-	}
-
-	_, err = tx.Exec("UPDATE schema_migrations SET version = $1, updated_at = $2", previousVersion, time.Now())
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	return tx.Commit()
-}
-
-// GetCurrentVersion implements the GetCurrentVersion method for PostgresMigrator
-func (p *Postgres) GetCurrentVersion() (string, error) {
-	var version string
-	err := p.db.QueryRow("SELECT version FROM schema_migrations").Scan(&version)
-	if errors.Is(err, sql.ErrNoRows) {
-		return "", nil
-	}
-	return version, err
-}
-
-func (p *Postgres) getMigrationsToRun(currentVersion string, migrations []migration.Migration) []migration.Migration {
-	var migrationsToRun []migration.Migration
-	for _, mgn := range migrations {
-		if util.CompareVersions(mgn.Version, currentVersion) > 0 {
-			migrationsToRun = append(migrationsToRun, mgn)
-		}
-	}
-	sort.Slice(migrationsToRun, func(i, j int) bool {
-		return util.CompareVersions(migrationsToRun[i].Version, migrationsToRun[j].Version) < 0
-	})
-	return migrationsToRun
-}
-
-func (p *Postgres) EnsureMigrationTableExists() error {
-	_, err := p.db.Exec(`
-		CREATE TABLE IF NOT EXISTS schema_migrations (
-			version TEXT PRIMARY KEY,
-			updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-		)
-	`)
-	return err
+	return nil
 }

@@ -18,7 +18,6 @@ import (
 	"github.com/shaharia-lab/smarty-pants/backend/internal/search"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/shutdown"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/storage"
-	"github.com/shaharia-lab/smarty-pants/backend/internal/storage/migration"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/types"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -55,10 +54,9 @@ func runStart(_ *cobra.Command, _ []string) error {
 		return err
 	}
 
-	migrationManager := migration.NewMigrationManager(st, migration.PostgreSQLMigrations)
-	if err := migrationManager.RunMigrations(); err != nil {
-		l.WithError(err).Error("Failed to run migration")
-		return fmt.Errorf("failed to run migration: %w", err)
+	err = st.RunMigration()
+	if err != nil {
+		return err
 	}
 
 	_, logging, err := setupAppSettings(ctx, st, l)
@@ -80,6 +78,7 @@ func runStart(_ *cobra.Command, _ []string) error {
 
 	apiServer := setupAPIServer(cfg, logging, st)
 	shutdownManager.RegisterShutdownFn(apiServer.Shutdown)
+	shutdownManager.RegisterShutdownFn(st.HandleShutdown)
 
 	go shutdownManager.Start(ctx)
 	go startAPIServer(cfg, apiServer, logging)
