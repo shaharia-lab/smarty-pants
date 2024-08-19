@@ -3,6 +3,7 @@ package config
 
 import (
 	"github.com/kelseyhightower/envconfig"
+	"github.com/shaharia-lab/smarty-pants/backend/internal/jwt"
 )
 
 // Config contains configuration options for the application
@@ -47,6 +48,8 @@ type Config struct {
 	GoogleOAuthClientID     string `envconfig:"GOOGLE_OAUTH_CLIENT_ID" required:"true"`
 	GoogleOAuthClientSecret string `envconfig:"GOOGLE_OAUTH_CLIENT_SECRET"`
 	GoogleOAuthRedirectURL  string `envconfig:"GOOGLE_OAUTH_REDIRECT_URL" default:"http://localhost:8080/auth/google/callback"`
+
+	JWTConfig jwt.Config
 }
 
 // Load loads the configuration options from the environment
