@@ -1802,3 +1802,68 @@ func (p *Postgres) UpdateKeyPair(privateKey, publicKey []byte) error {
 	_, err := p.db.Exec(query, privateKey, publicKey)
 	return err
 }
+
+func (p *Postgres) CreateUser(ctx context.Context, user *types.User) error {
+	user.UUID = uuid.New().String()
+	user.CreatedAt = time.Now().UTC()
+	user.UpdatedAt = time.Now().UTC()
+
+	query := `
+        INSERT INTO users (uuid, name, email, status, created_at, updated_at)
+        VALUES ($1, $2, $3, $4, $5, $6)
+    `
+
+	_, err := p.db.ExecContext(ctx, query, user.UUID, user.Name, user.Email, user.Status, user.CreatedAt, user.UpdatedAt)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (p *Postgres) GetUser(ctx context.Context, uuid string) (*types.User, error) {
+	query := `SELECT uuid, name, email, status, created_at, updated_at FROM users WHERE uuid = $1`
+
+	var user types.User
+	err := p.db.QueryRowContext(ctx, query, uuid).Scan(
+		&user.UUID,
+		&user.Name,
+		&user.Email,
+		&user.Status,
+		&user.CreatedAt,
+		&user.UpdatedAt,
+	)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, errors.New("user not found")
+		}
+		return nil, err
+	}
+
+	return &user, nil
+}
+
+func (p *Postgres) UpdateUserStatus(ctx context.Context, uuid string, status string) error {
+	query := `
+        UPDATE users
+        SET status = $1, updated_at = $2
+        WHERE uuid = $3
+    `
+
+	result, err := p.db.ExecContext(ctx, query, status, time.Now().UTC(), uuid)
+	if err != nil {
+		return err
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rowsAffected == 0 {
+		return errors.New("user not found")
+	}
+
+	return nil
+}

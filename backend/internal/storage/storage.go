@@ -5,6 +5,7 @@ import (
 	"database/sql"
 
 	"github.com/google/uuid"
+	"github.com/shaharia-lab/smarty-pants/backend/internal/auth"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/types"
 )
 
@@ -69,4 +70,8 @@ type Storage interface {
 
 	GetKeyPair() (privateKey, publicKey []byte, err error)
 	UpdateKeyPair(privateKey, publicKey []byte) error
+
+	CreateUser(ctx context.Context, user *auth.User) error
+	GetUser(ctx context.Context, uuid string) (*auth.User, error)
+	UpdateUserStatus(ctx context.Context, uuid string, status string) error
 }
