@@ -5,8 +5,6 @@ import (
 	"database/sql"
 
 	"github.com/google/uuid"
-	"github.com/shaharia-lab/smarty-pants/backend/internal/auth"
-	"github.com/shaharia-lab/smarty-pants/backend/internal/auth/jwt"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/types"
 )
 
@@ -20,9 +18,6 @@ type DatasourceConfig struct {
 }
 
 type Storage interface {
-	jwt.Storage
-	auth.Storage
-
 	HealthCheck() error
 
 	Store(ctx context.Context, document types.Document) error
