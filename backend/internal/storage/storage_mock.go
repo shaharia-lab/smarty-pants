@@ -128,6 +128,24 @@ func (_m *StorageMock) CreateLLMProvider(ctx context.Context, provider types.LLM
 	return r0
 }
 
+// CreateUser provides a mock function with given fields: ctx, user
+func (_m *StorageMock) CreateUser(ctx context.Context, user *types.User) error {
+	ret := _m.Called(ctx, user)
+
+	if len(ret) == 0 {
+		panic("no return value specified for CreateUser")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, *types.User) error); ok {
+		r0 = rf(ctx, user)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // DeleteDatasource provides a mock function with given fields: ctx, _a1
 func (_m *StorageMock) DeleteDatasource(ctx context.Context, _a1 uuid.UUID) error {
 	ret := _m.Called(ctx, _a1)
@@ -504,6 +522,45 @@ func (_m *StorageMock) GetInteraction(ctx context.Context, _a1 uuid.UUID) (types
 	return r0, r1
 }
 
+// GetKeyPair provides a mock function with given fields:
+func (_m *StorageMock) GetKeyPair() ([]byte, []byte, error) {
+	ret := _m.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetKeyPair")
+	}
+
+	var r0 []byte
+	var r1 []byte
+	var r2 error
+	if rf, ok := ret.Get(0).(func() ([]byte, []byte, error)); ok {
+		return rf()
+	}
+	if rf, ok := ret.Get(0).(func() []byte); ok {
+		r0 = rf()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]byte)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func() []byte); ok {
+		r1 = rf()
+	} else {
+		if ret.Get(1) != nil {
+			r1 = ret.Get(1).([]byte)
+		}
+	}
+
+	if rf, ok := ret.Get(2).(func() error); ok {
+		r2 = rf()
+	} else {
+		r2 = ret.Error(2)
+	}
+
+	return r0, r1, r2
+}
+
 // GetLLMProvider provides a mock function with given fields: ctx, _a1
 func (_m *StorageMock) GetLLMProvider(ctx context.Context, _a1 uuid.UUID) (*types.LLMProviderConfig, error) {
 	ret := _m.Called(ctx, _a1)
@@ -555,6 +612,36 @@ func (_m *StorageMock) GetSettings(ctx context.Context) (types.Settings, error) 
 
 	if rf, ok := ret.Get(1).(func(context.Context) error); ok {
 		r1 = rf(ctx)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// GetUser provides a mock function with given fields: ctx, _a1
+func (_m *StorageMock) GetUser(ctx context.Context, _a1 string) (*types.User, error) {
+	ret := _m.Called(ctx, _a1)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetUser")
+	}
+
+	var r0 *types.User
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, string) (*types.User, error)); ok {
+		return rf(ctx, _a1)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, string) *types.User); ok {
+		r0 = rf(ctx, _a1)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*types.User)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = rf(ctx, _a1)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -844,6 +931,24 @@ func (_m *StorageMock) UpdateEmbeddingProvider(ctx context.Context, provider typ
 	return r0
 }
 
+// UpdateKeyPair provides a mock function with given fields: privateKey, publicKey
+func (_m *StorageMock) UpdateKeyPair(privateKey []byte, publicKey []byte) error {
+	ret := _m.Called(privateKey, publicKey)
+
+	if len(ret) == 0 {
+		panic("no return value specified for UpdateKeyPair")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func([]byte, []byte) error); ok {
+		r0 = rf(privateKey, publicKey)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // UpdateLLMProvider provides a mock function with given fields: ctx, provider
 func (_m *StorageMock) UpdateLLMProvider(ctx context.Context, provider types.LLMProviderConfig) error {
 	ret := _m.Called(ctx, provider)
@@ -880,9 +985,27 @@ func (_m *StorageMock) UpdateSettings(ctx context.Context, settings types.Settin
 	return r0
 }
 
+// UpdateUserStatus provides a mock function with given fields: ctx, _a1, status
+func (_m *StorageMock) UpdateUserStatus(ctx context.Context, _a1 string, status string) error {
+	ret := _m.Called(ctx, _a1, status)
+
+	if len(ret) == 0 {
+		panic("no return value specified for UpdateUserStatus")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) error); ok {
+		r0 = rf(ctx, _a1, status)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // NewStorage creates a new instance of StorageMock. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
 // The first argument is typically a *testing.T value.
-func NewStorage(t interface {
+func NewStorageMock(t interface {
 	mock.TestingT
 	Cleanup(func())
 }) *StorageMock {

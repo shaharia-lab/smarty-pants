@@ -66,4 +66,11 @@ type Storage interface {
 
 	RunMigration() error
 	HandleShutdown(ctx context.Context) error
+
+	GetKeyPair() (privateKey, publicKey []byte, err error)
+	UpdateKeyPair(privateKey, publicKey []byte) error
+
+	CreateUser(ctx context.Context, user *types.User) error
+	GetUser(ctx context.Context, uuid string) (*types.User, error)
+	UpdateUserStatus(ctx context.Context, uuid string, status string) error
 }
