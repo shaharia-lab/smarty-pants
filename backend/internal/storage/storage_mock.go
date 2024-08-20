@@ -504,6 +504,45 @@ func (_m *StorageMock) GetInteraction(ctx context.Context, _a1 uuid.UUID) (types
 	return r0, r1
 }
 
+// GetKeyPair provides a mock function with given fields:
+func (_m *StorageMock) GetKeyPair() ([]byte, []byte, error) {
+	ret := _m.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetKeyPair")
+	}
+
+	var r0 []byte
+	var r1 []byte
+	var r2 error
+	if rf, ok := ret.Get(0).(func() ([]byte, []byte, error)); ok {
+		return rf()
+	}
+	if rf, ok := ret.Get(0).(func() []byte); ok {
+		r0 = rf()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]byte)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func() []byte); ok {
+		r1 = rf()
+	} else {
+		if ret.Get(1) != nil {
+			r1 = ret.Get(1).([]byte)
+		}
+	}
+
+	if rf, ok := ret.Get(2).(func() error); ok {
+		r2 = rf()
+	} else {
+		r2 = ret.Error(2)
+	}
+
+	return r0, r1, r2
+}
+
 // GetLLMProvider provides a mock function with given fields: ctx, _a1
 func (_m *StorageMock) GetLLMProvider(ctx context.Context, _a1 uuid.UUID) (*types.LLMProviderConfig, error) {
 	ret := _m.Called(ctx, _a1)
@@ -837,6 +876,24 @@ func (_m *StorageMock) UpdateEmbeddingProvider(ctx context.Context, provider typ
 	var r0 error
 	if rf, ok := ret.Get(0).(func(context.Context, types.EmbeddingProviderConfig) error); ok {
 		r0 = rf(ctx, provider)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// UpdateKeyPair provides a mock function with given fields: privateKey, publicKey
+func (_m *StorageMock) UpdateKeyPair(privateKey []byte, publicKey []byte) error {
+	ret := _m.Called(privateKey, publicKey)
+
+	if len(ret) == 0 {
+		panic("no return value specified for UpdateKeyPair")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func([]byte, []byte) error); ok {
+		r0 = rf(privateKey, publicKey)
 	} else {
 		r0 = ret.Error(0)
 	}

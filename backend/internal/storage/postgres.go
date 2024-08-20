@@ -1782,3 +1782,23 @@ func (p *Postgres) HandleShutdown(ctx context.Context) error {
 	}
 	return nil
 }
+
+func (p *Postgres) GetKeyPair() (privateKey, publicKey []byte, err error) {
+	query := "SELECT private_key, public_key FROM key_pairs LIMIT 1"
+	err = p.db.QueryRow(query).Scan(&privateKey, &publicKey)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, nil, errors.New("no key pair found")
+	}
+	return
+}
+
+func (p *Postgres) UpdateKeyPair(privateKey, publicKey []byte) error {
+	query := `
+        INSERT INTO key_pairs (private_key, public_key) 
+        VALUES ($1, $2) 
+        ON CONFLICT (id) DO UPDATE 
+        SET private_key = $1, public_key = $2
+    `
+	_, err := p.db.Exec(query, privateKey, publicKey)
+	return err
+}
