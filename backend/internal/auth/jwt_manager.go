@@ -2,6 +2,7 @@
 package auth
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"time"
@@ -17,25 +18,39 @@ type JWTClaims struct {
 
 // JWTManager handles JWT operations
 type JWTManager struct {
-	keyManager *KeyManager
-	logger     *logrus.Logger
+	keyManager  *KeyManager
+	userManager *UserManager
+	logger      *logrus.Logger
 }
 
-// NewJWTManager creates a new JWTManager with the given KeyManager and logger
-func NewJWTManager(keyManager *KeyManager, logger *logrus.Logger) *JWTManager {
+// NewJWTManager creates a new JWTManager with the given KeyManager, UserManager and logger
+func NewJWTManager(keyManager *KeyManager, userManager *UserManager, logger *logrus.Logger) *JWTManager {
 	return &JWTManager{
-		keyManager: keyManager,
-		logger:     logger,
+		keyManager:  keyManager,
+		userManager: userManager,
+		logger:      logger,
 	}
 }
 
-// IssueToken creates and signs a new JWT token
-func (m *JWTManager) IssueToken(subject string, audience []string, expiration time.Duration) (string, error) {
+// IssueTokenForUser creates and signs a new JWT token for a user
+func (m *JWTManager) IssueTokenForUser(ctx context.Context, userUUID string, audience []string, expiration time.Duration) (string, error) {
 	m.logger.WithFields(logrus.Fields{
-		"subject":    subject,
+		"userUUID":   userUUID,
 		"audience":   audience,
 		"expiration": expiration,
-	}).Debug("Attempting to issue new token")
+	}).Debug("Attempting to issue new token for user")
+
+	// Verify user exists and is active
+	user, err := m.userManager.GetUser(ctx, userUUID)
+	if err != nil {
+		m.logger.WithError(err).Error("Failed to get user")
+		return "", fmt.Errorf("failed to get user: %w", err)
+	}
+
+	if user.Status != "active" {
+		m.logger.WithField("userUUID", userUUID).Error("User is not active")
+		return "", errors.New("user is not active")
+	}
 
 	privateKey, _, err := m.keyManager.GetKeyPair()
 	if err != nil {
@@ -46,12 +61,12 @@ func (m *JWTManager) IssueToken(subject string, audience []string, expiration ti
 	currentTime := time.Now().UTC()
 
 	claims := JWTClaims{
-		jwt.RegisteredClaims{
+		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(currentTime.Add(expiration)),
 			IssuedAt:  jwt.NewNumericDate(currentTime),
 			NotBefore: jwt.NewNumericDate(currentTime),
 			Issuer:    "smarty-pants",
-			Subject:   subject,
+			Subject:   user.UUID,
 			ID:        fmt.Sprintf("%d", currentTime.Unix()),
 			Audience:  audience,
 		},
@@ -64,7 +79,10 @@ func (m *JWTManager) IssueToken(subject string, audience []string, expiration ti
 		return "", fmt.Errorf("failed to sign token: %w", err)
 	}
 
-	m.logger.WithField("tokenID", claims.ID).Info("Token issued successfully")
+	m.logger.WithFields(logrus.Fields{
+		"tokenID":  claims.ID,
+		"userUUID": user.UUID,
+	}).Info("Token issued successfully for user")
 	m.logger.WithFields(logrus.Fields{
 		"tokenID":   claims.ID,
 		"expiresAt": claims.ExpiresAt,

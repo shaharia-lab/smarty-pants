@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"context"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
@@ -11,24 +12,28 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/logger"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/storage"
+	"github.com/shaharia-lab/smarty-pants/backend/internal/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
 
 func TestNewJWTManager(t *testing.T) {
 	mockStorage := new(storage.StorageMock)
+	mockUserManager := NewUserManager(mockStorage)
 	l := logger.NoOpsLogger()
 	keyManager := NewKeyManager(mockStorage, l)
 
-	jwtManager := NewJWTManager(keyManager, l)
+	jwtManager := NewJWTManager(keyManager, mockUserManager, l)
 
 	assert.NotNil(t, jwtManager)
 	assert.Equal(t, keyManager, jwtManager.keyManager)
+	assert.Equal(t, mockUserManager, jwtManager.userManager)
 	assert.Equal(t, l, jwtManager.logger)
 }
 
-func TestIssueToken(t *testing.T) {
+func TestIssueTokenForUser(t *testing.T) {
 	mockStorage := new(storage.StorageMock)
+	mockUserManager := NewUserManager(mockStorage)
 	l := logger.NoOpsLogger()
 	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
 	assert.NoError(t, err)
@@ -40,48 +45,59 @@ func TestIssueToken(t *testing.T) {
 	mockStorage.On("GetKeyPair").Return(privateKeyBytes, publicKeyBytes, nil)
 
 	keyManager := NewKeyManager(mockStorage, l)
-	jwtManager := NewJWTManager(keyManager, l)
+	jwtManager := NewJWTManager(keyManager, mockUserManager, l)
 
 	tests := []struct {
 		name        string
-		subject     string
+		userUUID    string
 		audience    []string
 		expiration  time.Duration
+		mockUser    *types.User
+		mockError   error
 		expectError bool
 	}{
 		{
-			name:        "Valid token",
-			subject:     "user123",
-			audience:    []string{"web", "mobile"},
-			expiration:  time.Hour,
+			name:       "Valid active user",
+			userUUID:   "user123",
+			audience:   []string{"web", "mobile"},
+			expiration: time.Hour,
+			mockUser: &types.User{
+				UUID:   "user123",
+				Email:  "user@example.com",
+				Status: "active",
+			},
+			mockError:   nil,
 			expectError: false,
 		},
 		{
-			name:        "Empty subject",
-			subject:     "",
+			name:       "Inactive user",
+			userUUID:   "user456",
+			audience:   []string{"web"},
+			expiration: time.Hour,
+			mockUser: &types.User{
+				UUID:   "user456",
+				Email:  "inactive@example.com",
+				Status: "inactive",
+			},
+			mockError:   nil,
+			expectError: true,
+		},
+		{
+			name:        "Non-existent user",
+			userUUID:    "user789",
 			audience:    []string{"web"},
 			expiration:  time.Hour,
-			expectError: false,
-		},
-		{
-			name:        "Empty audience",
-			subject:     "user123",
-			audience:    []string{},
-			expiration:  time.Hour,
-			expectError: false,
-		},
-		{
-			name:        "Zero expiration",
-			subject:     "user123",
-			audience:    []string{"web"},
-			expiration:  time.Second, // Changed from 0 to 1 second
-			expectError: false,
+			mockUser:    nil,
+			mockError:   errors.New("user not found"),
+			expectError: true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			token, err := jwtManager.IssueToken(tt.subject, tt.audience, tt.expiration)
+			mockStorage.On("GetUser", mock.Anything, tt.userUUID).Return(tt.mockUser, tt.mockError).Once()
+
+			token, err := jwtManager.IssueTokenForUser(context.Background(), tt.userUUID, tt.audience, tt.expiration)
 
 			if tt.expectError {
 				assert.Error(t, err)
@@ -100,23 +116,20 @@ func TestIssueToken(t *testing.T) {
 
 				claims, ok := parsedToken.Claims.(*JWTClaims)
 				assert.True(t, ok)
-				assert.Equal(t, tt.subject, claims.Subject)
-
-				// Compare Audience as strings
+				assert.Equal(t, tt.mockUser.UUID, claims.Subject)
+				assert.Equal(t, tt.userUUID, claims.Subject)
 				assert.ElementsMatch(t, tt.audience, claims.Audience)
-
-				if tt.expiration > 0 {
-					assert.WithinDuration(t, time.Now().Add(tt.expiration), claims.ExpiresAt.Time, 5*time.Second)
-				} else {
-					assert.True(t, claims.ExpiresAt.Time.After(time.Now()), "Token should not be expired")
-				}
+				assert.WithinDuration(t, time.Now().Add(tt.expiration), claims.ExpiresAt.Time, 5*time.Second)
 			}
+
+			mockStorage.AssertExpectations(t)
 		})
 	}
 }
 
 func TestValidateToken(t *testing.T) {
 	mockStorage := new(storage.StorageMock)
+	mockUserManager := NewUserManager(mockStorage)
 	l := logger.NoOpsLogger()
 	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
 	assert.NoError(t, err)
@@ -128,15 +141,22 @@ func TestValidateToken(t *testing.T) {
 	mockStorage.On("GetKeyPair").Return(privateKeyBytes, publicKeyBytes, nil)
 
 	keyManager := NewKeyManager(mockStorage, l)
-	jwtManager := NewJWTManager(keyManager, l)
+	jwtManager := NewJWTManager(keyManager, mockUserManager, l)
 
-	validToken, err := jwtManager.IssueToken("user123", []string{"web"}, time.Hour)
+	validUser := &types.User{
+		UUID:   "user123",
+		Email:  "user@example.com",
+		Status: "active",
+	}
+	mockStorage.On("GetUser", mock.Anything, "user123").Return(validUser, nil)
+
+	validToken, err := jwtManager.IssueTokenForUser(context.Background(), "user123", []string{"web"}, time.Hour)
 	assert.NoError(t, err)
 
 	expiredClaims := JWTClaims{
-		jwt.RegisteredClaims{
+		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(-time.Hour)),
-			Subject:   "user123",
+			Subject:   "user@example.com",
 		},
 	}
 	expiredToken := jwt.NewWithClaims(jwt.SigningMethodRS256, expiredClaims)
@@ -149,6 +169,7 @@ func TestValidateToken(t *testing.T) {
 		expectError      bool
 		expectedSubject  string
 		expectedAudience []string
+		expectedUserUUID string
 	}{
 		{
 			name:             "Valid token",
@@ -156,6 +177,7 @@ func TestValidateToken(t *testing.T) {
 			expectError:      false,
 			expectedSubject:  "user123",
 			expectedAudience: []string{"web"},
+			expectedUserUUID: "user123",
 		},
 		{
 			name:        "Expired token",
@@ -186,6 +208,7 @@ func TestValidateToken(t *testing.T) {
 				assert.NotNil(t, claims)
 				assert.Equal(t, tt.expectedSubject, claims.Subject)
 				assert.ElementsMatch(t, tt.expectedAudience, claims.Audience)
+				assert.Equal(t, tt.expectedUserUUID, claims.Subject)
 			}
 		})
 	}
@@ -193,19 +216,24 @@ func TestValidateToken(t *testing.T) {
 
 func TestJWTManagerWithKeyManagerErrors(t *testing.T) {
 	mockStorage := new(storage.StorageMock)
+	mockUserManager := NewUserManager(mockStorage)
 	l := logger.NoOpsLogger()
 
-	// Mock GetKeyPair to always return an error
 	mockStorage.On("GetKeyPair").Return([]byte(nil), []byte(nil), errors.New("key manager error"))
-
-	// Mock UpdateKeyPair to also return an error
 	mockStorage.On("UpdateKeyPair", mock.Anything, mock.Anything).Return(errors.New("update key pair error"))
 
 	keyManager := NewKeyManager(mockStorage, l)
-	jwtManager := NewJWTManager(keyManager, l)
+	jwtManager := NewJWTManager(keyManager, mockUserManager, l)
 
-	t.Run("IssueToken with KeyManager error", func(t *testing.T) {
-		token, err := jwtManager.IssueToken("user123", []string{"web"}, time.Hour)
+	validUser := &types.User{
+		UUID:   "user123",
+		Email:  "user@example.com",
+		Status: "active",
+	}
+	mockStorage.On("GetUser", mock.Anything, "user123").Return(validUser, nil)
+
+	t.Run("IssueTokenForUser with KeyManager error", func(t *testing.T) {
+		token, err := jwtManager.IssueTokenForUser(context.Background(), "user123", []string{"web"}, time.Hour)
 		assert.Error(t, err)
 		assert.Empty(t, token)
 		assert.Contains(t, err.Error(), "failed to get private key")
@@ -218,6 +246,6 @@ func TestJWTManagerWithKeyManagerErrors(t *testing.T) {
 		assert.Contains(t, err.Error(), "failed to get public key")
 	})
 
-	// Verify that GetKeyPair was called
 	mockStorage.AssertCalled(t, "GetKeyPair")
+	mockStorage.AssertExpectations(t)
 }
