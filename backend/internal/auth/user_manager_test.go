@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -32,6 +33,7 @@ func TestUserManager_handleGetUser(t *testing.T) {
 		Name:      "Test User",
 		Email:     "test@example.com",
 		Status:    types.UserStatusActive,
+		Roles:     []types.UserRole{types.UserRoleUser},
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 	}
@@ -152,12 +154,12 @@ func TestUserManager_ResolveUserFromRequest(t *testing.T) {
 			name: "Valid UUID and user found",
 			setupMock: func(m *storage.StorageMock) {
 				userUUID := uuid.MustParse("11111111-1111-1111-1111-111111111111")
-				user := &types.User{UUID: userUUID, Name: "Test User", Email: "test@example.com", Status: types.UserStatusActive}
+				user := &types.User{UUID: userUUID, Name: "Test User", Email: "test@example.com", Status: types.UserStatusActive, Roles: []types.UserRole{types.UserRoleUser}}
 				m.On("GetUser", mock.Anything, userUUID).Return(user, nil)
 			},
 			inputUUID:      "11111111-1111-1111-1111-111111111111",
 			expectedStatus: http.StatusOK,
-			expectedUser:   &types.User{UUID: uuid.MustParse("11111111-1111-1111-1111-111111111111"), Name: "Test User", Email: "test@example.com", Status: types.UserStatusActive},
+			expectedUser:   &types.User{UUID: uuid.MustParse("11111111-1111-1111-1111-111111111111"), Name: "Test User", Email: "test@example.com", Status: types.UserStatusActive, Roles: []types.UserRole{types.UserRoleUser}},
 		},
 		{
 			name:           "Invalid UUID",
@@ -257,6 +259,7 @@ func TestUserManager_handleListUsers(t *testing.T) {
 		Name:      "John Doe",
 		Email:     "john@example.com",
 		Status:    types.UserStatusActive,
+		Roles:     []types.UserRole{types.UserRoleUser},
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 	}
@@ -265,20 +268,59 @@ func TestUserManager_handleListUsers(t *testing.T) {
 		Name:      "Jane Smith",
 		Email:     "jane@example.com",
 		Status:    types.UserStatusActive,
+		Roles:     []types.UserRole{types.UserRoleUser, types.UserRoleAdmin},
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 	}
 
-	mockPaginatedUsers := types.PaginatedUsers{
-		Users:      []types.User{*user1, *user2},
-		Total:      2,
-		Page:       1,
-		PerPage:    10,
-		TotalPages: 1,
-	}
+	allUsers := []types.User{*user1, *user2}
 
 	mockStorage.On("GetPaginatedUsers", mock.Anything, mock.AnythingOfType("types.UserFilter"), mock.AnythingOfType("types.UserFilterOption")).
-		Return(mockPaginatedUsers, nil)
+		Return(func(ctx context.Context, filter types.UserFilter, option types.UserFilterOption) types.PaginatedUsers {
+			var filteredUsers []types.User
+			for _, user := range allUsers {
+				include := true
+
+				if filter.NameContains != "" && !strings.Contains(strings.ToLower(user.Name), strings.ToLower(filter.NameContains)) {
+					include = false
+				}
+				if include && filter.EmailContains != "" && !strings.Contains(strings.ToLower(user.Email), strings.ToLower(filter.EmailContains)) {
+					include = false
+				}
+				if include && filter.Status != "" && user.Status != filter.Status {
+					include = false
+				}
+				if include && len(filter.Roles) > 0 {
+					hasRole := false
+					for _, userRole := range user.Roles {
+						for _, filterRole := range filter.Roles {
+							if userRole == filterRole {
+								hasRole = true
+								break
+							}
+						}
+						if hasRole {
+							break
+						}
+					}
+					if !hasRole {
+						include = false
+					}
+				}
+
+				if include {
+					filteredUsers = append(filteredUsers, user)
+				}
+			}
+
+			return types.PaginatedUsers{
+				Users:      filteredUsers,
+				Total:      len(filteredUsers),
+				Page:       option.Page,
+				PerPage:    option.PerPage,
+				TotalPages: 1,
+			}
+		}, nil)
 
 	r := chi.NewRouter()
 	r.Route("/api/v1", func(r chi.Router) {
@@ -309,6 +351,24 @@ func TestUserManager_handleListUsers(t *testing.T) {
 			name:           "With filtering",
 			queryParams:    "?name=John&email=example.com&status=active",
 			expectedStatus: http.StatusOK,
+			expectedUsers:  1,
+		},
+		{
+			name:           "With user role filtering",
+			queryParams:    "?roles=user",
+			expectedStatus: http.StatusOK,
+			expectedUsers:  2,
+		},
+		{
+			name:           "With admin role filtering",
+			queryParams:    "?roles=admin",
+			expectedStatus: http.StatusOK,
+			expectedUsers:  1,
+		},
+		{
+			name:           "With multiple role filtering",
+			queryParams:    "?roles=user&roles=admin",
+			expectedStatus: http.StatusOK,
 			expectedUsers:  2,
 		},
 	}
@@ -318,8 +378,13 @@ func TestUserManager_handleListUsers(t *testing.T) {
 			reqURL := fmt.Sprintf("/api/v1/users%s", tc.queryParams)
 			req, _ := http.NewRequest("GET", reqURL, nil)
 
+			t.Logf("Request URL: %s", reqURL)
+
 			rr := httptest.NewRecorder()
 			r.ServeHTTP(rr, req)
+
+			t.Logf("Response Status: %d", rr.Code)
+			t.Logf("Response Body: %s", rr.Body.String())
 
 			assert.Equal(t, tc.expectedStatus, rr.Code)
 
@@ -327,10 +392,15 @@ func TestUserManager_handleListUsers(t *testing.T) {
 			err := json.Unmarshal(rr.Body.Bytes(), &response)
 			assert.NoError(t, err)
 			assert.Equal(t, tc.expectedUsers, len(response.Users))
-			assert.Equal(t, mockPaginatedUsers.Total, response.Total)
-			assert.Equal(t, mockPaginatedUsers.Page, response.Page)
-			assert.Equal(t, mockPaginatedUsers.PerPage, response.PerPage)
-			assert.Equal(t, mockPaginatedUsers.TotalPages, response.TotalPages)
+			assert.Equal(t, tc.expectedUsers, response.Total)
+			assert.Equal(t, 1, response.Page)
+			assert.LessOrEqual(t, response.PerPage, 10)
+			assert.Equal(t, 1, response.TotalPages)
+
+			// Check that all users have the 'user' role
+			for _, user := range response.Users {
+				assert.Contains(t, user.Roles, types.UserRoleUser)
+			}
 		})
 	}
 

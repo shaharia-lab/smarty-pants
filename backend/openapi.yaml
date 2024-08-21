@@ -1184,12 +1184,20 @@ components:
           format: email
         status:
           $ref: '#/components/schemas/UserStatus'
+        roles:
+          type: array
+          items:
+            $ref: '#/components/schemas/UserRole'
         created_at:
           type: string
           format: date-time
         updated_at:
           type: string
           format: date-time
+
+    UserRole:
+      type: string
+      enum: [user, developer, admin]
 
     UserStatus:
       type: string

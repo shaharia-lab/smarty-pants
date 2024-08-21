@@ -17,6 +17,7 @@ import (
 	"github.com/golang-migrate/migrate/v4/database/postgres"
 	"github.com/golang-migrate/migrate/v4/source/iofs"
 	"github.com/google/uuid"
+	"github.com/lib/pq"
 	_ "github.com/lib/pq"
 	"github.com/pgvector/pgvector-go"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/logger"
@@ -1809,36 +1810,52 @@ func (p *Postgres) CreateUser(ctx context.Context, user *types.User) error {
 	user.UpdatedAt = time.Now().UTC()
 
 	query := `
-        INSERT INTO users (uuid, name, email, status, created_at, updated_at)
-        VALUES ($1, $2, $3, $4, $5, $6)
+        INSERT INTO users (uuid, name, email, status, roles, created_at, updated_at)
+        VALUES ($1, $2, $3, $4, $5, $6, $7)
     `
 
-	_, err := p.db.ExecContext(ctx, query, user.UUID, user.Name, user.Email, user.Status, user.CreatedAt, user.UpdatedAt)
+	_, err := p.db.ExecContext(ctx, query,
+		user.UUID,
+		user.Name,
+		user.Email,
+		user.Status,
+		pq.Array(user.Roles),
+		user.CreatedAt,
+		user.UpdatedAt)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to create user: %w", err)
 	}
 
 	return nil
 }
 
 func (p *Postgres) GetUser(ctx context.Context, uuid uuid.UUID) (*types.User, error) {
-	query := `SELECT uuid, name, email, status, created_at, updated_at FROM users WHERE uuid = $1`
-
 	var user types.User
-	err := p.db.QueryRowContext(ctx, query, uuid).Scan(
+	var roleStrings []string
+
+	err := p.db.QueryRowContext(ctx, `
+		SELECT uuid, name, email, status, roles, created_at, updated_at 
+		FROM users 
+		WHERE uuid = $1
+	`, uuid).Scan(
 		&user.UUID,
 		&user.Name,
 		&user.Email,
 		&user.Status,
+		pq.Array(&roleStrings),
 		&user.CreatedAt,
 		&user.UpdatedAt,
 	)
-
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, types.UserNotFoundError
 		}
-		return nil, err
+		return nil, fmt.Errorf("failed to get user: %w", err)
+	}
+
+	user.Roles = make([]types.UserRole, len(roleStrings))
+	for i, roleStr := range roleStrings {
+		user.Roles[i] = types.UserRole(roleStr)
 	}
 
 	return &user, nil
@@ -1890,6 +1907,15 @@ func (p *Postgres) GetPaginatedUsers(ctx context.Context, filter types.UserFilte
 		args = append(args, filter.Status)
 		argCount++
 	}
+	if len(filter.Roles) > 0 {
+		roleStrings := make([]string, len(filter.Roles))
+		for i, role := range filter.Roles {
+			roleStrings[i] = string(role)
+		}
+		whereClause = append(whereClause, fmt.Sprintf("roles && $%d", argCount))
+		args = append(args, pq.Array(roleStrings))
+		argCount++
+	}
 
 	// Construct the WHERE clause string
 	var whereStr string
@@ -1916,7 +1942,7 @@ func (p *Postgres) GetPaginatedUsers(ctx context.Context, filter types.UserFilte
 
 	// Fetch users
 	query := fmt.Sprintf(`
-		SELECT uuid, name, email, status, created_at, updated_at
+		SELECT uuid, name, email, status, roles, created_at, updated_at
 		FROM users
 		%s
 		ORDER BY created_at DESC
@@ -1933,11 +1959,16 @@ func (p *Postgres) GetPaginatedUsers(ctx context.Context, filter types.UserFilte
 	for rows.Next() {
 		var user types.User
 		var userUUID uuid.UUID
-		err := rows.Scan(&userUUID, &user.Name, &user.Email, &user.Status, &user.CreatedAt, &user.UpdatedAt)
+		var roles pq.StringArray
+		err := rows.Scan(&userUUID, &user.Name, &user.Email, &user.Status, &roles, &user.CreatedAt, &user.UpdatedAt)
 		if err != nil {
 			return result, fmt.Errorf("error scanning user: %w", err)
 		}
 		user.UUID = userUUID
+		user.Roles = make([]types.UserRole, len(roles))
+		for i, role := range roles {
+			user.Roles[i] = types.UserRole(role)
+		}
 		result.Users = append(result.Users, user)
 	}
 
@@ -1952,4 +1983,28 @@ func (p *Postgres) GetPaginatedUsers(ctx context.Context, filter types.UserFilte
 	result.TotalPages = (total + option.PerPage - 1) / option.PerPage
 
 	return result, nil
+}
+
+func (p *Postgres) UpdateUserRoles(ctx context.Context, uuid uuid.UUID, roles []types.UserRole) error {
+	tx, err := p.db.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	defer tx.Rollback()
+
+	// Update roles
+	_, err = tx.ExecContext(ctx, `
+		UPDATE users 
+		SET roles = $1, updated_at = CURRENT_TIMESTAMP 
+		WHERE uuid = $2
+	`, pq.Array(roles), uuid)
+	if err != nil {
+		return fmt.Errorf("failed to update user roles: %w", err)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
+	return nil
 }
