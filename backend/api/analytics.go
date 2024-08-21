@@ -25,10 +25,10 @@ func getAnalyticsOverview(st storage.Storage, logger *logrus.Logger) http.Handle
 			span.RecordError(err)
 			span.SetStatus(http.StatusInternalServerError, "failed to get analytics overview")
 
-			SendAPIErrorResponse(w, http.StatusInternalServerError, util.NewAPIError("Failed to get analytics overview", err))
+			util.SendAPIErrorResponse(w, http.StatusInternalServerError, util.NewAPIError("Failed to get analytics overview", err))
 			return
 		}
 
-		SendSuccessResponse(w, http.StatusOK, overview, logger, nil)
+		util.SendSuccessResponse(w, http.StatusOK, overview, logger, nil)
 	}
 }

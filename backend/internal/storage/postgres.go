@@ -1804,7 +1804,7 @@ func (p *Postgres) UpdateKeyPair(privateKey, publicKey []byte) error {
 }
 
 func (p *Postgres) CreateUser(ctx context.Context, user *types.User) error {
-	user.UUID = uuid.New().String()
+	user.UUID = uuid.New()
 	user.CreatedAt = time.Now().UTC()
 	user.UpdatedAt = time.Now().UTC()
 
@@ -1821,7 +1821,7 @@ func (p *Postgres) CreateUser(ctx context.Context, user *types.User) error {
 	return nil
 }
 
-func (p *Postgres) GetUser(ctx context.Context, uuid string) (*types.User, error) {
+func (p *Postgres) GetUser(ctx context.Context, uuid uuid.UUID) (*types.User, error) {
 	query := `SELECT uuid, name, email, status, created_at, updated_at FROM users WHERE uuid = $1`
 
 	var user types.User
@@ -1835,8 +1835,8 @@ func (p *Postgres) GetUser(ctx context.Context, uuid string) (*types.User, error
 	)
 
 	if err != nil {
-		if err == sql.ErrNoRows {
-			return nil, errors.New("user not found")
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, types.UserNotFoundError
 		}
 		return nil, err
 	}
@@ -1844,7 +1844,7 @@ func (p *Postgres) GetUser(ctx context.Context, uuid string) (*types.User, error
 	return &user, nil
 }
 
-func (p *Postgres) UpdateUserStatus(ctx context.Context, uuid string, status string) error {
+func (p *Postgres) UpdateUserStatus(ctx context.Context, uuid uuid.UUID, status types.UserStatus) error {
 	query := `
         UPDATE users
         SET status = $1, updated_at = $2
@@ -1862,7 +1862,7 @@ func (p *Postgres) UpdateUserStatus(ctx context.Context, uuid string, status str
 	}
 
 	if rowsAffected == 0 {
-		return errors.New("user not found")
+		return types.UserNotFoundError
 	}
 
 	return nil

@@ -71,6 +71,6 @@ type Storage interface {
 	UpdateKeyPair(privateKey, publicKey []byte) error
 
 	CreateUser(ctx context.Context, user *types.User) error
-	GetUser(ctx context.Context, uuid string) (*types.User, error)
-	UpdateUserStatus(ctx context.Context, uuid string, status string) error
+	GetUser(ctx context.Context, uuid uuid.UUID) (*types.User, error)
+	UpdateUserStatus(ctx context.Context, uuid uuid.UUID, status types.UserStatus) error
 }

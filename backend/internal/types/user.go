@@ -1,12 +1,23 @@
 package types
 
-import "time"
+import (
+	"time"
+
+	"github.com/google/uuid"
+)
+
+type UserStatus string
+
+const (
+	UserStatusActive   UserStatus = "active"
+	UserStatusInactive UserStatus = "inactive"
+)
 
 type User struct {
-	UUID      string    `db:"uuid"`
-	Name      string    `db:"name"`
-	Email     string    `db:"email"`
-	Status    string    `db:"status"`
-	CreatedAt time.Time `db:"created_at"`
-	UpdatedAt time.Time `db:"updated_at"`
+	UUID      uuid.UUID  `db:"uuid"`
+	Name      string     `db:"name"`
+	Email     string     `db:"email"`
+	Status    UserStatus `db:"status"`
+	CreatedAt time.Time  `db:"created_at"`
+	UpdatedAt time.Time  `db:"updated_at"`
 }
