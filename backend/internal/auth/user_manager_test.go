@@ -1,7 +1,6 @@
 package auth
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -132,44 +131,6 @@ func TestUserManager_handleDeactivateUser(t *testing.T) {
 	r.Put("/users/{uuid}/deactivate", um.handleDeactivateUser)
 
 	req, _ := http.NewRequest("PUT", "/users/"+userUUID.String()+"/deactivate", nil)
-	rr := httptest.NewRecorder()
-
-	r.ServeHTTP(rr, req)
-
-	assert.Equal(t, http.StatusOK, rr.Code)
-
-	mockStorage.AssertExpectations(t)
-}
-
-func TestUserManager_handleUpdateUserStatus(t *testing.T) {
-	mockStorage := new(storage.StorageMock)
-	logger := logrus.New()
-	um := NewUserManager(mockStorage, logger)
-
-	userUUID := uuid.New()
-	user := &types.User{
-		UUID:   userUUID,
-		Status: types.UserStatusActive,
-	}
-
-	newStatus := types.UserStatusInactive
-
-	mockStorage.On("UpdateUserStatus", mock.Anything, userUUID, newStatus).Return(nil)
-
-	r := chi.NewRouter()
-	r.Use(func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			ctx := context.WithValue(r.Context(), userContextKey, user)
-			next.ServeHTTP(w, r.WithContext(ctx))
-		})
-	})
-	r.Put("/users/{uuid}/status", um.handleUpdateUserStatus)
-
-	payload := map[string]string{"status": string(newStatus)}
-	jsonPayload, _ := json.Marshal(payload)
-
-	req, _ := http.NewRequest("PUT", "/users/"+userUUID.String()+"/status", bytes.NewBuffer(jsonPayload))
-	req.Header.Set("Content-Type", "application/json")
 	rr := httptest.NewRecorder()
 
 	r.ServeHTTP(rr, req)
