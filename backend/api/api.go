@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"os"
 	"runtime"
 	"runtime/debug"
 	"time"
@@ -128,12 +127,6 @@ func (a *API) setupRoutes() {
 	type gResponse struct {
 		Message string `json:"message"`
 	}
-
-	oauthManager := oauth.NewOAuthManager(a.storage, a.logger)
-	oauthManager.RegisterProvider(oauth.Google, os.Getenv("GOOGLE_CLIENT_ID"), os.Getenv("GOOGLE_CLIENT_SECRET"), "http://localhost:8080/auth/google/callback")
-
-	oauthHandlers := oauth.NewOAuthHandlers(oauthManager, a.logger)
-	oauthHandlers.RegisterRoutes(a.router)
 
 	a.router.Get("/", func(w http.ResponseWriter, r *http.Request) {
 		util.SendSuccessResponse(w, http.StatusOK, gResponse{Message: "Smart assistant!"}, a.logger, nil)
