@@ -1013,6 +1013,24 @@ func (_m *StorageMock) UpdateSettings(ctx context.Context, settings types.Settin
 	return r0
 }
 
+// UpdateUserRoles provides a mock function with given fields: ctx, _a1, roles
+func (_m *StorageMock) UpdateUserRoles(ctx context.Context, _a1 uuid.UUID, roles []types.UserRole) error {
+	ret := _m.Called(ctx, _a1, roles)
+
+	if len(ret) == 0 {
+		panic("no return value specified for UpdateUserRoles")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID, []types.UserRole) error); ok {
+		r0 = rf(ctx, _a1, roles)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // UpdateUserStatus provides a mock function with given fields: ctx, _a1, status
 func (_m *StorageMock) UpdateUserStatus(ctx context.Context, _a1 uuid.UUID, status types.UserStatus) error {
 	ret := _m.Called(ctx, _a1, status)
