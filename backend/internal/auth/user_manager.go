@@ -146,6 +146,9 @@ func (um *UserManager) RegisterRoutes(r chi.Router) {
 }
 
 func (um *UserManager) handleListUsers(w http.ResponseWriter, r *http.Request) {
+	_, span := observability.StartSpan(r.Context(), "auth.UserManager.handleListUsers")
+	defer span.End()
+
 	filter := types.UserFilter{
 		NameContains:  r.URL.Query().Get("name"),
 		EmailContains: r.URL.Query().Get("email"),
