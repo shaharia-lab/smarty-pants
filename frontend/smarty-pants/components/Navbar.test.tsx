@@ -6,9 +6,15 @@ import Navbar from './Navbar';
 
 // Mock the next/link component
 jest.mock('next/link', () => {
-    return React.forwardRef(({ children, href, className }: { children: React.ReactNode; href: string; className: string }, ref) => (
-        <a href={href} className={className} ref={ref as React.Ref<HTMLAnchorElement>}>{children}</a>
-    ));
+    const MockedLink = React.forwardRef<HTMLAnchorElement, { children: React.ReactNode; href: string; className: string }>(
+        ({ children, href, className }, ref) => (
+            <a href={href} className={className} ref={ref}>
+                {children}
+            </a>
+        )
+    );
+    MockedLink.displayName = 'MockedLink';
+    return MockedLink;
 });
 
 // Mock window.location

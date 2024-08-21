@@ -238,4 +238,5 @@ const Navbar: React.FC<NavbarProps> = ({ initialPath = '' }) => {
     );
 };
 
+Navbar.displayName = 'Navbar';
 export default Navbar;

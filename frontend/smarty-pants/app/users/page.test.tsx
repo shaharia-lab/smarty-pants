@@ -5,13 +5,27 @@ import UsersPage from './page';
 import { User, PaginatedUsers } from '@/types/user';
 
 // Mock the components and fetch function
-jest.mock('@/components/Navbar', () => () => <div data-testid="navbar">Navbar</div>);
-jest.mock('@/components/Header', () => ({ config }: { config: { title: string } }) => <div data-testid="header">{config.title}</div>);
-jest.mock('../../components/UserList', () => ({ users }: { users: User[] }) => (
-    <div data-testid="user-list">
-        {users.map(user => <div key={user.uuid}>{user.name}</div>)}
-    </div>
-));
+jest.mock('@/components/Navbar', () => {
+    const MockNavbar = () => <div data-testid="navbar">Navbar</div>;
+    MockNavbar.displayName = 'MockNavbar';
+    return MockNavbar;
+});
+
+jest.mock('@/components/Header', () => {
+    const MockHeader = ({ config }: { config: { title: string } }) => <div data-testid="header">{config.title}</div>;
+    MockHeader.displayName = 'MockHeader';
+    return MockHeader;
+});
+
+jest.mock('../../components/UserList', () => {
+    const MockUserList = ({ users }: { users: User[] }) => (
+        <div data-testid="user-list">
+            {users.map(user => <div key={user.uuid}>{user.name}</div>)}
+        </div>
+    );
+    MockUserList.displayName = 'MockUserList';
+    return MockUserList;
+});
 
 global.fetch = jest.fn();
 
