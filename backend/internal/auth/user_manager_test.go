@@ -284,3 +284,94 @@ func TestUserManager_ResolveUserFromRequest_InvalidUUID(t *testing.T) {
 
 	assert.Equal(t, http.StatusBadRequest, rr.Code)
 }
+
+func TestUserManager_handleListUsers(t *testing.T) {
+	mockStorage := new(storage.StorageMock)
+	logger := logrus.New()
+	logger.SetLevel(logrus.DebugLevel)
+	um := NewUserManager(mockStorage, logger)
+
+	user1 := &types.User{
+		UUID:      uuid.New(),
+		Name:      "John Doe",
+		Email:     "john@example.com",
+		Status:    types.UserStatusActive,
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	}
+	user2 := &types.User{
+		UUID:      uuid.New(),
+		Name:      "Jane Smith",
+		Email:     "jane@example.com",
+		Status:    types.UserStatusActive,
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	}
+
+	mockPaginatedUsers := types.PaginatedUsers{
+		Users:      []types.User{*user1, *user2},
+		Total:      2,
+		Page:       1,
+		PerPage:    10,
+		TotalPages: 1,
+	}
+
+	mockStorage.On("GetPaginatedUsers", mock.Anything, mock.AnythingOfType("types.UserFilter"), mock.AnythingOfType("types.UserFilterOption")).
+		Return(mockPaginatedUsers, nil)
+
+	r := chi.NewRouter()
+	r.Route("/api/v1", func(r chi.Router) {
+		r.Route("/users", func(r chi.Router) {
+			r.Get("/", um.handleListUsers)
+		})
+	})
+
+	testCases := []struct {
+		name           string
+		queryParams    string
+		expectedStatus int
+		expectedUsers  int
+	}{
+		{
+			name:           "Default pagination",
+			queryParams:    "",
+			expectedStatus: http.StatusOK,
+			expectedUsers:  2,
+		},
+		{
+			name:           "With pagination",
+			queryParams:    "?page=1&per_page=5",
+			expectedStatus: http.StatusOK,
+			expectedUsers:  2,
+		},
+		{
+			name:           "With filtering",
+			queryParams:    "?name=John&email=example.com&status=active",
+			expectedStatus: http.StatusOK,
+			expectedUsers:  2,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			reqURL := fmt.Sprintf("/api/v1/users%s", tc.queryParams)
+			req, _ := http.NewRequest("GET", reqURL, nil)
+
+			rr := httptest.NewRecorder()
+			r.ServeHTTP(rr, req)
+
+			assert.Equal(t, tc.expectedStatus, rr.Code)
+
+			var response types.PaginatedUsers
+			err := json.Unmarshal(rr.Body.Bytes(), &response)
+			assert.NoError(t, err)
+			assert.Equal(t, tc.expectedUsers, len(response.Users))
+			assert.Equal(t, mockPaginatedUsers.Total, response.Total)
+			assert.Equal(t, mockPaginatedUsers.Page, response.Page)
+			assert.Equal(t, mockPaginatedUsers.PerPage, response.PerPage)
+			assert.Equal(t, mockPaginatedUsers.TotalPages, response.TotalPages)
+		})
+	}
+
+	mockStorage.AssertExpectations(t)
+}

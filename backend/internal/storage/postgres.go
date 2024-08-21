@@ -17,7 +17,7 @@ import (
 	"github.com/golang-migrate/migrate/v4/database/postgres"
 	"github.com/golang-migrate/migrate/v4/source/iofs"
 	"github.com/google/uuid"
-	_ "github.com/lib/pq" // Import the Postgres driver
+	_ "github.com/lib/pq"
 	"github.com/pgvector/pgvector-go"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/logger"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/observability"
@@ -1866,4 +1866,90 @@ func (p *Postgres) UpdateUserStatus(ctx context.Context, uuid uuid.UUID, status 
 	}
 
 	return nil
+}
+
+func (p *Postgres) GetPaginatedUsers(ctx context.Context, filter types.UserFilter, option types.UserFilterOption) (types.PaginatedUsers, error) {
+	var result types.PaginatedUsers
+	var whereClause []string
+	var args []interface{}
+	argCount := 1
+
+	// Build WHERE clause based on filter
+	if filter.NameContains != "" {
+		whereClause = append(whereClause, fmt.Sprintf("name ILIKE $%d", argCount))
+		args = append(args, "%"+filter.NameContains+"%")
+		argCount++
+	}
+	if filter.EmailContains != "" {
+		whereClause = append(whereClause, fmt.Sprintf("email ILIKE $%d", argCount))
+		args = append(args, "%"+filter.EmailContains+"%")
+		argCount++
+	}
+	if filter.Status != "" {
+		whereClause = append(whereClause, fmt.Sprintf("status = $%d", argCount))
+		args = append(args, filter.Status)
+		argCount++
+	}
+
+	// Construct the WHERE clause string
+	var whereStr string
+	if len(whereClause) > 0 {
+		whereStr = "WHERE " + strings.Join(whereClause, " AND ")
+	}
+
+	// Count total matching users
+	countQuery := fmt.Sprintf("SELECT COUNT(*) FROM users %s", whereStr)
+	var total int
+	err := p.db.QueryRowContext(ctx, countQuery, args...).Scan(&total)
+	if err != nil {
+		return result, fmt.Errorf("error counting users: %w", err)
+	}
+
+	// Calculate pagination
+	if option.Page < 1 {
+		option.Page = 1
+	}
+	if option.PerPage < 1 {
+		option.PerPage = 10 // Default to 10 per page
+	}
+	offset := (option.Page - 1) * option.PerPage
+
+	// Fetch users
+	query := fmt.Sprintf(`
+		SELECT uuid, name, email, status, created_at, updated_at
+		FROM users
+		%s
+		ORDER BY created_at DESC
+		LIMIT $%d OFFSET $%d
+	`, whereStr, argCount, argCount+1)
+	args = append(args, option.PerPage, offset)
+
+	rows, err := p.db.QueryContext(ctx, query, args...)
+	if err != nil {
+		return result, fmt.Errorf("error querying users: %w", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var user types.User
+		var userUUID uuid.UUID
+		err := rows.Scan(&userUUID, &user.Name, &user.Email, &user.Status, &user.CreatedAt, &user.UpdatedAt)
+		if err != nil {
+			return result, fmt.Errorf("error scanning user: %w", err)
+		}
+		user.UUID = userUUID
+		result.Users = append(result.Users, user)
+	}
+
+	if err = rows.Err(); err != nil {
+		return result, fmt.Errorf("error iterating users: %w", err)
+	}
+
+	// Populate pagination info
+	result.Total = total
+	result.Page = option.Page
+	result.PerPage = option.PerPage
+	result.TotalPages = (total + option.PerPage - 1) / option.PerPage
+
+	return result, nil
 }
