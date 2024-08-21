@@ -87,6 +87,21 @@ func runStart(cmd *cobra.Command, _ []string) error {
 		return err
 	}
 
+	userManager := auth.NewUserManager(st, logging)
+
+	oauthManager := auth.NewOAuthManager(
+		map[string]auth.OAuthProvider{
+			"google": auth.NewGoogleProvider(
+				cfg.GoogleOAuthClientID,
+				cfg.GoogleOAuthClientSecret,
+				cfg.GoogleOAuthRedirectURL,
+			),
+		},
+		userManager,
+		auth.NewJWTManager(auth.NewKeyManager(st, logging), userManager, logging),
+		logging,
+	)
+
 	metricsServer := observability.StartMetricsServer(cfg.OtelMetricsExposedPort, logging)
 
 	shutdownManager := initializeShutdownManager(cfg, logging)
@@ -124,6 +139,7 @@ func runStart(cmd *cobra.Command, _ []string) error {
 		llm.NewManager(st, logging, aclManager),
 		search.NewManager(searchSystem, logging, aclManager),
 		settings.NewManager(st, logging, aclManager),
+		oauthManager,
 	)
 
 	shutdownManager.RegisterShutdownFn(func(ctx context.Context) error {

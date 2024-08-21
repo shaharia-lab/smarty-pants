@@ -4,46 +4,41 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
-	"io/ioutil"
 	"net/http"
-	"net/url"
 	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/types"
 	"github.com/sirupsen/logrus"
-	"golang.org/x/oauth2"
-	"golang.org/x/oauth2/google"
 )
 
+type OAuthProvider interface {
+	GetAuthURL(state string) string
+	ExchangeCodeForToken(ctx context.Context, code string) (string, error)
+	GetUserInfo(ctx context.Context, token string) (*UserInfo, error)
+}
+
 type OAuthManager struct {
-	config      *oauth2.Config
+	providers   map[string]OAuthProvider
 	userManager *UserManager
 	jwtManager  *JWTManager
 	logger      *logrus.Logger
-	stateStore  map[string]time.Time // Simple in-memory store for states
+	stateStore  map[string]stateInfo
 }
 
-func NewOAuthManager(clientID, clientSecret, redirectURL string, userManager *UserManager, jwtManager *JWTManager, logger *logrus.Logger) *OAuthManager {
-	config := &oauth2.Config{
-		ClientID:     clientID,
-		ClientSecret: clientSecret,
-		RedirectURL:  redirectURL,
-		Scopes: []string{
-			"https://www.googleapis.com/auth/userinfo.email",
-			"https://www.googleapis.com/auth/userinfo.profile",
-		},
-		Endpoint: google.Endpoint,
-	}
+type stateInfo struct {
+	provider  string
+	timestamp time.Time
+}
 
+func NewOAuthManager(providers map[string]OAuthProvider, userManager *UserManager, jwtManager *JWTManager, logger *logrus.Logger) *OAuthManager {
 	return &OAuthManager{
-		config:      config,
+		providers:   providers,
 		userManager: userManager,
 		jwtManager:  jwtManager,
 		logger:      logger,
-		stateStore:  make(map[string]time.Time),
+		stateStore:  make(map[string]stateInfo),
 	}
 }
 
@@ -82,16 +77,20 @@ func (om *OAuthManager) InitiateAuthFlow(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	if req.AuthFlow.Provider != "google" {
+	provider, ok := om.providers[req.AuthFlow.Provider]
+	if !ok {
 		om.logger.WithField("provider", req.AuthFlow.Provider).Error("Unsupported provider")
 		http.Error(w, "Unsupported provider", http.StatusBadRequest)
 		return
 	}
 
 	state := uuid.New().String()
-	om.stateStore[state] = time.Now() // Store state with timestamp
+	om.stateStore[state] = stateInfo{
+		provider:  req.AuthFlow.Provider,
+		timestamp: time.Now(),
+	}
 
-	authURL := om.config.AuthCodeURL(state)
+	authURL := provider.GetAuthURL(state)
 
 	resp := AuthFlowResponse{
 		AuthFlow: struct {
@@ -99,7 +98,7 @@ func (om *OAuthManager) InitiateAuthFlow(w http.ResponseWriter, r *http.Request)
 			AuthRedirectURL string `json:"auth_redirect_url"`
 			State           string `json:"state"`
 		}{
-			Provider:        "google",
+			Provider:        req.AuthFlow.Provider,
 			AuthRedirectURL: authURL,
 			State:           state,
 		},
@@ -117,28 +116,29 @@ func (om *OAuthManager) HandleAuthCode(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if req.AuthFlow.Provider != "google" {
-		om.logger.WithField("provider", req.AuthFlow.Provider).Error("Unsupported provider")
-		http.Error(w, "Unsupported provider", http.StatusBadRequest)
-		return
-	}
-
-	// Validate state
-	if _, ok := om.stateStore[req.AuthFlow.State]; !ok {
+	stateInfo, ok := om.stateStore[req.AuthFlow.State]
+	if !ok {
 		om.logger.WithField("state", req.AuthFlow.State).Error("Invalid state")
 		http.Error(w, "Invalid state", http.StatusBadRequest)
 		return
 	}
-	delete(om.stateStore, req.AuthFlow.State) // Remove used state
+	delete(om.stateStore, req.AuthFlow.State)
 
-	token, err := om.config.Exchange(r.Context(), req.AuthFlow.AuthCode)
+	provider, ok := om.providers[stateInfo.provider]
+	if !ok {
+		om.logger.WithField("provider", stateInfo.provider).Error("Invalid provider")
+		http.Error(w, "Invalid provider", http.StatusBadRequest)
+		return
+	}
+
+	token, err := provider.ExchangeCodeForToken(r.Context(), req.AuthFlow.AuthCode)
 	if err != nil {
 		om.logger.WithError(err).Error("Failed to exchange OAuth code")
 		http.Error(w, "Failed to authenticate", http.StatusInternalServerError)
 		return
 	}
 
-	userInfo, err := om.getUserInfo(r.Context(), token.AccessToken)
+	userInfo, err := provider.GetUserInfo(r.Context(), token)
 	if err != nil {
 		om.logger.WithError(err).Error("Failed to get user info")
 		http.Error(w, "Failed to get user info", http.StatusInternalServerError)
@@ -148,7 +148,6 @@ func (om *OAuthManager) HandleAuthCode(w http.ResponseWriter, r *http.Request) {
 	user, err := om.userManager.GetUserByEmail(r.Context(), userInfo.Email)
 	if err != nil {
 		if errors.Is(err, types.UserNotFoundError) {
-			// User doesn't exist, create a new one
 			user, err = om.userManager.CreateUser(r.Context(), userInfo.Name, userInfo.Email, "active")
 			if err != nil {
 				om.logger.WithError(err).Error("Failed to create user")
@@ -162,7 +161,6 @@ func (om *OAuthManager) HandleAuthCode(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Issue JWT token
 	jwtToken, err := om.jwtManager.IssueTokenForUser(r.Context(), user.UUID, []string{"user"}, 24*time.Hour)
 	if err != nil {
 		om.logger.WithError(err).Error("Failed to issue JWT token")
@@ -178,33 +176,13 @@ func (om *OAuthManager) HandleAuthCode(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(resp)
 }
 
-func (om *OAuthManager) getUserInfo(ctx context.Context, accessToken string) (*UserInfo, error) {
-	resp, err := http.Get("https://www.googleapis.com/oauth2/v2/userinfo?access_token=" + url.QueryEscape(accessToken))
-	if err != nil {
-		return nil, fmt.Errorf("failed getting user info: %v", err)
-	}
-	defer resp.Body.Close()
-
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("failed reading response body: %v", err)
-	}
-
-	var userInfo UserInfo
-	if err := json.Unmarshal(body, &userInfo); err != nil {
-		return nil, fmt.Errorf("failed to parse user info: %v", err)
-	}
-
-	return &userInfo, nil
+func (om *OAuthManager) RegisterRoutes(r chi.Router) {
+	r.Post("/api/v1/auth/initiate", om.InitiateAuthFlow)
+	r.Post("/api/v1/auth/callback", om.HandleAuthCode)
 }
 
 type UserInfo struct {
 	ID    string `json:"id"`
 	Email string `json:"email"`
 	Name  string `json:"name"`
-}
-
-func (om *OAuthManager) RegisterRoutes(r chi.Router) {
-	r.Post("/api/v1/auth/initiate", om.InitiateAuthFlow)
-	r.Post("/api/v1/auth/callback", om.HandleAuthCode)
 }
