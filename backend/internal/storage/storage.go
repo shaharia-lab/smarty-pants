@@ -73,4 +73,5 @@ type Storage interface {
 	CreateUser(ctx context.Context, user *types.User) error
 	GetUser(ctx context.Context, uuid uuid.UUID) (*types.User, error)
 	UpdateUserStatus(ctx context.Context, uuid uuid.UUID, status types.UserStatus) error
+	GetPaginatedUsers(ctx context.Context, filter types.UserFilter, option types.UserFilterOption) (types.PaginatedUsers, error)
 }
