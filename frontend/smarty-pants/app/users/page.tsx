@@ -65,4 +65,5 @@ const UsersPage: React.FC = () => {
     );
 };
 
+UsersPage.displayName = 'UsersPage';
 export default UsersPage;
