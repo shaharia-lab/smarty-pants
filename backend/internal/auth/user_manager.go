@@ -2,7 +2,6 @@ package auth
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"net/http"
 	"strconv"
@@ -142,7 +141,6 @@ func (um *UserManager) RegisterRoutes(r chi.Router) {
 			r.Get("/{uuid}", um.handleGetUser)
 			r.Put("/{uuid}/activate", um.handleActivateUser)
 			r.Put("/{uuid}/deactivate", um.handleDeactivateUser)
-			r.Put("/{uuid}/status", um.handleUpdateUserStatus)
 		})
 	})
 }
@@ -225,29 +223,6 @@ func (um *UserManager) handleDeactivateUser(w http.ResponseWriter, r *http.Reque
 		util.SendErrorResponse(w, http.StatusInternalServerError, "Failed to deactivate user", um.logger, nil)
 		return
 	}
-	util.SendSuccessResponse(w, http.StatusOK, nil, um.logger, nil)
-}
-
-func (um *UserManager) handleUpdateUserStatus(w http.ResponseWriter, r *http.Request) {
-	_, span := observability.StartSpan(r.Context(), "auth.UserManager.handleUpdateUserStatus")
-	defer span.End()
-
-	user := r.Context().Value(userContextKey).(*types.User)
-	var statusUpdate struct {
-		Status types.UserStatus `json:"status"`
-	}
-
-	if err := json.NewDecoder(r.Body).Decode(&statusUpdate); err != nil {
-		util.SendErrorResponse(w, http.StatusBadRequest, "Invalid request body", um.logger, nil)
-		return
-	}
-
-	err := um.UpdateUserStatus(r.Context(), user.UUID, statusUpdate.Status)
-	if err != nil {
-		util.SendErrorResponse(w, http.StatusInternalServerError, "Failed to update user status", um.logger, nil)
-		return
-	}
-
 	util.SendSuccessResponse(w, http.StatusOK, nil, um.logger, nil)
 }
 
