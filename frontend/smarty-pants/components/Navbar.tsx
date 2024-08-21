@@ -12,10 +12,7 @@ const Navbar: React.FC = () => {
             setCurrentPath(window.location.pathname);
         };
 
-        // Set initial path
         updatePath();
-
-        // Listen for route changes
         window.addEventListener('popstate', updatePath);
 
         return () => {
@@ -142,6 +139,14 @@ const Navbar: React.FC = () => {
         setActiveDropdown(activeDropdown === name ? null : name);
     };
 
+    const isActive = (item: any): boolean => {
+        if (item.href === currentPath) return true;
+        if (item.children) {
+            return item.children.some((child: any) => child.href === currentPath);
+        }
+        return false;
+    };
+
     return (
         <nav className="bg-gray-800">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -160,7 +165,11 @@ const Navbar: React.FC = () => {
                                             <div>
                                                 <button
                                                     onClick={() => toggleDropdown(item.name)}
-                                                    className="text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium focus:outline-none flex items-center"
+                                                    className={`${
+                                                        isActive(item)
+                                                            ? 'bg-gray-900 text-white'
+                                                            : 'text-gray-300 hover:bg-gray-700 hover:text-white'
+                                                    } px-3 py-2 rounded-md text-sm font-medium focus:outline-none flex items-center`}
                                                 >
                                                     {item.icon}
                                                     {item.name}
@@ -171,11 +180,15 @@ const Navbar: React.FC = () => {
                                                 {activeDropdown === item.name && (
                                                     <div className="absolute z-10 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5">
                                                         <div className="py-1" role="menu" aria-orientation="vertical" aria-labelledby="options-menu">
-                                                            {item.children.map((subItem) => (
+                                                            {item.children.map((subItem: any) => (
                                                                 <Link
                                                                     key={subItem.name}
                                                                     href={subItem.href}
-                                                                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900 flex items-center"
+                                                                    className={`${
+                                                                        currentPath === subItem.href
+                                                                            ? 'bg-gray-100 text-gray-900'
+                                                                            : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
+                                                                    } block px-4 py-2 text-sm flex items-center`}
                                                                     onClick={() => {
                                                                         setCurrentPath(subItem.href);
                                                                         setActiveDropdown(null);
@@ -193,7 +206,7 @@ const Navbar: React.FC = () => {
                                             <Link
                                                 href={item.href}
                                                 className={`${
-                                                    currentPath === item.href
+                                                    isActive(item)
                                                         ? 'bg-gray-900 text-white'
                                                         : 'text-gray-300 hover:bg-gray-700 hover:text-white'
                                                 } px-3 py-2 rounded-md text-sm font-medium flex items-center`}
