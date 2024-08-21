@@ -711,32 +711,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/User'
 
-    put:
-      summary: Update a user's status
-      parameters:
-        - in: path
-          name: uuid
-          required: true
-          schema:
-            type: string
-            format: uuid
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                status:
-                  $ref: '#/components/schemas/UserStatus'
-      responses:
-        '200':
-          description: User status updated successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/User'
-
   /users/{uuid}/activate:
     put:
       summary: Activate a user
