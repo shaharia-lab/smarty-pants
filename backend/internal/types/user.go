@@ -14,10 +14,10 @@ const (
 )
 
 type User struct {
-	UUID      uuid.UUID  `db:"uuid"`
-	Name      string     `db:"name"`
-	Email     string     `db:"email"`
-	Status    UserStatus `db:"status"`
-	CreatedAt time.Time  `db:"created_at"`
-	UpdatedAt time.Time  `db:"updated_at"`
+	UUID      uuid.UUID  `json:"uuid"`
+	Name      string     `json:"name"`
+	Email     string     `json:"email"`
+	Status    UserStatus `json:"status"`
+	CreatedAt time.Time  `json:"created_at"`
+	UpdatedAt time.Time  `json:"updated_at"`
 }
