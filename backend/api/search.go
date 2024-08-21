@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/shaharia-lab/smarty-pants/backend/internal/search"
+	"github.com/shaharia-lab/smarty-pants/backend/internal/util"
 	"github.com/sirupsen/logrus"
 )
 
@@ -32,6 +33,6 @@ func addSearchHandler(searchSystem search.System, logging *logrus.Logger) http.H
 			return
 		}
 
-		SendSuccessResponse(w, http.StatusOK, results, logging, nil)
+		util.SendSuccessResponse(w, http.StatusOK, results, logging, nil)
 	}
 }

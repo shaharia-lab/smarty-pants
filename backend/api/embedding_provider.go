@@ -38,7 +38,7 @@ func addEmbeddingProviderHandler(s storage.Storage, logging *logrus.Logger) http
 			return
 		}
 
-		SendSuccessResponse(w, http.StatusCreated, provider, logging, nil)
+		util.SendSuccessResponse(w, http.StatusCreated, provider, logging, nil)
 	}
 }
 
@@ -111,7 +111,7 @@ func getEmbeddingProviderHandler(s storage.Storage, l *logrus.Logger) http.Handl
 			return
 		}
 
-		SendSuccessResponse(w, http.StatusOK, provider, l, nil)
+		util.SendSuccessResponse(w, http.StatusOK, provider, l, nil)
 	}
 }
 
@@ -145,7 +145,7 @@ func getEmbeddingProvidersHandler(s storage.Storage, l *logrus.Logger) http.Hand
 			providers.EmbeddingProviders = []types.EmbeddingProviderConfig{}
 		}
 
-		SendSuccessResponse(w, http.StatusOK, providers, l, nil)
+		util.SendSuccessResponse(w, http.StatusOK, providers, l, nil)
 	}
 }
 
@@ -161,7 +161,7 @@ func setActiveEmbeddingProviderHandler(s storage.Storage, l *logrus.Logger) http
 		err = s.SetActiveEmbeddingProvider(r.Context(), id)
 		if err != nil {
 			l.WithError(err).Error("Failed to set active embedding provider")
-			SendAPIErrorResponse(w, http.StatusInternalServerError, &util.APIError{
+			util.SendAPIErrorResponse(w, http.StatusInternalServerError, &util.APIError{
 				Message: "Failed to set active embedding provider",
 				Err:     err.Error(),
 			})
@@ -169,6 +169,6 @@ func setActiveEmbeddingProviderHandler(s storage.Storage, l *logrus.Logger) http
 		}
 
 		l.WithField("embedding_provider_id", id).Info("Embedding provider activated successfully")
-		SendSuccessResponse(w, http.StatusOK, map[string]string{"message": "Embedding provider activated successfully"}, l, nil)
+		util.SendSuccessResponse(w, http.StatusOK, map[string]string{"message": "Embedding provider activated successfully"}, l, nil)
 	}
 }

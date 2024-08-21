@@ -10,6 +10,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/storage"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/types"
+	"github.com/shaharia-lab/smarty-pants/backend/internal/util"
 	"github.com/sirupsen/logrus"
 )
 
@@ -39,7 +40,7 @@ func addLLMProviderHandler(s storage.Storage, logging *logrus.Logger) http.Handl
 			return
 		}
 
-		SendSuccessResponse(w, http.StatusCreated, provider, logging, nil)
+		util.SendSuccessResponse(w, http.StatusCreated, provider, logging, nil)
 	}
 }
 
@@ -112,7 +113,7 @@ func getLLMProviderHandler(s storage.Storage, l *logrus.Logger) http.HandlerFunc
 			return
 		}
 
-		SendSuccessResponse(w, http.StatusOK, provider, l, nil)
+		util.SendSuccessResponse(w, http.StatusOK, provider, l, nil)
 	}
 }
 
@@ -146,7 +147,7 @@ func getLLMProvidersHandler(s storage.Storage, l *logrus.Logger) http.HandlerFun
 			providers.LLMProviders = []types.LLMProviderConfig{}
 		}
 
-		SendSuccessResponse(w, http.StatusOK, providers, l, nil)
+		util.SendSuccessResponse(w, http.StatusOK, providers, l, nil)
 	}
 }
 

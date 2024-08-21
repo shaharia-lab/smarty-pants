@@ -13,9 +13,11 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
+	"github.com/shaharia-lab/smarty-pants/backend/internal/auth"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/embedding"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/search"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/storage"
+	"github.com/shaharia-lab/smarty-pants/backend/internal/util"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/sync/errgroup"
 )
@@ -36,6 +38,7 @@ type API struct {
 	storage      storage.Storage
 	searchSystem search.System
 	server       *http.Server
+	userManager  *auth.UserManager
 }
 
 type Config struct {
@@ -45,7 +48,7 @@ type Config struct {
 	IdleTimeout       int
 }
 
-func NewAPI(logger *logrus.Logger, storage storage.Storage, searchSystem search.System, config Config) *API {
+func NewAPI(logger *logrus.Logger, storage storage.Storage, searchSystem search.System, config Config, userManager *auth.UserManager) *API {
 	api := &API{
 		config:       config,
 		router:       chi.NewRouter(),
@@ -53,6 +56,7 @@ func NewAPI(logger *logrus.Logger, storage storage.Storage, searchSystem search.
 		logger:       logger,
 		storage:      storage,
 		searchSystem: searchSystem,
+		userManager:  userManager,
 	}
 	api.setupMiddleware()
 	api.setupRoutes()
@@ -98,21 +102,21 @@ func (a *API) setupRoutes() {
 	}
 
 	a.router.Get("/", func(w http.ResponseWriter, r *http.Request) {
-		SendSuccessResponse(w, http.StatusOK, gResponse{Message: "Smart assistant!"}, a.logger, nil)
+		util.SendSuccessResponse(w, http.StatusOK, gResponse{Message: "Smart assistant!"}, a.logger, nil)
 	})
 
 	a.router.Route("/system", func(r chi.Router) {
 		r.Get("/ping", func(w http.ResponseWriter, r *http.Request) {
-			SendSuccessResponse(w, http.StatusOK, gResponse{Message: "Pong"}, a.logger, nil)
+			util.SendSuccessResponse(w, http.StatusOK, gResponse{Message: "Pong"}, a.logger, nil)
 		})
 
 		r.Route("/probes", func(r chi.Router) {
 			r.Get("/liveness", func(w http.ResponseWriter, r *http.Request) {
-				SendSuccessResponse(w, http.StatusOK, gResponse{Message: "I am alive"}, a.logger, nil)
+				util.SendSuccessResponse(w, http.StatusOK, gResponse{Message: "I am alive"}, a.logger, nil)
 			})
 
 			r.Get("/readiness", func(w http.ResponseWriter, r *http.Request) {
-				SendSuccessResponse(w, http.StatusOK, gResponse{Message: "I am ready"}, a.logger, nil)
+				util.SendSuccessResponse(w, http.StatusOK, gResponse{Message: "I am ready"}, a.logger, nil)
 			})
 		})
 	})
@@ -184,6 +188,8 @@ func (a *API) setupRoutes() {
 			})
 		})
 	})
+
+	a.userManager.RegisterRoutes(a.router)
 }
 
 // Start starts the API server
@@ -301,7 +307,7 @@ func (a *API) startDependencyHealthLogging(ctx context.Context) {
 			if err := a.storage.HealthCheck(); err != nil {
 				a.logger.WithError(err).Error("Storage health check failed")
 			} else {
-				a.logger.Debug("Storage health check passed")
+				a.logger.Debug("Storafge health check passed")
 			}
 
 			emProvider, err := embedding.InitializeEmbeddingProvider(ctx, a.storage, a.logger)

@@ -8,6 +8,7 @@ import (
 	"github.com/shaharia-lab/smarty-pants/backend/internal/observability"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/storage"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/types"
+	"github.com/shaharia-lab/smarty-pants/backend/internal/util"
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
@@ -30,7 +31,7 @@ func getDocumentsHandler(st storage.Storage, logging *logrus.Logger) http.Handle
 		paginatedDocuments, err := st.Get(ctx, filter, option)
 		if err != nil {
 			logging.WithError(err).Error("Failed to fetch documents")
-			SendErrorResponse(w, http.StatusInternalServerError, "Failed to fetch documents", logging, span)
+			util.SendErrorResponse(w, http.StatusInternalServerError, "Failed to fetch documents", logging, span)
 			return
 		}
 		storageSpan.End()
@@ -39,7 +40,7 @@ func getDocumentsHandler(st storage.Storage, logging *logrus.Logger) http.Handle
 			paginatedDocuments = createEmptyPaginatedDocuments(option.Page, option.Limit)
 		}
 
-		SendSuccessResponse(w, http.StatusOK, paginatedDocuments, logging, span)
+		util.SendSuccessResponse(w, http.StatusOK, paginatedDocuments, logging, span)
 	}
 }
 
@@ -58,23 +59,23 @@ func getDocumentHandler(st storage.Storage, logging *logrus.Logger) http.Handler
 		paginatedDocuments, err := st.Get(ctx, filter, option)
 		if err != nil {
 			logging.WithError(err).Error("Failed to fetch document")
-			SendErrorResponse(w, http.StatusInternalServerError, "Failed to fetch document", logging, span)
+			util.SendErrorResponse(w, http.StatusInternalServerError, "Failed to fetch document", logging, span)
 			return
 		}
 
 		if len(paginatedDocuments.Documents) == 0 {
 			logging.WithField("uuid", uuid).Warning("Document not found")
-			SendErrorResponse(w, http.StatusNotFound, "Document not found", logging, span)
+			util.SendErrorResponse(w, http.StatusNotFound, "Document not found", logging, span)
 			return
 		}
 
 		if len(paginatedDocuments.Documents) > 1 {
 			logging.Error("Multiple documents found")
-			SendErrorResponse(w, http.StatusInternalServerError, "Unexpected error: multiple documents found", logging, span)
+			util.SendErrorResponse(w, http.StatusInternalServerError, "Unexpected error: multiple documents found", logging, span)
 			return
 		}
 
-		SendSuccessResponse(w, http.StatusOK, &paginatedDocuments.Documents[0], logging, span)
+		util.SendSuccessResponse(w, http.StatusOK, &paginatedDocuments.Documents[0], logging, span)
 	}
 }
 

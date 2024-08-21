@@ -35,7 +35,7 @@ func addDatasourceHandler(st storage.Storage, logging *logrus.Logger) http.Handl
 
 		var payload types.DatasourcePayload
 		if err := util.DecodeJSONBody(r, &payload); err != nil {
-			SendAPIErrorResponse(w, http.StatusBadRequest, err)
+			util.SendAPIErrorResponse(w, http.StatusBadRequest, err)
 			return
 		}
 
@@ -46,13 +46,13 @@ func addDatasourceHandler(st storage.Storage, logging *logrus.Logger) http.Handl
 
 		settings, err := util.ParseSettings(payload.SourceType, payload.Settings)
 		if err != nil {
-			SendAPIErrorResponse(w, http.StatusBadRequest, util.NewAPIError("Failed to parse settings", err))
+			util.SendAPIErrorResponse(w, http.StatusBadRequest, util.NewAPIError("Failed to parse settings", err))
 			return
 		}
 
 		err = settings.Validate()
 		if err != nil {
-			SendAPIErrorResponse(w, http.StatusBadRequest, util.NewAPIError("Validation failed for the datasource settings", err))
+			util.SendAPIErrorResponse(w, http.StatusBadRequest, util.NewAPIError("Validation failed for the datasource settings", err))
 			return
 		}
 
@@ -104,7 +104,7 @@ func getDatasourceHandler(storage storage.Storage, logging *logrus.Logger) http.
 			return
 		}
 
-		SendSuccessResponse(w, http.StatusOK, ds, logging, span)
+		util.SendSuccessResponse(w, http.StatusOK, ds, logging, span)
 	}
 }
 
@@ -116,33 +116,33 @@ func validateDatasourceHandler(storage storage.Storage, logging *logrus.Logger) 
 		dsUUID := chi.URLParam(r, "uuid")
 		dsUUIDParsed, err := uuid.Parse(dsUUID)
 		if err != nil {
-			SendAPIErrorResponse(w, http.StatusBadRequest, util.NewAPIError(invalidUUIDMsg, err))
+			util.SendAPIErrorResponse(w, http.StatusBadRequest, util.NewAPIError(invalidUUIDMsg, err))
 			return
 		}
 
 		ds, err := storage.GetDatasource(ctx, dsUUIDParsed)
 		if err != nil {
-			SendAPIErrorResponse(w, http.StatusNotFound, util.NewAPIError(datasourceNotFoundMsg, err))
+			util.SendAPIErrorResponse(w, http.StatusNotFound, util.NewAPIError(datasourceNotFoundMsg, err))
 			return
 		}
 
 		if ds.SourceType == types.DatasourceTypeSlack {
 			slackSettings, ok := ds.Settings.(*types.SlackSettings)
 			if !ok {
-				SendAPIErrorResponse(w, http.StatusBadRequest, util.NewAPIError("Invalid slack settings", nil))
+				util.SendAPIErrorResponse(w, http.StatusBadRequest, util.NewAPIError("Invalid slack settings", nil))
 				return
 			}
 
 			slackDs, _ := datasource.NewSlackDatasource(ds, datasource.NewConcreteSlackClient(slackSettings.Token), logging)
 			if err := slackDs.Validate(); err != nil {
-				SendAPIErrorResponse(w, http.StatusBadRequest, util.NewAPIError("Datasource validation failed", err))
+				util.SendAPIErrorResponse(w, http.StatusBadRequest, util.NewAPIError("Datasource validation failed", err))
 				return
 			}
 
-			SendSuccessResponse(w, http.StatusOK, map[string]string{"result": "success"}, logging, span)
+			util.SendSuccessResponse(w, http.StatusOK, map[string]string{"result": "success"}, logging, span)
 		}
 
-		SendAPIErrorResponse(
+		util.SendAPIErrorResponse(
 			w,
 			http.StatusBadRequest,
 			util.NewAPIError(
@@ -163,7 +163,7 @@ func getDatasourcesHandler(st storage.Storage, logging *logrus.Logger) http.Hand
 		paginatedDatasources, err := st.GetAllDatasources(ctx, page, perPage)
 		if err != nil {
 			logging.WithError(err).Error("Failed to get datasources")
-			SendAPIErrorResponse(w, http.StatusInternalServerError, util.NewAPIError("Failed to get datasources", err))
+			util.SendAPIErrorResponse(w, http.StatusInternalServerError, util.NewAPIError("Failed to get datasources", err))
 			return
 		}
 
@@ -172,7 +172,7 @@ func getDatasourcesHandler(st storage.Storage, logging *logrus.Logger) http.Hand
 			paginatedDatasources = createEmptyPaginatedDatasources(page, perPage)
 		}
 
-		SendSuccessResponse(w, http.StatusOK, paginatedDatasources, logging, nil)
+		util.SendSuccessResponse(w, http.StatusOK, paginatedDatasources, logging, nil)
 	}
 }
 
@@ -183,25 +183,25 @@ func updateDatasourceHandler(st storage.Storage, logging *logrus.Logger) http.Ha
 
 		dsUUID := chi.URLParam(r, "uuid")
 		if dsUUID == "" {
-			SendAPIErrorResponse(w, http.StatusBadRequest, util.NewAPIError("Missing UUID", nil))
+			util.SendAPIErrorResponse(w, http.StatusBadRequest, util.NewAPIError("Missing UUID", nil))
 			return
 		}
 
 		var updatePayload map[string]interface{}
 		if err := json.NewDecoder(r.Body).Decode(&updatePayload); err != nil {
-			SendAPIErrorResponse(w, http.StatusBadRequest, util.NewAPIError("Invalid request body", err))
+			util.SendAPIErrorResponse(w, http.StatusBadRequest, util.NewAPIError("Invalid request body", err))
 			return
 		}
 
 		dsUUIDParsed, err := uuid.Parse(dsUUID)
 		if err != nil {
-			SendAPIErrorResponse(w, http.StatusBadRequest, util.NewAPIError(invalidUUIDMsg, err))
+			util.SendAPIErrorResponse(w, http.StatusBadRequest, util.NewAPIError(invalidUUIDMsg, err))
 			return
 		}
 
 		existingDS, err := st.GetDatasource(ctx, dsUUIDParsed)
 		if err != nil {
-			SendAPIErrorResponse(w, http.StatusNotFound, util.NewAPIError(datasourceNotFoundMsg, err))
+			util.SendAPIErrorResponse(w, http.StatusNotFound, util.NewAPIError(datasourceNotFoundMsg, err))
 			return
 		}
 
@@ -209,7 +209,7 @@ func updateDatasourceHandler(st storage.Storage, logging *logrus.Logger) http.Ha
 		newSettings, err := updateDatasourceSettings(existingDS, updatePayload)
 		if err != nil {
 			logging.Error("Failed to update datasource settings: ", err)
-			SendAPIErrorResponse(w, http.StatusBadRequest, util.NewAPIError("Failed to update datasource settings", err))
+			util.SendAPIErrorResponse(w, http.StatusBadRequest, util.NewAPIError("Failed to update datasource settings", err))
 			return
 		}
 
@@ -219,7 +219,7 @@ func updateDatasourceHandler(st storage.Storage, logging *logrus.Logger) http.Ha
 				"source_type":   existingDS.SourceType,
 			}).Error("Failed to update datasource")
 
-			SendAPIErrorResponse(w, http.StatusInternalServerError, util.NewAPIError("Failed to update datasource", err))
+			util.SendAPIErrorResponse(w, http.StatusInternalServerError, util.NewAPIError("Failed to update datasource", err))
 			return
 		}
 
@@ -264,7 +264,7 @@ func setActiveDatasourceHandler(s storage.Storage, l *logrus.Logger) http.Handle
 		err = s.SetActiveDatasource(r.Context(), id)
 		if err != nil {
 			l.WithError(err).Error(failedToSetDatasourceActiveMsg)
-			SendAPIErrorResponse(w, http.StatusInternalServerError, &util.APIError{
+			util.SendAPIErrorResponse(w, http.StatusInternalServerError, &util.APIError{
 				Message: failedToSetDatasourceActiveMsg,
 				Err:     err.Error(),
 			})
@@ -272,7 +272,7 @@ func setActiveDatasourceHandler(s storage.Storage, l *logrus.Logger) http.Handle
 		}
 
 		l.WithField("embedding_provider_id", id).Info("Datasource has been activated successfully")
-		SendSuccessResponse(w, http.StatusOK, map[string]string{"message": "Datasource has been activated successfully"}, l, nil)
+		util.SendSuccessResponse(w, http.StatusOK, map[string]string{"message": "Datasource has been activated successfully"}, l, nil)
 	}
 }
 
@@ -288,7 +288,7 @@ func setDisableDatasourceHandler(s storage.Storage, l *logrus.Logger) http.Handl
 		err = s.SetDisableDatasource(r.Context(), id)
 		if err != nil {
 			l.WithError(err).Error("Failed to deactivate datasource")
-			SendAPIErrorResponse(w, http.StatusInternalServerError, &util.APIError{
+			util.SendAPIErrorResponse(w, http.StatusInternalServerError, &util.APIError{
 				Message: failedToSetDatasourceActiveMsg,
 				Err:     err.Error(),
 			})
@@ -296,7 +296,7 @@ func setDisableDatasourceHandler(s storage.Storage, l *logrus.Logger) http.Handl
 		}
 
 		l.WithField("datasource_id", id).Info("Datasource has been deactivated successfully")
-		SendSuccessResponse(w, http.StatusOK, map[string]string{"message": "Datasource has been deactivated successfully"}, l, nil)
+		util.SendSuccessResponse(w, http.StatusOK, map[string]string{"message": "Datasource has been deactivated successfully"}, l, nil)
 	}
 }
 
@@ -312,7 +312,7 @@ func deleteDatasourceHandler(s storage.Storage, l *logrus.Logger) http.HandlerFu
 		err = s.DeleteDatasource(r.Context(), id)
 		if err != nil {
 			l.WithError(err).Error("Failed to deactivate datasource")
-			SendAPIErrorResponse(w, http.StatusInternalServerError, &util.APIError{
+			util.SendAPIErrorResponse(w, http.StatusInternalServerError, &util.APIError{
 				Message: failedToSetDatasourceActiveMsg,
 				Err:     err.Error(),
 			})
@@ -320,7 +320,7 @@ func deleteDatasourceHandler(s storage.Storage, l *logrus.Logger) http.HandlerFu
 		}
 
 		l.WithField("datasource_id", id).Info(datasourceDeletedSuccessfullyMsg)
-		SendSuccessResponse(w, http.StatusOK, map[string]string{"message": "Datasource has been deleted successfully"}, l, nil)
+		util.SendSuccessResponse(w, http.StatusOK, map[string]string{"message": "Datasource has been deleted successfully"}, l, nil)
 	}
 }
 
@@ -336,7 +336,7 @@ func setDisableEmbeddingProviderHandler(s storage.Storage, l *logrus.Logger) htt
 		err = s.SetDisableEmbeddingProvider(r.Context(), id)
 		if err != nil {
 			l.WithError(err).Error("Failed to deactivate embedding provider")
-			SendAPIErrorResponse(w, http.StatusInternalServerError, &util.APIError{
+			util.SendAPIErrorResponse(w, http.StatusInternalServerError, &util.APIError{
 				Message: "Failed to deactivate embedding provider",
 				Err:     err.Error(),
 			})
@@ -344,7 +344,7 @@ func setDisableEmbeddingProviderHandler(s storage.Storage, l *logrus.Logger) htt
 		}
 
 		l.WithField("datasource_id", id).Info("Embedding provider has been deactivated successfully")
-		SendSuccessResponse(w, http.StatusOK, map[string]string{"message": "Embedding provider has been deactivated successfully"}, l, nil)
+		util.SendSuccessResponse(w, http.StatusOK, map[string]string{"message": "Embedding provider has been deactivated successfully"}, l, nil)
 	}
 }
 

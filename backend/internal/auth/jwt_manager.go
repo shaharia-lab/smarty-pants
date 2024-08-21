@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 )
 
@@ -33,7 +34,7 @@ func NewJWTManager(keyManager *KeyManager, userManager *UserManager, logger *log
 }
 
 // IssueTokenForUser creates and signs a new JWT token for a user
-func (m *JWTManager) IssueTokenForUser(ctx context.Context, userUUID string, audience []string, expiration time.Duration) (string, error) {
+func (m *JWTManager) IssueTokenForUser(ctx context.Context, userUUID uuid.UUID, audience []string, expiration time.Duration) (string, error) {
 	m.logger.WithFields(logrus.Fields{
 		"userUUID":   userUUID,
 		"audience":   audience,
@@ -66,7 +67,7 @@ func (m *JWTManager) IssueTokenForUser(ctx context.Context, userUUID string, aud
 			IssuedAt:  jwt.NewNumericDate(currentTime),
 			NotBefore: jwt.NewNumericDate(currentTime),
 			Issuer:    "smarty-pants",
-			Subject:   user.UUID,
+			Subject:   user.UUID.String(),
 			ID:        fmt.Sprintf("%d", currentTime.Unix()),
 			Audience:  audience,
 		},

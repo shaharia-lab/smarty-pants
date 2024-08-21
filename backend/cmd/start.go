@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/shaharia-lab/smarty-pants/backend/api"
+	"github.com/shaharia-lab/smarty-pants/backend/internal/auth"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/collector"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/config"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/logger"
@@ -64,6 +65,9 @@ func runStart(_ *cobra.Command, _ []string) error {
 		return err
 	}
 
+	// userManager
+	userManager := auth.NewUserManager(st, logging)
+
 	go startMetricsServer(cfg, logging)
 
 	shutdownManager := initializeShutdownManager(cfg, logging)
@@ -76,7 +80,7 @@ func runStart(_ *cobra.Command, _ []string) error {
 		return err
 	}
 
-	apiServer := setupAPIServer(cfg, logging, st)
+	apiServer := setupAPIServer(cfg, logging, st, userManager)
 	shutdownManager.RegisterShutdownFn(apiServer.Shutdown)
 	shutdownManager.RegisterShutdownFn(st.HandleShutdown)
 
@@ -219,7 +223,7 @@ func setupAndStartProcessor(ctx context.Context, cfg *config.Config, st storage.
 	return nil
 }
 
-func setupAPIServer(cfg *config.Config, logging *logrus.Logger, st storage.Storage) *api.API {
+func setupAPIServer(cfg *config.Config, logging *logrus.Logger, st storage.Storage, userManager *auth.UserManager) *api.API {
 	logging.Info("Creating API server")
 	return api.NewAPI(
 		logging,
@@ -231,6 +235,7 @@ func setupAPIServer(cfg *config.Config, logging *logrus.Logger, st storage.Stora
 			WriteTimeout:      cfg.APIServerWriteTimeoutInSecs,
 			IdleTimeout:       cfg.APIServerIdleTimeoutInSecs,
 		},
+		userManager,
 	)
 }
 

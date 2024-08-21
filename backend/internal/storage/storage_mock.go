@@ -591,6 +591,34 @@ func (_m *StorageMock) GetLLMProvider(ctx context.Context, _a1 uuid.UUID) (*type
 	return r0, r1
 }
 
+// GetPaginatedUsers provides a mock function with given fields: ctx, filter, option
+func (_m *StorageMock) GetPaginatedUsers(ctx context.Context, filter types.UserFilter, option types.UserFilterOption) (types.PaginatedUsers, error) {
+	ret := _m.Called(ctx, filter, option)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetPaginatedUsers")
+	}
+
+	var r0 types.PaginatedUsers
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, types.UserFilter, types.UserFilterOption) (types.PaginatedUsers, error)); ok {
+		return rf(ctx, filter, option)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, types.UserFilter, types.UserFilterOption) types.PaginatedUsers); ok {
+		r0 = rf(ctx, filter, option)
+	} else {
+		r0 = ret.Get(0).(types.PaginatedUsers)
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, types.UserFilter, types.UserFilterOption) error); ok {
+		r1 = rf(ctx, filter, option)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // GetSettings provides a mock function with given fields: ctx
 func (_m *StorageMock) GetSettings(ctx context.Context) (types.Settings, error) {
 	ret := _m.Called(ctx)
@@ -620,7 +648,7 @@ func (_m *StorageMock) GetSettings(ctx context.Context) (types.Settings, error) 
 }
 
 // GetUser provides a mock function with given fields: ctx, _a1
-func (_m *StorageMock) GetUser(ctx context.Context, _a1 string) (*types.User, error) {
+func (_m *StorageMock) GetUser(ctx context.Context, _a1 uuid.UUID) (*types.User, error) {
 	ret := _m.Called(ctx, _a1)
 
 	if len(ret) == 0 {
@@ -629,10 +657,10 @@ func (_m *StorageMock) GetUser(ctx context.Context, _a1 string) (*types.User, er
 
 	var r0 *types.User
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, string) (*types.User, error)); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID) (*types.User, error)); ok {
 		return rf(ctx, _a1)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, string) *types.User); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID) *types.User); ok {
 		r0 = rf(ctx, _a1)
 	} else {
 		if ret.Get(0) != nil {
@@ -640,7 +668,7 @@ func (_m *StorageMock) GetUser(ctx context.Context, _a1 string) (*types.User, er
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
+	if rf, ok := ret.Get(1).(func(context.Context, uuid.UUID) error); ok {
 		r1 = rf(ctx, _a1)
 	} else {
 		r1 = ret.Error(1)
@@ -986,7 +1014,7 @@ func (_m *StorageMock) UpdateSettings(ctx context.Context, settings types.Settin
 }
 
 // UpdateUserStatus provides a mock function with given fields: ctx, _a1, status
-func (_m *StorageMock) UpdateUserStatus(ctx context.Context, _a1 string, status string) error {
+func (_m *StorageMock) UpdateUserStatus(ctx context.Context, _a1 uuid.UUID, status types.UserStatus) error {
 	ret := _m.Called(ctx, _a1, status)
 
 	if len(ret) == 0 {
@@ -994,7 +1022,7 @@ func (_m *StorageMock) UpdateUserStatus(ctx context.Context, _a1 string, status 
 	}
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, string, string) error); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID, types.UserStatus) error); ok {
 		r0 = rf(ctx, _a1, status)
 	} else {
 		r0 = ret.Error(0)

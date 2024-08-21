@@ -11,6 +11,7 @@ import (
 	"github.com/shaharia-lab/smarty-pants/backend/internal/search"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/storage"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/types"
+	"github.com/shaharia-lab/smarty-pants/backend/internal/util"
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel/attribute"
 )
@@ -59,11 +60,11 @@ func createInteractionHandler(st storage.Storage, logger *logrus.Logger) http.Ha
 
 		if err != nil {
 			logger.WithError(err).Error("Failed to create interaction")
-			SendErrorResponse(w, http.StatusInternalServerError, "failed to create interaction", logger, nil)
+			util.SendErrorResponse(w, http.StatusInternalServerError, "failed to create interaction", logger, nil)
 			return
 		}
 
-		SendSuccessResponse(w, http.StatusOK, interaction, logger, nil)
+		util.SendSuccessResponse(w, http.StatusOK, interaction, logger, nil)
 	}
 }
 
@@ -78,7 +79,7 @@ func getInteractionsHandler(logger *logrus.Logger) http.HandlerFunc {
 			PerPage: 10,
 		}
 
-		SendSuccessResponse(w, http.StatusOK, response, logger, nil)
+		util.SendSuccessResponse(w, http.StatusOK, response, logger, nil)
 	}
 }
 
@@ -96,7 +97,7 @@ func getInteractionHandler(logger *logrus.Logger) http.HandlerFunc {
 			},
 		}
 
-		SendSuccessResponse(w, http.StatusOK, interaction, logger, nil)
+		util.SendSuccessResponse(w, http.StatusOK, interaction, logger, nil)
 	}
 }
 
@@ -107,21 +108,21 @@ func sendMessageHandler(searchSystem search.System, st storage.Storage, logger *
 
 		var req MessageRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			SendErrorResponse(w, http.StatusBadRequest, "invalid request", logger, nil)
+			util.SendErrorResponse(w, http.StatusBadRequest, "invalid request", logger, nil)
 			return
 		}
 
 		llmProvider, err := llm.InitializeLLMProvider(ctx, st, logger)
 		if err != nil {
 			logger.WithError(err).Error("Failed to initialize LLM provider")
-			SendErrorResponse(w, http.StatusInternalServerError, "failed to initialize LLM provider", logger, nil)
+			util.SendErrorResponse(w, http.StatusInternalServerError, "failed to initialize LLM provider", logger, nil)
 			return
 		}
 
 		llmContexts, err := searchSystem.GenerateLLMContext(ctx, search.Request{Query: req.Query})
 		if err != nil {
 			logger.WithError(err).Error("Failed to generate LLM contexts")
-			SendErrorResponse(w, http.StatusInternalServerError, "failed to generate LLM contexts", logger, nil)
+			util.SendErrorResponse(w, http.StatusInternalServerError, "failed to generate LLM contexts", logger, nil)
 			return
 		}
 		span.SetAttributes(
@@ -137,14 +138,14 @@ func sendMessageHandler(searchSystem search.System, st storage.Storage, logger *
 
 		if err != nil {
 			logger.WithError(err).Error("Failed to generate prompt")
-			SendErrorResponse(w, http.StatusInternalServerError, "failed to generate prompt", logger, nil)
+			util.SendErrorResponse(w, http.StatusInternalServerError, "failed to generate prompt", logger, nil)
 			return
 		}
 
 		llmResponse, err := llmProvider.GetResponse(prompt)
 		if err != nil {
 			logger.WithError(err).Error("Failed to get response from LLM provider")
-			SendErrorResponse(w, http.StatusInternalServerError, "failed to get response from LLM provider", logger, nil)
+			util.SendErrorResponse(w, http.StatusInternalServerError, "failed to get response from LLM provider", logger, nil)
 			return
 		}
 
@@ -153,6 +154,6 @@ func sendMessageHandler(searchSystem search.System, st storage.Storage, logger *
 		}
 
 		logger.Infof("LLM response: %s", llmResponse)
-		SendSuccessResponse(w, http.StatusOK, response, logger, nil)
+		util.SendSuccessResponse(w, http.StatusOK, response, logger, nil)
 	}
 }

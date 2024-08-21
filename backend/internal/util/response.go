@@ -1,4 +1,4 @@
-package api
+package util
 
 import (
 	"encoding/json"
@@ -6,7 +6,6 @@ import (
 	"net/http"
 
 	"github.com/shaharia-lab/smarty-pants/backend/internal/logger"
-	"github.com/shaharia-lab/smarty-pants/backend/internal/util"
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
@@ -44,8 +43,8 @@ func SendErrorResponse(w http.ResponseWriter, statusCode int, message string, lo
 	sendResponse(w, statusCode, response, errors.New(message), logger, span)
 }
 
-// SendSuccessResponse sends a success response with data
-func SendAPIErrorResponse(w http.ResponseWriter, statusCode int, err *util.APIError) {
+// SendAPIErrorResponse sends a success response with data
+func SendAPIErrorResponse(w http.ResponseWriter, statusCode int, err *APIError) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(statusCode)
 
