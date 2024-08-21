@@ -13,12 +13,14 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// OAuthProvider is an interface for OAuth providers
 type OAuthProvider interface {
 	GetAuthURL(state string) string
 	ExchangeCodeForToken(ctx context.Context, code string) (string, error)
 	GetUserInfo(ctx context.Context, token string) (*UserInfo, error)
 }
 
+// OAuthManager handles OAuth operations
 type OAuthManager struct {
 	providers   map[string]OAuthProvider
 	userManager *UserManager
@@ -27,11 +29,13 @@ type OAuthManager struct {
 	stateStore  map[string]stateInfo
 }
 
+// stateInfo stores the provider and timestamp for a given state
 type stateInfo struct {
 	provider  string
 	timestamp time.Time
 }
 
+// NewOAuthManager creates a new OAuthManager with the given providers, UserManager, JWTManager, and logger
 func NewOAuthManager(providers map[string]OAuthProvider, userManager *UserManager, jwtManager *JWTManager, logger *logrus.Logger) *OAuthManager {
 	return &OAuthManager{
 		providers:   providers,
@@ -42,6 +46,7 @@ func NewOAuthManager(providers map[string]OAuthProvider, userManager *UserManage
 	}
 }
 
+// AuthFlowRequest represents the request body for initiating an OAuth flow
 type AuthFlowRequest struct {
 	AuthFlow struct {
 		Provider   string `json:"provider"`
@@ -49,6 +54,7 @@ type AuthFlowRequest struct {
 	} `json:"auth_flow"`
 }
 
+// AuthFlowResponse represents the response body for initiating an OAuth flow
 type AuthFlowResponse struct {
 	AuthFlow struct {
 		Provider        string `json:"provider"`
@@ -57,6 +63,7 @@ type AuthFlowResponse struct {
 	} `json:"auth_flow"`
 }
 
+// AuthCodeRequest represents the request body for handling an OAuth code
 type AuthCodeRequest struct {
 	AuthFlow struct {
 		Provider string `json:"provider"`
@@ -65,10 +72,12 @@ type AuthCodeRequest struct {
 	} `json:"auth_flow"`
 }
 
+// AuthTokenResponse represents the response body for handling an OAuth code
 type AuthTokenResponse struct {
 	AccessToken string `json:"access_token"`
 }
 
+// InitiateAuthFlow initiates an OAuth flow with the given provider
 func (om *OAuthManager) InitiateAuthFlow(w http.ResponseWriter, r *http.Request) {
 	var req AuthFlowRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -108,6 +117,7 @@ func (om *OAuthManager) InitiateAuthFlow(w http.ResponseWriter, r *http.Request)
 	json.NewEncoder(w).Encode(resp)
 }
 
+// HandleAuthCode handles an OAuth code and returns an access token
 func (om *OAuthManager) HandleAuthCode(w http.ResponseWriter, r *http.Request) {
 	var req AuthCodeRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -176,11 +186,13 @@ func (om *OAuthManager) HandleAuthCode(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(resp)
 }
 
+// RegisterRoutes registers the OAuth routes
 func (om *OAuthManager) RegisterRoutes(r chi.Router) {
 	r.Post("/api/v1/auth/initiate", om.InitiateAuthFlow)
 	r.Post("/api/v1/auth/callback", om.HandleAuthCode)
 }
 
+// UserInfo represents the structure of user info from an OAuth provider
 type UserInfo struct {
 	ID    string `json:"id"`
 	Email string `json:"email"`
