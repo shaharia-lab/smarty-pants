@@ -5,176 +5,206 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"net/http"
+	"net/url"
+	"time"
 
+	"github.com/go-chi/chi/v5"
+	"github.com/google/uuid"
+	"github.com/shaharia-lab/smarty-pants/backend/internal/types"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 )
 
-type Provider string
-
-var ErrUserNotFound = errors.New("user not found")
-
-const (
-	Google Provider = "google"
-	// Add other providers here in the future
-)
-
 type OAuthManager struct {
-	configs map[Provider]*oauth2.Config
-	storage Storage
-	logger  *logrus.Logger
+	config      *oauth2.Config
+	userManager *UserManager
+	jwtManager  *JWTManager
+	logger      *logrus.Logger
+	stateStore  map[string]time.Time // Simple in-memory store for states
 }
 
-type Storage interface {
-	SaveUser(ctx context.Context, user *User) error
-	GetUserByEmail(ctx context.Context, email string) (*User, error)
-	SaveOAuthToken(ctx context.Context, token *OAuthToken) error
-	GetOAuthToken(ctx context.Context, userID int64, provider Provider) (*OAuthToken, error)
-}
-
-var TokenNotFound = errors.New("token not found")
-
-type User struct {
-	ID             int64
-	Name           string
-	Email          string
-	AuthProvider   Provider
-	AuthProviderID string
-}
-
-type OAuthToken struct {
-	UserID       int64
-	Provider     Provider
-	AccessToken  string
-	RefreshToken string
-	ExpiresAt    int64
-}
-
-func NewOAuthManager(storage Storage, logger *logrus.Logger) *OAuthManager {
-	return &OAuthManager{
-		configs: make(map[Provider]*oauth2.Config),
-		storage: storage,
-		logger:  logger,
-	}
-}
-
-func (m *OAuthManager) RegisterProvider(provider Provider, clientID, clientSecret, redirectURL string) {
+func NewOAuthManager(clientID, clientSecret, redirectURL string, userManager *UserManager, jwtManager *JWTManager, logger *logrus.Logger) *OAuthManager {
 	config := &oauth2.Config{
 		ClientID:     clientID,
 		ClientSecret: clientSecret,
 		RedirectURL:  redirectURL,
-		Scopes:       []string{"https://www.googleapis.com/auth/userinfo.email", "https://www.googleapis.com/auth/userinfo.profile"},
+		Scopes: []string{
+			"https://www.googleapis.com/auth/userinfo.email",
+			"https://www.googleapis.com/auth/userinfo.profile",
+		},
+		Endpoint: google.Endpoint,
 	}
 
-	switch provider {
-	case Google:
-		config.Endpoint = google.Endpoint
-	// Add cases for other providers here
-	default:
-		m.logger.Errorf("Unsupported OAuth provider: %s", provider)
+	return &OAuthManager{
+		config:      config,
+		userManager: userManager,
+		jwtManager:  jwtManager,
+		logger:      logger,
+		stateStore:  make(map[string]time.Time),
+	}
+}
+
+type AuthFlowRequest struct {
+	AuthFlow struct {
+		Provider   string `json:"provider"`
+		CurrentURL string `json:"current_url,omitempty"`
+	} `json:"auth_flow"`
+}
+
+type AuthFlowResponse struct {
+	AuthFlow struct {
+		Provider        string `json:"provider"`
+		AuthRedirectURL string `json:"auth_redirect_url"`
+		State           string `json:"state"`
+	} `json:"auth_flow"`
+}
+
+type AuthCodeRequest struct {
+	AuthFlow struct {
+		Provider string `json:"provider"`
+		AuthCode string `json:"auth_code"`
+		State    string `json:"state"`
+	} `json:"auth_flow"`
+}
+
+type AuthTokenResponse struct {
+	AccessToken string `json:"access_token"`
+}
+
+func (om *OAuthManager) InitiateAuthFlow(w http.ResponseWriter, r *http.Request) {
+	var req AuthFlowRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		om.logger.WithError(err).Error("Failed to decode request body")
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
 
-	m.configs[provider] = config
+	if req.AuthFlow.Provider != "google" {
+		om.logger.WithField("provider", req.AuthFlow.Provider).Error("Unsupported provider")
+		http.Error(w, "Unsupported provider", http.StatusBadRequest)
+		return
+	}
+
+	state := uuid.New().String()
+	om.stateStore[state] = time.Now() // Store state with timestamp
+
+	authURL := om.config.AuthCodeURL(state)
+
+	resp := AuthFlowResponse{
+		AuthFlow: struct {
+			Provider        string `json:"provider"`
+			AuthRedirectURL string `json:"auth_redirect_url"`
+			State           string `json:"state"`
+		}{
+			Provider:        "google",
+			AuthRedirectURL: authURL,
+			State:           state,
+		},
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(resp)
 }
 
-func (m *OAuthManager) GetAuthURL(provider Provider, state string) (string, error) {
-	config, ok := m.configs[provider]
-	if !ok {
-		return "", fmt.Errorf("unsupported OAuth provider: %s", provider)
-	}
-	return config.AuthCodeURL(state), nil
-}
-
-func (m *OAuthManager) HandleCallback(ctx context.Context, provider Provider, code string) (*User, error) {
-	config, ok := m.configs[provider]
-	if !ok {
-		return nil, fmt.Errorf("unsupported OAuth provider: %s", provider)
+func (om *OAuthManager) HandleAuthCode(w http.ResponseWriter, r *http.Request) {
+	var req AuthCodeRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		om.logger.WithError(err).Error("Failed to decode request body")
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
 	}
 
-	m.logger.WithField("code", code).Info("Handling OAuth callback")
-	token, err := config.Exchange(ctx, code)
+	if req.AuthFlow.Provider != "google" {
+		om.logger.WithField("provider", req.AuthFlow.Provider).Error("Unsupported provider")
+		http.Error(w, "Unsupported provider", http.StatusBadRequest)
+		return
+	}
+
+	// Validate state
+	if _, ok := om.stateStore[req.AuthFlow.State]; !ok {
+		om.logger.WithField("state", req.AuthFlow.State).Error("Invalid state")
+		http.Error(w, "Invalid state", http.StatusBadRequest)
+		return
+	}
+	delete(om.stateStore, req.AuthFlow.State) // Remove used state
+
+	token, err := om.config.Exchange(r.Context(), req.AuthFlow.AuthCode)
 	if err != nil {
-		return nil, fmt.Errorf("failed to exchange token: %w", err)
+		om.logger.WithError(err).Error("Failed to exchange OAuth code")
+		http.Error(w, "Failed to authenticate", http.StatusInternalServerError)
+		return
 	}
 
-	client := config.Client(ctx, token)
-	userInfo, err := m.getUserInfo(ctx, client, provider)
+	userInfo, err := om.getUserInfo(r.Context(), token.AccessToken)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get user info from provider: %w", err)
+		om.logger.WithError(err).Error("Failed to get user info")
+		http.Error(w, "Failed to get user info", http.StatusInternalServerError)
+		return
 	}
 
-	user, err := m.storage.GetUserByEmail(ctx, userInfo.Email)
+	user, err := om.userManager.GetUserByEmail(r.Context(), userInfo.Email)
 	if err != nil {
-		if errors.Is(err, ErrUserNotFound) {
-			user = &User{
-				Name:           userInfo.Name,
-				Email:          userInfo.Email,
-				AuthProvider:   provider,
-				AuthProviderID: userInfo.ID,
-			}
-			err = m.storage.SaveUser(ctx, user)
+		if errors.Is(err, types.UserNotFoundError) {
+			// User doesn't exist, create a new one
+			user, err = om.userManager.CreateUser(r.Context(), userInfo.Name, userInfo.Email, "active")
 			if err != nil {
-				return nil, fmt.Errorf("failed to save user: %w", err)
+				om.logger.WithError(err).Error("Failed to create user")
+				http.Error(w, "Failed to create user", http.StatusInternalServerError)
+				return
 			}
 		} else {
-			return nil, fmt.Errorf("failed to get user from storage: %w", err)
+			om.logger.WithError(err).Error("Failed to get user")
+			http.Error(w, "Failed to get user", http.StatusInternalServerError)
+			return
 		}
 	}
 
-	oauthToken := &OAuthToken{
-		UserID:       user.ID,
-		Provider:     provider,
-		AccessToken:  token.AccessToken,
-		RefreshToken: token.RefreshToken,
-		ExpiresAt:    token.Expiry.Unix(),
-	}
-	err = m.storage.SaveOAuthToken(ctx, oauthToken)
+	// Issue JWT token
+	jwtToken, err := om.jwtManager.IssueTokenForUser(r.Context(), user.UUID, []string{"user"}, 24*time.Hour)
 	if err != nil {
-		return nil, fmt.Errorf("failed to save OAuth token: %w", err)
+		om.logger.WithError(err).Error("Failed to issue JWT token")
+		http.Error(w, "Failed to issue token", http.StatusInternalServerError)
+		return
 	}
 
-	return user, nil
-}
-
-func (m *OAuthManager) getUserInfo(ctx context.Context, client *http.Client, provider Provider) (*UserInfo, error) {
-	switch provider {
-	case Google:
-		return getGoogleUserInfo(ctx, client)
-	// Add cases for other providers here
-	default:
-		return nil, fmt.Errorf("unsupported OAuth provider: %s", provider)
+	resp := AuthTokenResponse{
+		AccessToken: jwtToken,
 	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(resp)
 }
 
-type UserInfo struct {
-	ID    string
-	Name  string
-	Email string
-}
-
-func getGoogleUserInfo(ctx context.Context, client *http.Client) (*UserInfo, error) {
-	resp, err := client.Get("https://www.googleapis.com/oauth2/v3/userinfo")
+func (om *OAuthManager) getUserInfo(ctx context.Context, accessToken string) (*UserInfo, error) {
+	resp, err := http.Get("https://www.googleapis.com/oauth2/v2/userinfo?access_token=" + url.QueryEscape(accessToken))
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed getting user info: %v", err)
 	}
 	defer resp.Body.Close()
 
-	var userInfo struct {
-		Sub   string `json:"sub"`
-		Name  string `json:"name"`
-		Email string `json:"email"`
-	}
-	err = json.NewDecoder(resp.Body).Decode(&userInfo)
+	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed reading response body: %v", err)
 	}
 
-	return &UserInfo{
-		ID:    userInfo.Sub,
-		Name:  userInfo.Name,
-		Email: userInfo.Email,
-	}, nil
+	var userInfo UserInfo
+	if err := json.Unmarshal(body, &userInfo); err != nil {
+		return nil, fmt.Errorf("failed to parse user info: %v", err)
+	}
+
+	return &userInfo, nil
+}
+
+type UserInfo struct {
+	ID    string `json:"id"`
+	Email string `json:"email"`
+	Name  string `json:"name"`
+}
+
+func (om *OAuthManager) RegisterRoutes(r chi.Router) {
+	r.Post("/api/v1/auth/initiate", om.InitiateAuthFlow)
+	r.Post("/api/v1/auth/callback", om.HandleAuthCode)
 }

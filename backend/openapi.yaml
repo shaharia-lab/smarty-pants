@@ -627,7 +627,57 @@ paths:
                 properties:
                   message:
                     type: string
+  /auth/initiate:
+    post:
+      summary: Initiate OAuth authentication flow
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthFlowRequest'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthFlowResponse'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
+  /auth/callback:
+    post:
+      summary: Handle OAuth callback and complete authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthCodeRequest'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthTokenResponse'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /search:
     post:
       summary: Perform a search
@@ -749,6 +799,68 @@ paths:
 
 components:
   schemas:
+    AuthFlowRequest:
+      type: object
+      required:
+        - auth_flow
+      properties:
+        auth_flow:
+          type: object
+          required:
+            - provider
+          properties:
+            provider:
+              type: string
+              enum: [ google ]
+            current_url:
+              type: string
+              format: uri
+
+    AuthFlowResponse:
+      type: object
+      properties:
+        auth_flow:
+          type: object
+          properties:
+            provider:
+              type: string
+            auth_redirect_url:
+              type: string
+              format: uri
+            state:
+              type: string
+
+    AuthCodeRequest:
+      type: object
+      required:
+        - auth_flow
+      properties:
+        auth_flow:
+          type: object
+          required:
+            - provider
+            - auth_code
+            - state
+          properties:
+            provider:
+              type: string
+              enum: [ google ]
+            auth_code:
+              type: string
+            state:
+              type: string
+    AuthTokenResponse:
+      type: object
+      properties:
+        access_token:
+          type: string
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string
     PingResponse:
       type: object
       properties:

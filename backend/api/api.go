@@ -55,6 +55,7 @@ type API struct {
 	llmManager         *llm.Manager
 	searchManager      *search.Manager
 	settingsManager    *settings.Manager
+	oauthManager *auth.OAuthManager
 }
 
 type Config struct {
@@ -64,7 +65,7 @@ type Config struct {
 	IdleTimeout       int
 }
 
-func NewAPI(logger *logrus.Logger, storage storage.Storage, searchSystem search.System, config Config, userManager *auth.UserManager, jwtManager *auth.JWTManager, aclManager auth.ACLManager, enableAuth bool, analyticsManager *analytics.Analytics, datasourceManager *datasource.Manager, documentManager *document.Manager, embeddingManager *embedding.Manager, interactionManager *interaction.Manager, llmManager *llm.Manager, searchManager *search.Manager, settingsManager *settings.Manager) *API {
+func NewAPI(logger *logrus.Logger, storage storage.Storage, searchSystem search.System, config Config, userManager *auth.UserManager, jwtManager *auth.JWTManager, aclManager auth.ACLManager, enableAuth bool, analyticsManager *analytics.Analytics, datasourceManager *datasource.Manager, documentManager *document.Manager, embeddingManager *embedding.Manager, interactionManager *interaction.Manager, llmManager *llm.Manager, searchManager *search.Manager, settingsManager *settings.Manager, oauthManager *auth.OAuthManager) *API {
 	api := &API{
 		config:             config,
 		router:             chi.NewRouter(),
@@ -84,6 +85,7 @@ func NewAPI(logger *logrus.Logger, storage storage.Storage, searchSystem search.
 		llmManager:         llmManager,
 		searchManager:      searchManager,
 		settingsManager:    settingsManager,
+		oauthManager: oauthManager,
 	}
 	api.setupMiddleware()
 	api.setupRoutes()
@@ -156,6 +158,7 @@ func (a *API) setupRoutes() {
 	a.interactionManager.RegisterRoutes(a.router)
 	a.searchManager.RegisterRoutes(a.router)
 	a.settingsManager.RegisterRoutes(a.router)
+	a.oauthManager.RegisterRoutes(a.router)
 }
 
 // Start starts the API server

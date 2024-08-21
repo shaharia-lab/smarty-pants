@@ -278,23 +278,7 @@ func setupAndStartProcessor(ctx context.Context, cfg *config.Config, st storage.
 	return processingEngine, nil
 }
 
-func setupAPIServer(
-	cfg *config.Config,
-	logging *logrus.Logger,
-	st storage.Storage,
-	userManager *auth.UserManager,
-	jwtmanager *auth.JWTManager,
-	aclManager auth.ACLManager,
-	authEnabled bool,
-	analyticsManager *analytics.Analytics,
-	datasourceManager *datasource.Manager,
-	documentManager *document.Manager,
-	embeddingManager *embedding.Manager,
-	interactionManager *interaction.Manager,
-	llmManager *llm.Manager,
-	searchManager *search.Manager,
-	settingsManager *settings.Manager,
-) *api.API {
+func setupAPIServer(cfg *config.Config, logging *logrus.Logger, st storage.Storage, userManager *auth.UserManager, jwtmanager *auth.JWTManager, aclManager auth.ACLManager, authEnabled bool, oauthManager *auth.OAuthManager) *api.API {
 	logging.Info("Creating API server")
 	return api.NewAPI(
 		logging,
@@ -318,6 +302,7 @@ func setupAPIServer(
 		llmManager,
 		searchManager,
 		settingsManager,
+		oauthManager,
 	)
 }
 

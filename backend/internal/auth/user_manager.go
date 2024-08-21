@@ -59,6 +59,20 @@ func (um *UserManager) GetAnonymousUser(ctx context.Context) (*types.User, error
 	return um.storage.GetUser(ctx, uuid.MustParse(types.AnonymousUserUUID))
 }
 
+// GetUserByEmail fetches the user details from the storage.
+func (um *UserManager) GetUserByEmail(ctx context.Context, email string) (*types.User, error) {
+	paginatedUsers, err := um.storage.GetPaginatedUsers(ctx, types.UserFilter{EmailContains: email}, types.UserFilterOption{PerPage: 1})
+	if err != nil {
+		return nil, err
+	}
+
+	if len(paginatedUsers.Users) == 0 {
+		return nil, types.UserNotFoundError
+	}
+
+	return &paginatedUsers.Users[0], nil
+}
+
 // UpdateUserStatus updates the status of the user with the given UUID.
 func (um *UserManager) UpdateUserStatus(ctx context.Context, uuid uuid.UUID, status types.UserStatus) error {
 	return um.storage.UpdateUserStatus(ctx, uuid, status)
