@@ -3,22 +3,28 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 
-const Navbar: React.FC = () => {
+interface NavbarProps {
+    initialPath?: string;
+}
+
+const Navbar: React.FC<NavbarProps> = ({ initialPath = '' }) => {
     const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
-    const [currentPath, setCurrentPath] = useState<string>('');
+    const [currentPath, setCurrentPath] = useState<string>(initialPath);
 
     useEffect(() => {
         const updatePath = () => {
             setCurrentPath(window.location.pathname);
         };
 
-        updatePath();
+        if (!initialPath) {
+            updatePath();
+        }
         window.addEventListener('popstate', updatePath);
 
         return () => {
             window.removeEventListener('popstate', updatePath);
         };
-    }, []);
+    }, [initialPath]);
 
     const navItems = [
         {
@@ -135,6 +141,7 @@ const Navbar: React.FC = () => {
             ]
         }
     ];
+
     const toggleDropdown = (name: string) => {
         setActiveDropdown(activeDropdown === name ? null : name);
     };
@@ -159,27 +166,33 @@ const Navbar: React.FC = () => {
                         </div>
                         <div className="hidden md:block">
                             <div className="ml-10 flex items-baseline space-x-4">
-                                {navItems.map((item) => (
-                                    <div key={item.name} className="relative">
-                                        {item.children ? (
-                                            <div>
-                                                <button
-                                                    onClick={() => toggleDropdown(item.name)}
-                                                    className={`${
-                                                        isActive(item)
-                                                            ? 'bg-gray-900 text-white'
-                                                            : 'text-gray-300 hover:bg-gray-700 hover:text-white'
-                                                    } px-3 py-2 rounded-md text-sm font-medium focus:outline-none flex items-center`}
-                                                >
-                                                    {item.icon}
-                                                    {item.name}
-                                                    <svg className="ml-2 -mr-0.5 h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                                                        <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-                                                    </svg>
-                                                </button>
-                                                {activeDropdown === item.name && (
-                                                    <div className="absolute z-10 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5">
-                                                        <div className="py-1" role="menu" aria-orientation="vertical" aria-labelledby="options-menu">
+                                {navItems.map((item) => {
+                                    const active = isActive(item);
+                                    const className = `${
+                                        active
+                                            ? 'bg-gray-900 text-white'
+                                            : 'text-gray-300 hover:bg-gray-700 hover:text-white'
+                                    } px-3 py-2 rounded-md text-sm font-medium flex items-center`;
+
+                                    return (
+                                        <div key={item.name} className="relative">
+                                            {item.children ? (
+                                                <div>
+                                                    <button
+                                                        onClick={() => toggleDropdown(item.name)}
+                                                        className={className}
+                                                    >
+                                                        {item.icon}
+                                                        {item.name}
+                                                        <svg className="ml-2 -mr-0.5 h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                                            <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                                                        </svg>
+                                                    </button>
+                                                    {activeDropdown === item.name && (
+                                                    <div
+                                                        className="absolute z-10 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5">
+                                                        <div className="py-1" role="menu" aria-orientation="vertical"
+                                                             aria-labelledby="options-menu">
                                                             {item.children.map((subItem: any) => (
                                                                 <Link
                                                                     key={subItem.name}
@@ -203,21 +216,19 @@ const Navbar: React.FC = () => {
                                                 )}
                                             </div>
                                         ) : (
-                                            <Link
-                                                href={item.href}
-                                                className={`${
-                                                    isActive(item)
-                                                        ? 'bg-gray-900 text-white'
-                                                        : 'text-gray-300 hover:bg-gray-700 hover:text-white'
-                                                } px-3 py-2 rounded-md text-sm font-medium flex items-center`}
-                                                onClick={() => setCurrentPath(item.href)}
-                                            >
-                                                {item.icon}
-                                                {item.name}
-                                            </Link>
-                                        )}
-                                    </div>
-                                ))}
+                                                <Link
+                                                    href={item.href}
+                                                    className={className}
+                                                    onClick={() => setCurrentPath(item.href)}
+                                                    data-testid={`nav-${item.name.toLowerCase()}`}
+                                                >
+                                                    {item.icon}
+                                                    {item.name}
+                                                </Link>
+                                            )}
+                                        </div>
+                                    );
+                                })}
                             </div>
                         </div>
                     </div>
