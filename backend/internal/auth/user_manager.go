@@ -18,11 +18,13 @@ type contextKey string
 
 const userContextKey contextKey = "user_details"
 
+// UserManager is a manager for user operations.
 type UserManager struct {
 	storage storage.Storage
 	logger  *logrus.Logger
 }
 
+// NewUserManager creates a new instance of UserManager with the given storage and logger.
 func NewUserManager(storage storage.Storage, logger *logrus.Logger) *UserManager {
 	return &UserManager{
 		storage: storage,
@@ -30,6 +32,7 @@ func NewUserManager(storage storage.Storage, logger *logrus.Logger) *UserManager
 	}
 }
 
+// CreateUser creates a new user with the given name, email, and status.
 func (um *UserManager) CreateUser(ctx context.Context, name, email string, status types.UserStatus) (*types.User, error) {
 	user := &types.User{
 		Name:   name,
@@ -45,27 +48,54 @@ func (um *UserManager) CreateUser(ctx context.Context, name, email string, statu
 	return user, nil
 }
 
+// GetUser fetches the user details from the storage.
 func (um *UserManager) GetUser(ctx context.Context, uuid uuid.UUID) (*types.User, error) {
 	return um.storage.GetUser(ctx, uuid)
 }
 
+// UpdateUserStatus updates the status of the user with the given UUID.
 func (um *UserManager) UpdateUserStatus(ctx context.Context, uuid uuid.UUID, status types.UserStatus) error {
 	return um.storage.UpdateUserStatus(ctx, uuid, status)
 }
 
+// ActivateUser sets the user status to active.
 func (um *UserManager) ActivateUser(ctx context.Context, uuid uuid.UUID) error {
 	return um.UpdateUserStatus(ctx, uuid, types.UserStatusActive)
 }
 
+// DeactivateUser sets the user status to inactive.
 func (um *UserManager) DeactivateUser(ctx context.Context, uuid uuid.UUID) error {
 	return um.UpdateUserStatus(ctx, uuid, types.UserStatusInactive)
 }
 
+// ResolveUserFromRequest is a middleware that extracts the user UUID from the request and fetches the user details from the storage.
 func (um *UserManager) ResolveUserFromRequest(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		userUUID := chi.URLParam(r, "uuid")
+		um.logger.WithFields(logrus.Fields{
+			"path":        r.URL.Path,
+			"raw_query":   r.URL.RawQuery,
+			"request_uri": r.RequestURI,
+		}).Debug("ResolveUserFromRequest called")
+
+		rctx := chi.RouteContext(r.Context())
+		if rctx == nil {
+			um.logger.Error("No route context found")
+			util.SendErrorResponse(w, http.StatusInternalServerError, "Internal server error", um.logger, nil)
+			return
+		}
+
+		userUUID := rctx.URLParam("uuid")
+		um.logger.WithField("uuid", userUUID).Debug("Extracted UUID from request")
+
+		if userUUID == "" {
+			um.logger.Error("Empty UUID parameter")
+			util.SendErrorResponse(w, http.StatusBadRequest, "Invalid user UUID", um.logger, nil)
+			return
+		}
+
 		parsedUUID, err := uuid.Parse(userUUID)
 		if err != nil {
+			um.logger.WithError(err).Error("Failed to parse UUID")
 			util.SendErrorResponse(w, http.StatusBadRequest, "Invalid user UUID", um.logger, nil)
 			return
 		}
@@ -85,13 +115,16 @@ func (um *UserManager) ResolveUserFromRequest(next http.Handler) http.Handler {
 	})
 }
 
+// RegisterRoutes registers the user management routes.
 func (um *UserManager) RegisterRoutes(r chi.Router) {
 	r.Route("/api/v1/users", func(r chi.Router) {
-		r.Use(um.ResolveUserFromRequest)
-		r.Get("/{uuid}", um.handleGetUser)
-		r.Put("/{uuid}/activate", um.handleActivateUser)
-		r.Put("/{uuid}/deactivate", um.handleDeactivateUser)
-		r.Put("/{uuid}/status", um.handleUpdateUserStatus)
+		r.Group(func(r chi.Router) {
+			r.Use(um.ResolveUserFromRequest)
+			r.Get("/{uuid}", um.handleGetUser)
+			r.Put("/{uuid}/activate", um.handleActivateUser)
+			r.Put("/{uuid}/deactivate", um.handleDeactivateUser)
+			r.Put("/{uuid}/status", um.handleUpdateUserStatus)
+		})
 	})
 }
 
