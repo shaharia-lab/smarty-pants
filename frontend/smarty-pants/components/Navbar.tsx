@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 
@@ -167,23 +169,22 @@ const Navbar: React.FC = () => {
                                                     </svg>
                                                 </button>
                                                 {activeDropdown === item.name && (
-                                                    <div className="absolute z-10 -ml-4 mt-3 transform px-2 w-screen max-w-md sm:px-0 lg:ml-0 lg:left-1/2 lg:-translate-x-1/2">
-                                                        <div className="rounded-lg shadow-lg ring-1 ring-black ring-opacity-5 overflow-hidden">
-                                                            <div className="relative grid gap-6 bg-white px-5 py-6 sm:gap-8 sm:p-8">
-                                                                {item.children.map((subItem) => (
-                                                                    <Link
-                                                                        key={subItem.name}
-                                                                        href={subItem.href}
-                                                                        className="hover:bg-gray-100 p-3 rounded-md transition ease-in-out duration-150 flex items-center"
-                                                                        onClick={() => setCurrentPath(subItem.href)}
-                                                                    >
-                                                                        {subItem.icon}
-                                                                        <p className="text-base font-medium text-gray-900">
-                                                                            {subItem.name}
-                                                                        </p>
-                                                                    </Link>
-                                                                ))}
-                                                            </div>
+                                                    <div className="absolute z-10 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5">
+                                                        <div className="py-1" role="menu" aria-orientation="vertical" aria-labelledby="options-menu">
+                                                            {item.children.map((subItem) => (
+                                                                <Link
+                                                                    key={subItem.name}
+                                                                    href={subItem.href}
+                                                                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900 flex items-center"
+                                                                    onClick={() => {
+                                                                        setCurrentPath(subItem.href);
+                                                                        setActiveDropdown(null);
+                                                                    }}
+                                                                >
+                                                                    {subItem.icon}
+                                                                    <span className="ml-2">{subItem.name}</span>
+                                                                </Link>
+                                                            ))}
                                                         </div>
                                                     </div>
                                                 )}
