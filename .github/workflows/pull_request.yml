@@ -131,17 +131,10 @@ jobs:
           path: frontend/smarty-pants/coverage
         continue-on-error: true
 
-      - name: Download backend unit test coverage
+      - name: Download backend test coverage
         uses: actions/download-artifact@v3
         with:
           name: backend-coverage-pr${{ github.event.pull_request.number }}-${{ github.sha }}
-          path: backend
-        continue-on-error: true
-
-      - name: Download backend integration test coverage
-        uses: actions/download-artifact@v3
-        with:
-          name: backend-integration-coverage-pr${{ github.event.pull_request.number }}-${{ github.sha }}
           path: backend
         continue-on-error: true
 
