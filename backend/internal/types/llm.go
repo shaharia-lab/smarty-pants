@@ -35,15 +35,13 @@ type LLMProviderConfig struct {
 	Status        string              `json:"status"`
 }
 
-type LLMProviderSettings interface {
-	Validate() error
-	RawJSON() json.RawMessage
-	ToMap() map[string]interface{}
+type NoOpLLMProviderSettings struct {
+	ResponseToReturn string `json:"response_to_return"`
+	HealthCheckError *error `json:"health_check_error,omitempty"`
 }
 
-type NoOpLLMProviderSettings struct {
-	ResponseToReturn string
-	HealthCheckError *error
+func (s *NoOpLLMProviderSettings) Validate() error {
+	return nil
 }
 
 func (s *NoOpLLMProviderSettings) RawJSON() json.RawMessage {
@@ -55,15 +53,16 @@ func (s *NoOpLLMProviderSettings) ToMap() map[string]interface{} {
 	if s == nil {
 		return nil
 	}
-
 	return map[string]interface{}{
 		"response_to_return": s.ResponseToReturn,
 		"health_check_error": s.HealthCheckError,
 	}
 }
 
-func (s *NoOpLLMProviderSettings) Validate() error {
-	return nil
+type LLMProviderSettings interface {
+	Validate() error
+	RawJSON() json.RawMessage
+	ToMap() map[string]interface{}
 }
 
 type OpenAILLMSettings struct {
