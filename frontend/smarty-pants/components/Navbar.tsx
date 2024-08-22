@@ -1,7 +1,9 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import authService from '../services/authService';
 import SVGLogo from "@/components/SVGLogo";
 
 interface NavbarProps {
@@ -12,19 +14,29 @@ const Navbar: React.FC<NavbarProps> = ({ initialPath = '' }) => {
     const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
     const [currentPath, setCurrentPath] = useState<string>(initialPath);
 
+    const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const router = useRouter();
+
     useEffect(() => {
-        const updatePath = () => {
-            setCurrentPath(window.location.pathname);
-        };
+        setIsAuthenticated(authService.isAuthenticated());
+    }, []);
 
-        if (!initialPath) {
-            updatePath();
+    const handleLogout = () => {
+        authService.logout();
+        setIsAuthenticated(false);
+        router.push('/login');
+    };
+
+    useEffect(() => {
+        if (typeof window !== "undefined") {
+            const updatePath = () => {
+                setCurrentPath(window.location.pathname);
+            };
+
+            if (!initialPath) {
+                updatePath();
+            }
         }
-        window.addEventListener('popstate', updatePath);
-
-        return () => {
-            window.removeEventListener('popstate', updatePath);
-        };
     }, [initialPath]);
 
     const navItems = [
@@ -239,6 +251,19 @@ const Navbar: React.FC<NavbarProps> = ({ initialPath = '' }) => {
                                         </div>
                                     );
                                 })}
+
+                                {isAuthenticated ? (
+                                    <button
+                                        onClick={handleLogout}
+                                        className="text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium"
+                                    >
+                                        Logout
+                                    </button>
+                                ) : (
+                                    <Link href="/login" className="text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium">
+                                        Login
+                                    </Link>
+                                )}
                             </div>
                         </div>
                     </div>
