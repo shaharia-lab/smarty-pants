@@ -167,7 +167,7 @@ const Navbar: React.FC<NavbarProps> = ({ initialPath = '' }) => {
                                     height={40}
                                     leftBrainColor="#FFF"
                                     rightBrainColor="#FFF"
-                                    centerSquareColor="#8ca6c9"
+                                    centerSquareColor="#8CA6C9"
                                     centerSquareBlinkColor="#FFFFFF"
                                     onHoverRotationDegree={15}
                                 />
