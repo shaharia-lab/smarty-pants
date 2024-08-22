@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import SVGLogo from "@/components/SVGLogo";
 
 interface NavbarProps {
     initialPath?: string;
@@ -160,8 +161,17 @@ const Navbar: React.FC<NavbarProps> = ({ initialPath = '' }) => {
                 <div className="flex items-center justify-between h-16">
                     <div className="flex items-center">
                         <div className="flex-shrink-0">
-                            <Link href="/" className="text-white font-bold text-xl">
-                                SmartyPants AI
+                            <Link href="/" className="flex items-center">
+                                <SVGLogo
+                                    width={40}
+                                    height={40}
+                                    leftBrainColor="#FFF"
+                                    rightBrainColor="#FFF"
+                                    centerSquareColor="#8CA6C9"
+                                    centerSquareBlinkColor="#FFFFFF"
+                                    onHoverRotationDegree={15}
+                                />
+                                <span className="ml-2 text-white font-bold text-xl">SmartyPants</span>
                             </Link>
                         </div>
                         <div className="hidden md:block">

@@ -17,6 +17,12 @@ jest.mock('next/link', () => {
     return MockedLink;
 });
 
+jest.mock('./SVGLogo', () => {
+    return function DummySVGLogo(props: any) {
+        return <div data-testid="svg-logo" data-props={JSON.stringify(props)}>SVG Logo</div>;
+    };
+});
+
 // Mock window.location
 const mockPathname = jest.fn();
 Object.defineProperty(window, 'location', {
@@ -27,7 +33,7 @@ Object.defineProperty(window, 'location', {
 describe('Navbar', () => {
     it('renders without crashing', () => {
         render(<Navbar />);
-        expect(screen.getByText('SmartyPants AI')).toBeInTheDocument();
+        expect(screen.getByText('SmartyPants')).toBeInTheDocument();
     });
 
     it('displays all top-level navigation items', () => {
@@ -79,5 +85,31 @@ describe('Navbar', () => {
         const { unmount } = render(<Navbar />);
         unmount();
         expect(removeEventListenerSpy).toHaveBeenCalledWith('popstate', expect.any(Function));
+    });
+
+    it('renders the SVG logo with correct props', () => {
+        render(<Navbar />);
+        const svgLogo = screen.getByTestId('svg-logo');
+        expect(svgLogo).toBeInTheDocument();
+
+        // Parse the props from the data-props attribute
+        const logoProps = JSON.parse(svgLogo.getAttribute('data-props') || '{}');
+
+        // Check if the logo has the correct props
+        expect(logoProps).toEqual({
+            width: 40,
+            height: 40,
+            leftBrainColor: '#FFF',
+            rightBrainColor: '#FFF',
+            centerSquareColor: '#8CA6C9',
+            centerSquareBlinkColor: '#FFFFFF',
+            onHoverRotationDegree: 15
+        });
+    });
+
+    it('renders the logo and brand name together', () => {
+        render(<Navbar />);
+        const logoContainer = screen.getByTestId('svg-logo').closest('a');
+        expect(logoContainer).toContainElement(screen.getByText('SmartyPants'));
     });
 });
