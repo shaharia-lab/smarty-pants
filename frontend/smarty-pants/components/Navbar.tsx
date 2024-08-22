@@ -15,7 +15,7 @@ const Navbar: React.FC<NavbarProps> = ({ initialPath = '' }) => {
     const [currentPath, setCurrentPath] = useState<string>(initialPath);
 
     const [isAuthenticated, setIsAuthenticated] = useState(false);
-    const router = useRouter();
+    //const router = useRouter();
 
     useEffect(() => {
         setIsAuthenticated(authService.isAuthenticated());
@@ -24,7 +24,8 @@ const Navbar: React.FC<NavbarProps> = ({ initialPath = '' }) => {
     const handleLogout = () => {
         authService.logout();
         setIsAuthenticated(false);
-        router.push('/login');
+        //router.push('/login');
+        setCurrentPath(window.location.pathname);
     };
 
     useEffect(() => {
