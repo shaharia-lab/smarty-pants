@@ -68,7 +68,7 @@ jobs:
           DB_USER: app
           DB_PASS: pass
           DB_NAME: test
-        run: make backend-integration-test
+        run: make backend-test-integration
 
       - name: Publish artifacts
         uses: actions/upload-artifact@v3
