@@ -27,7 +27,7 @@ Object.defineProperty(window, 'location', {
 describe('Navbar', () => {
     it('renders without crashing', () => {
         render(<Navbar />);
-        expect(screen.getByText('SmartyPants AI')).toBeInTheDocument();
+        expect(screen.getByText('SmartyPants')).toBeInTheDocument();
     });
 
     it('displays all top-level navigation items', () => {
