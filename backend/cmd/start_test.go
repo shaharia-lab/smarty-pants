@@ -29,11 +29,6 @@ func TestStartCommand(t *testing.T) {
 	require.NoError(t, err, "Failed to get free port for metrics")
 
 	// Set environment variables for the test
-	os.Setenv("DB_HOST", "localhost")
-	os.Setenv("DB_PORT", "5432")
-	os.Setenv("DB_USER", "app")
-	os.Setenv("DB_PASS", "pass")
-	os.Setenv("DB_NAME", "test")
 	os.Setenv("API_PORT", strconv.Itoa(apiPort))
 	os.Setenv("OTEL_METRICS_EXPOSED_PORT", strconv.Itoa(metricsPort))
 	os.Setenv("COLLECTOR_WORKER_COUNT", "1")
