@@ -656,3 +656,64 @@ func TestSetActiveDatasourceHandler(t *testing.T) {
 		})
 	}
 }
+
+func TestDeleteDatasourceHandler(t *testing.T) {
+	tests := []struct {
+		name           string
+		uuid           uuid.UUID
+		mockSetup      func(*storage.StorageMock)
+		expectedStatus int
+		expectedBody   string
+	}{
+		{
+			name: "Success - Datasource Deleted",
+			uuid: uuid.MustParse("123e4567-e89b-12d3-a456-426614174000"),
+			mockSetup: func(ms *storage.StorageMock) {
+				ms.On("DeleteDatasource", mock.Anything, uuid.MustParse("123e4567-e89b-12d3-a456-426614174000")).Return(nil)
+			},
+			expectedStatus: http.StatusOK,
+			expectedBody:   `{"message":"Datasource has been deleted successfully"}`,
+		},
+		{
+			name: "Error - Invalid UUID",
+			uuid: uuid.Nil,
+			mockSetup: func(ms *storage.StorageMock) {
+				// No mock setup needed for invalid UUID
+			},
+			expectedStatus: http.StatusBadRequest,
+			expectedBody:   `{"error":"Invalid UUID"}`,
+		},
+		{
+			name: "Error - Failed to Delete",
+			uuid: uuid.MustParse("123e4567-e89b-12d3-a456-426614174001"),
+			mockSetup: func(ms *storage.StorageMock) {
+				ms.On("DeleteDatasource", mock.Anything, uuid.MustParse("123e4567-e89b-12d3-a456-426614174001")).Return(errors.New("deletion failed"))
+			},
+			expectedStatus: http.StatusInternalServerError,
+			expectedBody:   `{"message":"Failed to set datasource active","error":"deletion failed"}`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockStorage := new(storage.StorageMock)
+			tt.mockSetup(mockStorage)
+
+			handler := deleteDatasourceHandler(mockStorage, logrus.New())
+
+			req := httptest.NewRequest("DELETE", "/api/v1/datasource/"+tt.uuid.String(), nil)
+			w := httptest.NewRecorder()
+
+			chiCtx := chi.NewRouteContext()
+			chiCtx.URLParams.Add("uuid", tt.uuid.String())
+			req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, chiCtx))
+
+			handler.ServeHTTP(w, req)
+
+			assert.Equal(t, tt.expectedStatus, w.Code)
+			assert.JSONEq(t, tt.expectedBody, w.Body.String())
+
+			mockStorage.AssertExpectations(t)
+		})
+	}
+}
