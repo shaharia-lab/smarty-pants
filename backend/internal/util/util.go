@@ -28,10 +28,6 @@ func ParseSettings(sourceType types.DatasourceType, settingsJSON json.RawMessage
 	return settings, nil
 }
 
-func invalidSettingsErr(sType interface{}, err error) error {
-	return fmt.Errorf("invalid settings for %s: %v", sType, err)
-}
-
 func ParseEmbeddingProviderSettings(providerType types.EmbeddingProviderType, settingsJSON json.RawMessage) (types.EmbeddingProviderSettings, error) {
 	var settings types.EmbeddingProviderSettings
 
@@ -55,26 +51,30 @@ func ParseEmbeddingProviderSettings(providerType types.EmbeddingProviderType, se
 }
 
 func ParseLLMProviderSettings(providerType types.LLMProviderType, settingsJSON json.RawMessage) (types.LLMProviderSettings, error) {
-	var settings types.EmbeddingProviderSettings
-
 	switch providerType {
 	case types.LLMProviderTypeOpenAI:
-		settings = &types.OpenAILLMSettings{}
+		settings := &types.OpenAILLMSettings{}
+		if err := json.Unmarshal(settingsJSON, settings); err != nil {
+			return nil, invalidSettingsErr(providerType, err)
+		}
+		if err := settings.Validate(); err != nil {
+			return nil, err
+		}
+		return settings, nil
 
 	case types.LLMProviderTypeNoOps:
-		settings = &types.NoOpLLMProviderSettings{}
+		settings := &types.NoOpLLMProviderSettings{}
+		if err := json.Unmarshal(settingsJSON, settings); err != nil {
+			return nil, invalidSettingsErr(providerType, err)
+		}
+		// NoOp settings don't need validation
+		return settings, nil
 
 	default:
 		return nil, fmt.Errorf("unsupported LLM provider type: %s", providerType)
 	}
+}
 
-	if err := json.Unmarshal(settingsJSON, settings); err != nil {
-		return nil, invalidSettingsErr(providerType, err)
-	}
-
-	if err := settings.Validate(); err != nil {
-		return nil, err
-	}
-
-	return settings, nil
+func invalidSettingsErr(sType interface{}, err error) error {
+	return fmt.Errorf("invalid settings for %v: %v", sType, err)
 }
