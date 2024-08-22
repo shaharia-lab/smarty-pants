@@ -31,6 +31,9 @@ backend-build-prod:
 backend-test:
 	cd $(BACKEND_DIR) && $(GOTEST) -v ./... -coverprofile=coverage_unit.out
 
+backend-test-integration:
+	cd $(BACKEND_DIR) && $(GOTEST) -tags=integration -v ./... -coverprofile=coverage_integration.out
+
 backend-clean:
 	cd $(BACKEND_DIR) && $(GOCLEAN)
 	cd $(BACKEND_DIR) && rm -f $(BINARY_NAME)

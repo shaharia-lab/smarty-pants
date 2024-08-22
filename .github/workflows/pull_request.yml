@@ -30,6 +30,53 @@ jobs:
           path: backend/coverage_unit.out
           retention-days: 1
 
+  backend-integration-test:
+    name: Backend Integration Tests
+    runs-on: ubuntu-latest
+    services:
+      db:
+        image: ankane/pgvector
+        env:
+          POSTGRES_DB: app
+          POSTGRES_USER: app
+          POSTGRES_PASSWORD: pass
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U app"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 20
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.22'
+      - name: Wait for DB to be ready
+        run: |
+          until pg_isready -h localhost -p 5432 -U app; do
+            echo "Waiting for DB to be ready..."
+            sleep 2
+          done
+      - name: Run Backend Integration Tests
+        env:
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_USER: app
+          DB_PASS: pass
+          DB_NAME: test
+        run: make backend-integration-test
+
+      - name: Publish artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: backend-integration-coverage-pr${{ github.event.pull_request.number }}-${{ github.sha }}
+          path: backend/coverage_integration.out
+          retention-days: 1
+
   frontend-unit-test:
     name: Frontend Unit Tests
     runs-on: ubuntu-latest
@@ -83,7 +130,7 @@ jobs:
 
   code-analysis:
     runs-on: ubuntu-latest
-    needs: [frontend-unit-test, backend-unit-test]
+    needs: [frontend-unit-test, backend-unit-test, backend-integration-test]
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -97,12 +144,23 @@ jobs:
           path: frontend/smarty-pants/coverage
         continue-on-error: true
 
-      - name: Download backend coverage
+      - name: Download backend unit test coverage
         uses: actions/download-artifact@v3
         with:
           name: backend-coverage-pr${{ github.event.pull_request.number }}-${{ github.sha }}
           path: backend
         continue-on-error: true
+
+      - name: Download backend integration test coverage
+        uses: actions/download-artifact@v3
+        with:
+          name: backend-integration-coverage-pr${{ github.event.pull_request.number }}-${{ github.sha }}
+          path: backend
+        continue-on-error: true
+
+      - name: Merge Coverage Reports
+        run: |
+          cat backend/coverage_unit.out backend/coverage_integration.out > backend/coverage_combined.out
 
       - name: SonarCloud Scan
         uses: sonarsource/sonarcloud-github-action@master
