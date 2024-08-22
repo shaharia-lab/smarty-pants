@@ -10,8 +10,22 @@ concurrency:
 
 jobs:
   backend-unit-test:
-    name: Backend Unit Tests
+    name: Backend Unit & Integration Tests
     runs-on: ubuntu-latest
+    services:
+      db:
+        image: ankane/pgvector
+        env:
+          POSTGRES_DB: app
+          POSTGRES_USER: app
+          POSTGRES_PASSWORD: pass
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U app"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
     steps:
       - uses: actions/checkout@v4
         with:
@@ -23,11 +37,31 @@ jobs:
       - name: Run Backend Tests
         run: make backend-test
 
+      - name: Wait for DB to be ready
+        run: |
+          until pg_isready -h localhost -p 5432 -U app; do
+            echo "Waiting for DB to be ready..."
+            sleep 2
+          done
+      - name: Run Backend Integration Tests
+        env:
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_USER: app
+          DB_PASS: pass
+          DB_NAME: app
+        run: make backend-test-integration
+
+      - name: Merge unit & integration tests code coverage
+        run: |
+          go install github.com/wadey/gocovmerge@latest
+          gocovmerge backend/coverage_unit.out backend/coverage_integration.out > backend/coverage.out
+
       - name: Publish artifacts
         uses: actions/upload-artifact@v3
         with:
           name: backend-coverage-pr${{ github.event.pull_request.number }}-${{ github.sha }}
-          path: backend/coverage_unit.out
+          path: backend/coverage.out
           retention-days: 1
 
   frontend-unit-test:
@@ -97,7 +131,7 @@ jobs:
           path: frontend/smarty-pants/coverage
         continue-on-error: true
 
-      - name: Download backend coverage
+      - name: Download backend test coverage
         uses: actions/download-artifact@v3
         with:
           name: backend-coverage-pr${{ github.event.pull_request.number }}-${{ github.sha }}

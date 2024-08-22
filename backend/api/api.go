@@ -333,6 +333,23 @@ func (a *API) startDependencyHealthLogging(ctx context.Context) {
 }
 
 func (a *API) Shutdown(ctx context.Context) error {
-	a.logger.Info("Shutting down API server")
-	return a.server.Shutdown(ctx)
+	a.logger.Info("Initiating API server shutdown")
+
+	if a.server == nil {
+		a.logger.Warn("API server is not running")
+		return nil
+	}
+
+	err := a.server.Shutdown(ctx)
+	if err != nil {
+		if errors.Is(err, context.DeadlineExceeded) {
+			a.logger.Warn("API server shutdown timed out")
+		} else {
+			a.logger.WithError(err).Error("Error during API server shutdown")
+		}
+		return err
+	}
+
+	a.logger.Info("API server shutdown completed successfully")
+	return nil
 }

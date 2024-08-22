@@ -12,6 +12,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/config"
+	"github.com/shaharia-lab/smarty-pants/backend/internal/datasource"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/observability"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/storage"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/types"
@@ -457,6 +458,260 @@ func TestUpdateDatasourceHandler(t *testing.T) {
 
 			assert.Equal(t, tt.expectedStatus, w.Code)
 			assert.Equal(t, tt.expectedBody, w.Body.String())
+
+			mockStorage.AssertExpectations(t)
+		})
+	}
+}
+
+func TestValidateDatasourceHandler(t *testing.T) {
+	tests := []struct {
+		name           string
+		uuid           uuid.UUID
+		mockSetup      func(*storage.StorageMock)
+		expectedStatus int
+		expectedBody   string
+	}{
+		{
+			name: "Success - Valid Slack Datasource",
+			uuid: uuid.MustParse("123e4567-e89b-12d3-a456-426614174000"),
+			mockSetup: func(ms *storage.StorageMock) {
+				ms.On("GetDatasource", mock.Anything, uuid.MustParse("123e4567-e89b-12d3-a456-426614174000")).Return(types.DatasourceConfig{
+					UUID:       uuid.MustParse("123e4567-e89b-12d3-a456-426614174000"),
+					Name:       "Test Slack Datasource",
+					SourceType: "slack",
+					Settings:   &types.SlackSettings{Token: "valid_token", ChannelID: "valid_channel", Workspace: "valid_workspace"},
+				}, nil)
+			},
+			expectedStatus: http.StatusOK,
+			expectedBody:   `{"result":"success"}`,
+		},
+		{
+			name: "Error - Datasource Not Found",
+			uuid: uuid.MustParse("123e4567-e89b-12d3-a456-426614174001"),
+			mockSetup: func(ms *storage.StorageMock) {
+				ms.On("GetDatasource", mock.Anything, uuid.MustParse("123e4567-e89b-12d3-a456-426614174001")).Return(types.DatasourceConfig{}, errors.New("not found"))
+			},
+			expectedStatus: http.StatusNotFound,
+			expectedBody:   `{"message":"Datasource not found","error":"not found"}`,
+		},
+		{
+			name: "Error - Unsupported Datasource Type",
+			uuid: uuid.MustParse("123e4567-e89b-12d3-a456-426614174002"),
+			mockSetup: func(ms *storage.StorageMock) {
+				ms.On("GetDatasource", mock.Anything, uuid.MustParse("123e4567-e89b-12d3-a456-426614174002")).Return(types.DatasourceConfig{
+					UUID:       uuid.MustParse("123e4567-e89b-12d3-a456-426614174002"),
+					Name:       "Test Unsupported Datasource",
+					SourceType: "unsupported",
+					Settings:   &datasource.SlackDatasource{},
+				}, nil)
+			},
+			expectedStatus: http.StatusBadRequest,
+			expectedBody:   `{"error":"unsupported datasource type: unsupported", "message":"Unsupported datasource type"}`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockStorage := new(storage.StorageMock)
+			tt.mockSetup(mockStorage)
+
+			handler := validateDatasourceHandler(mockStorage, logrus.New())
+
+			req := httptest.NewRequest("POST", "/api/v1/datasource/"+tt.uuid.String()+"/validate", nil)
+			w := httptest.NewRecorder()
+
+			chiCtx := chi.NewRouteContext()
+			chiCtx.URLParams.Add("uuid", tt.uuid.String())
+			req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, chiCtx))
+
+			handler.ServeHTTP(w, req)
+
+			assert.Equal(t, tt.expectedStatus, w.Code)
+			assert.JSONEq(t, tt.expectedBody, w.Body.String())
+
+			mockStorage.AssertExpectations(t)
+		})
+	}
+}
+
+func TestSetDisableDatasourceHandler(t *testing.T) {
+	tests := []struct {
+		name           string
+		uuid           uuid.UUID
+		mockSetup      func(*storage.StorageMock)
+		expectedStatus int
+		expectedBody   string
+	}{
+		{
+			name: "Success - Datasource Disabled",
+			uuid: uuid.MustParse("123e4567-e89b-12d3-a456-426614174000"),
+			mockSetup: func(ms *storage.StorageMock) {
+				ms.On("SetDisableDatasource", mock.Anything, uuid.MustParse("123e4567-e89b-12d3-a456-426614174000")).Return(nil)
+			},
+			expectedStatus: http.StatusOK,
+			expectedBody:   `{"message":"Datasource has been deactivated successfully"}`,
+		},
+		{
+			name: "Error - Invalid UUID",
+			uuid: uuid.Nil,
+			mockSetup: func(ms *storage.StorageMock) {
+				// No mock setup needed for invalid UUID
+			},
+			expectedStatus: http.StatusBadRequest,
+			expectedBody:   `{"error":"Invalid UUID"}`,
+		},
+		{
+			name: "Error - Failed to Deactivate",
+			uuid: uuid.MustParse("123e4567-e89b-12d3-a456-426614174001"),
+			mockSetup: func(ms *storage.StorageMock) {
+				ms.On("SetDisableDatasource", mock.Anything, uuid.MustParse("123e4567-e89b-12d3-a456-426614174001")).Return(errors.New("deactivation failed"))
+			},
+			expectedStatus: http.StatusInternalServerError,
+			expectedBody:   `{"message":"Failed to set datasource active","error":"deactivation failed"}`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockStorage := new(storage.StorageMock)
+			tt.mockSetup(mockStorage)
+
+			handler := setDisableDatasourceHandler(mockStorage, logrus.New())
+
+			req := httptest.NewRequest("POST", "/api/v1/datasource/"+tt.uuid.String()+"/disable", nil)
+			w := httptest.NewRecorder()
+
+			chiCtx := chi.NewRouteContext()
+			chiCtx.URLParams.Add("uuid", tt.uuid.String())
+			req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, chiCtx))
+
+			handler.ServeHTTP(w, req)
+
+			assert.Equal(t, tt.expectedStatus, w.Code)
+			assert.JSONEq(t, tt.expectedBody, w.Body.String())
+
+			mockStorage.AssertExpectations(t)
+		})
+	}
+}
+
+func TestSetActiveDatasourceHandler(t *testing.T) {
+	tests := []struct {
+		name           string
+		uuid           uuid.UUID
+		mockSetup      func(*storage.StorageMock)
+		expectedStatus int
+		expectedBody   string
+	}{
+		{
+			name: "Success - Datasource Activated",
+			uuid: uuid.MustParse("123e4567-e89b-12d3-a456-426614174000"),
+			mockSetup: func(ms *storage.StorageMock) {
+				ms.On("SetActiveDatasource", mock.Anything, uuid.MustParse("123e4567-e89b-12d3-a456-426614174000")).Return(nil)
+			},
+			expectedStatus: http.StatusOK,
+			expectedBody:   `{"message":"Datasource has been activated successfully"}`,
+		},
+		{
+			name: "Error - Invalid UUID",
+			uuid: uuid.Nil,
+			mockSetup: func(ms *storage.StorageMock) {
+				// No mock setup needed for invalid UUID
+			},
+			expectedStatus: http.StatusBadRequest,
+			expectedBody:   `{"error":"Invalid UUID"}`,
+		},
+		{
+			name: "Error - Failed to Activate",
+			uuid: uuid.MustParse("123e4567-e89b-12d3-a456-426614174001"),
+			mockSetup: func(ms *storage.StorageMock) {
+				ms.On("SetActiveDatasource", mock.Anything, uuid.MustParse("123e4567-e89b-12d3-a456-426614174001")).Return(errors.New("activation failed"))
+			},
+			expectedStatus: http.StatusInternalServerError,
+			expectedBody:   `{"message":"Failed to set datasource active","error":"activation failed"}`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockStorage := new(storage.StorageMock)
+			tt.mockSetup(mockStorage)
+
+			handler := setActiveDatasourceHandler(mockStorage, logrus.New())
+
+			req := httptest.NewRequest("POST", "/api/v1/datasource/"+tt.uuid.String()+"/activate", nil)
+			w := httptest.NewRecorder()
+
+			chiCtx := chi.NewRouteContext()
+			chiCtx.URLParams.Add("uuid", tt.uuid.String())
+			req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, chiCtx))
+
+			handler.ServeHTTP(w, req)
+
+			assert.Equal(t, tt.expectedStatus, w.Code)
+			assert.JSONEq(t, tt.expectedBody, w.Body.String())
+
+			mockStorage.AssertExpectations(t)
+		})
+	}
+}
+
+func TestDeleteDatasourceHandler(t *testing.T) {
+	tests := []struct {
+		name           string
+		uuid           uuid.UUID
+		mockSetup      func(*storage.StorageMock)
+		expectedStatus int
+		expectedBody   string
+	}{
+		{
+			name: "Success - Datasource Deleted",
+			uuid: uuid.MustParse("123e4567-e89b-12d3-a456-426614174000"),
+			mockSetup: func(ms *storage.StorageMock) {
+				ms.On("DeleteDatasource", mock.Anything, uuid.MustParse("123e4567-e89b-12d3-a456-426614174000")).Return(nil)
+			},
+			expectedStatus: http.StatusOK,
+			expectedBody:   `{"message":"Datasource has been deleted successfully"}`,
+		},
+		{
+			name: "Error - Invalid UUID",
+			uuid: uuid.Nil,
+			mockSetup: func(ms *storage.StorageMock) {
+				// No mock setup needed for invalid UUID
+			},
+			expectedStatus: http.StatusBadRequest,
+			expectedBody:   `{"error":"Invalid UUID"}`,
+		},
+		{
+			name: "Error - Failed to Delete",
+			uuid: uuid.MustParse("123e4567-e89b-12d3-a456-426614174001"),
+			mockSetup: func(ms *storage.StorageMock) {
+				ms.On("DeleteDatasource", mock.Anything, uuid.MustParse("123e4567-e89b-12d3-a456-426614174001")).Return(errors.New("deletion failed"))
+			},
+			expectedStatus: http.StatusInternalServerError,
+			expectedBody:   `{"message":"Failed to set datasource active","error":"deletion failed"}`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockStorage := new(storage.StorageMock)
+			tt.mockSetup(mockStorage)
+
+			handler := deleteDatasourceHandler(mockStorage, logrus.New())
+
+			req := httptest.NewRequest("DELETE", "/api/v1/datasource/"+tt.uuid.String(), nil)
+			w := httptest.NewRecorder()
+
+			chiCtx := chi.NewRouteContext()
+			chiCtx.URLParams.Add("uuid", tt.uuid.String())
+			req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, chiCtx))
+
+			handler.ServeHTTP(w, req)
+
+			assert.Equal(t, tt.expectedStatus, w.Code)
+			assert.JSONEq(t, tt.expectedBody, w.Body.String())
 
 			mockStorage.AssertExpectations(t)
 		})

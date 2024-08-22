@@ -22,6 +22,7 @@ type Processor struct {
 	metrics  *ProcessorMetrics
 	wg       sync.WaitGroup
 	stopCh   chan struct{}
+	stopOnce sync.Once
 }
 
 // ProcessorMetrics contains metrics for the processor
@@ -95,13 +96,12 @@ func (p *Processor) Start(ctx context.Context) error {
 
 // Stop stops the processor
 func (p *Processor) Stop() {
-	ctx, span := observability.StartSpan(context.Background(), "Processor.Stop")
-	defer span.End()
+	p.logger.Info("Initiating processor shutdown")
+	p.stopOnce.Do(func() {
+		close(p.stopCh)
+	})
 
-	p.logger.Info("Stopping processor")
-	close(p.stopCh)
-
-	timeoutCtx, cancel := context.WithTimeout(ctx, p.config.ShutdownTimeout)
+	timeoutCtx, cancel := context.WithTimeout(context.Background(), p.config.ShutdownTimeout)
 	defer cancel()
 
 	done := make(chan struct{})
@@ -116,6 +116,8 @@ func (p *Processor) Stop() {
 	case <-timeoutCtx.Done():
 		p.logger.Warn("Processor stop timed out, forcing shutdown")
 	}
+
+	p.logger.Info("Processor shutdown completed")
 }
 
 func initProcessorMetrics(meter metric.Meter) (*ProcessorMetrics, error) {

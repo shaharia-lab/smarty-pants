@@ -140,6 +140,7 @@ func validateDatasourceHandler(storage storage.Storage, logging *logrus.Logger) 
 			}
 
 			util.SendSuccessResponse(w, http.StatusOK, map[string]string{"result": "success"}, logging, span)
+			return
 		}
 
 		util.SendAPIErrorResponse(
@@ -255,7 +256,7 @@ func updateDatasourceSettings(existingDS types.DatasourceConfig, updatePayload m
 func setActiveDatasourceHandler(s storage.Storage, l *logrus.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		id, err := uuid.Parse(chi.URLParam(r, "uuid"))
-		if err != nil {
+		if err != nil || id == uuid.Nil {
 			l.WithError(err).Error(invalidUUIDMsg)
 			sendJSONError(w, invalidUUIDMsg, http.StatusBadRequest)
 			return
@@ -279,7 +280,7 @@ func setActiveDatasourceHandler(s storage.Storage, l *logrus.Logger) http.Handle
 func setDisableDatasourceHandler(s storage.Storage, l *logrus.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		id, err := uuid.Parse(chi.URLParam(r, "uuid"))
-		if err != nil {
+		if err != nil || id == uuid.Nil {
 			l.WithError(err).Error(invalidUUIDMsg)
 			sendJSONError(w, invalidUUIDMsg, http.StatusBadRequest)
 			return
@@ -303,7 +304,7 @@ func setDisableDatasourceHandler(s storage.Storage, l *logrus.Logger) http.Handl
 func deleteDatasourceHandler(s storage.Storage, l *logrus.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		id, err := uuid.Parse(chi.URLParam(r, "uuid"))
-		if err != nil {
+		if err != nil || id == uuid.Nil {
 			l.WithError(err).Error(invalidUUIDMsg)
 			sendJSONError(w, invalidUUIDMsg, http.StatusBadRequest)
 			return
@@ -321,30 +322,6 @@ func deleteDatasourceHandler(s storage.Storage, l *logrus.Logger) http.HandlerFu
 
 		l.WithField("datasource_id", id).Info(datasourceDeletedSuccessfullyMsg)
 		util.SendSuccessResponse(w, http.StatusOK, map[string]string{"message": "Datasource has been deleted successfully"}, l, nil)
-	}
-}
-
-func setDisableEmbeddingProviderHandler(s storage.Storage, l *logrus.Logger) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		id, err := uuid.Parse(chi.URLParam(r, "uuid"))
-		if err != nil {
-			l.WithError(err).Error(invalidUUIDMsg)
-			sendJSONError(w, invalidUUIDMsg, http.StatusBadRequest)
-			return
-		}
-
-		err = s.SetDisableEmbeddingProvider(r.Context(), id)
-		if err != nil {
-			l.WithError(err).Error("Failed to deactivate embedding provider")
-			util.SendAPIErrorResponse(w, http.StatusInternalServerError, &util.APIError{
-				Message: "Failed to deactivate embedding provider",
-				Err:     err.Error(),
-			})
-			return
-		}
-
-		l.WithField("datasource_id", id).Info("Embedding provider has been deactivated successfully")
-		util.SendSuccessResponse(w, http.StatusOK, map[string]string{"message": "Embedding provider has been deactivated successfully"}, l, nil)
 	}
 }
 
