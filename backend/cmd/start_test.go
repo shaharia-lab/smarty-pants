@@ -5,6 +5,7 @@ package cmd
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"net"
 	"net/http"
@@ -13,6 +14,8 @@ import (
 	"testing"
 	"time"
 
+	_ "github.com/lib/pq"
+	"github.com/shaharia-lab/smarty-pants/backend/internal/config"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -87,6 +90,42 @@ func TestStartCommand(t *testing.T) {
 		}
 	})
 
+	t.Run("Database migration completed successfully", func(t *testing.T) {
+		cfg, _ := config.Load()
+		dsn := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
+			cfg.DBHost,
+			cfg.DBPort,
+			cfg.DBUser,
+			cfg.DBPass,
+			cfg.DBName,
+		)
+
+		dbConn, err := sql.Open("postgres", dsn)
+		require.NoError(t, err, "Failed to connect to the database")
+		defer dbConn.Close()
+
+		// Check if the schema_migrations table exists
+		var exists bool
+		err = dbConn.QueryRow("SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'schema_migrations')").Scan(&exists)
+		require.NoError(t, err, "Failed to check if schema_migrations table exists")
+		assert.True(t, exists, "Expected table 'schema_migrations' to exist after migrations")
+
+		// Check that dirty is false and version is not null
+		var version sql.NullInt64
+		var dirty bool
+		err = dbConn.QueryRow("SELECT version, dirty FROM schema_migrations").Scan(&version, &dirty)
+		require.NoError(t, err, "Failed to query schema_migrations table")
+
+		assert.False(t, dirty, "Expected 'dirty' to be false in schema_migrations")
+		assert.True(t, version.Valid, "Expected 'version' to be not null in schema_migrations")
+		assert.Greater(t, version.Int64, int64(0), "Expected 'version' to be greater than 0 in schema_migrations")
+
+		t.Logf("Current migration version: %d", version.Int64)
+
+		// reset the database
+		resetDatabase(t, dbConn)
+	})
+
 	// Check if the application started without errors
 	select {
 	case err := <-errChan:
@@ -117,4 +156,22 @@ func getFreePort() (int, error) {
 	}
 	defer l.Close()
 	return l.Addr().(*net.TCPAddr).Port, nil
+}
+
+func resetDatabase(t *testing.T, dbConn *sql.DB) {
+	t.Helper()
+
+	// Drop all tables
+	_, err := dbConn.Exec(`
+		DO $$ DECLARE
+			r RECORD;
+		BEGIN
+			FOR r IN (SELECT tablename FROM pg_tables WHERE schemaname = current_schema()) LOOP
+				EXECUTE 'DROP TABLE IF EXISTS ' || quote_ident(r.tablename) || ' CASCADE';
+			END LOOP;
+		END $$;
+	`)
+	require.NoError(t, err, "Failed to drop all tables")
+
+	t.Log("Database reset completed")
 }

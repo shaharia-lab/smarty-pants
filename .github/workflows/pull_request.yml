@@ -10,7 +10,7 @@ concurrency:
 
 jobs:
   backend-unit-test:
-    name: Backend Unit Tests
+    name: Backend Unit & Integration Tests
     runs-on: ubuntu-latest
     services:
       db:
