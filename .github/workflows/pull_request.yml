@@ -67,7 +67,7 @@ jobs:
           DB_PORT: 5432
           DB_USER: app
           DB_PASS: pass
-          DB_NAME: test
+          DB_NAME: app
         run: make backend-test-integration
 
       - name: Publish artifacts
