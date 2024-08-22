@@ -12,27 +12,6 @@ jobs:
   backend-unit-test:
     name: Backend Unit Tests
     runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 20
-      - name: Set up Go
-        uses: actions/setup-go@v4
-        with:
-          go-version: '1.22'
-      - name: Run Backend Tests
-        run: make backend-test
-
-      - name: Publish artifacts
-        uses: actions/upload-artifact@v3
-        with:
-          name: backend-coverage-pr${{ github.event.pull_request.number }}-${{ github.sha }}
-          path: backend/coverage_unit.out
-          retention-days: 1
-
-  backend-integration-test:
-    name: Backend Integration Tests
-    runs-on: ubuntu-latest
     services:
       db:
         image: ankane/pgvector
@@ -55,6 +34,9 @@ jobs:
         uses: actions/setup-go@v4
         with:
           go-version: '1.22'
+      - name: Run Backend Tests
+        run: make backend-test
+
       - name: Wait for DB to be ready
         run: |
           until pg_isready -h localhost -p 5432 -U app; do
@@ -70,11 +52,16 @@ jobs:
           DB_NAME: app
         run: make backend-test-integration
 
+      - name: Merge unit & integration tests code coverage
+        run: |
+          go install github.com/wadey/gocovmerge@latest
+          gocovmerge backend/coverage_unit.out backend/coverage_integration.out > coverage.out
+
       - name: Publish artifacts
         uses: actions/upload-artifact@v3
         with:
-          name: backend-integration-coverage-pr${{ github.event.pull_request.number }}-${{ github.sha }}
-          path: backend/coverage_integration.out
+          name: backend-coverage-pr${{ github.event.pull_request.number }}-${{ github.sha }}
+          path: backend/coverage.out
           retention-days: 1
 
   frontend-unit-test:
@@ -130,7 +117,7 @@ jobs:
 
   code-analysis:
     runs-on: ubuntu-latest
-    needs: [frontend-unit-test, backend-unit-test, backend-integration-test]
+    needs: [frontend-unit-test, backend-unit-test]
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -157,10 +144,6 @@ jobs:
           name: backend-integration-coverage-pr${{ github.event.pull_request.number }}-${{ github.sha }}
           path: backend
         continue-on-error: true
-
-      - name: Merge Coverage Reports
-        run: |
-          cat backend/coverage_unit.out backend/coverage_integration.out > backend/coverage_combined.out
 
       - name: SonarCloud Scan
         uses: sonarsource/sonarcloud-github-action@master
