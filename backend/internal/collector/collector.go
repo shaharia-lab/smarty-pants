@@ -25,6 +25,8 @@ type Collector struct {
 	wg       sync.WaitGroup
 	stopCh   chan struct{}
 	metrics  *CollectorMetrics
+
+	stopOnce sync.Once
 }
 
 // Config contains configuration options for the collector
@@ -130,13 +132,12 @@ func (c *Collector) Start(ctx context.Context) error {
 }
 
 func (c *Collector) Stop() {
-	ctx, span := observability.StartSpan(context.Background(), "Collector.Stop")
-	defer span.End()
+	c.logger.Info("Initiating collector shutdown")
+	c.stopOnce.Do(func() {
+		close(c.stopCh)
+	})
 
-	c.logger.Info("Stopping collector")
-	close(c.stopCh)
-
-	timeoutCtx, cancel := context.WithTimeout(ctx, c.config.ShutdownTimeout)
+	timeoutCtx, cancel := context.WithTimeout(context.Background(), c.config.ShutdownTimeout)
 	defer cancel()
 
 	done := make(chan struct{})
@@ -151,6 +152,8 @@ func (c *Collector) Stop() {
 	case <-timeoutCtx.Done():
 		c.logger.Warn("Collector stop timed out, forcing shutdown")
 	}
+
+	c.logger.Info("Collector shutdown completed")
 }
 
 func (c *Collector) RegisterDatasource(ds types.DataSource) error {

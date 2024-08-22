@@ -7,6 +7,9 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/shaharia-lab/smarty-pants/backend/api"
@@ -34,9 +37,21 @@ func NewStartCommand(version string) *cobra.Command {
 	}
 }
 
-func runStart(_ *cobra.Command, _ []string) error {
-	ctx, cancel := context.WithCancel(context.Background())
+func runStart(cmd *cobra.Command, _ []string) error {
+	signalCtx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
+	// Combined context that cancels either when the command context is done or when a signal is received
+	ctx, cancel := context.WithCancel(cmd.Context())
 	defer cancel()
+
+	go func() {
+		select {
+		case <-signalCtx.Done():
+			cancel()
+		case <-ctx.Done():
+		}
+	}()
 
 	l := initializeLogger()
 	cfg, err := loadConfig(l)
@@ -65,30 +80,57 @@ func runStart(_ *cobra.Command, _ []string) error {
 		return err
 	}
 
-	// userManager
 	userManager := auth.NewUserManager(st, logging)
 
-	go startMetricsServer(cfg, logging)
+	metricsServer := observability.StartMetricsServer(cfg.OtelMetricsExposedPort, logging)
 
 	shutdownManager := initializeShutdownManager(cfg, logging)
 
-	if err := setupAndStartCollector(ctx, cfg, st, logging, shutdownManager); err != nil {
+	collectorRunner, err := setupAndStartCollector(ctx, cfg, st, logging)
+	if err != nil {
 		return err
 	}
 
-	if err := setupAndStartProcessor(ctx, cfg, st, logging, shutdownManager); err != nil {
+	processorRunner, err := setupAndStartProcessor(ctx, cfg, st, logging)
+	if err != nil {
 		return err
 	}
 
 	apiServer := setupAPIServer(cfg, logging, st, userManager)
-	shutdownManager.RegisterShutdownFn(apiServer.Shutdown)
-	shutdownManager.RegisterShutdownFn(st.HandleShutdown)
+
+	shutdownManager.RegisterShutdownFn(func(ctx context.Context) error {
+		return apiServer.Shutdown(ctx)
+	})
+	shutdownManager.RegisterShutdownFn(func(ctx context.Context) error {
+		return st.HandleShutdown(ctx)
+	})
+	shutdownManager.RegisterShutdownFn(func(ctx context.Context) error {
+		collectorRunner.Stop()
+		return nil
+	})
+	shutdownManager.RegisterShutdownFn(func(ctx context.Context) error {
+		processorRunner.Stop()
+		return nil
+	})
+	shutdownManager.RegisterShutdownFn(func(ctx context.Context) error {
+		return metricsServer.Stop(ctx)
+	})
 
 	go shutdownManager.Start(ctx)
 	go startAPIServer(cfg, apiServer, logging)
 
-	waitForShutdown(ctx, shutdownManager, logging)
+	<-ctx.Done()
+	logging.Info("Shutdown signal received")
 
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), time.Duration(cfg.GracefulShutdownTimeoutInSecs)*time.Second)
+	defer cancel()
+
+	if err := shutdownManager.Shutdown(shutdownCtx); err != nil {
+		logging.WithError(err).Error("Error during shutdown")
+		return err
+	}
+
+	logging.Info("Application shutdown complete")
 	return nil
 }
 
@@ -158,40 +200,30 @@ func setupAppSettings(ctx context.Context, st storage.Storage, l *logrus.Logger)
 	return appSettings, logging, nil
 }
 
-func startMetricsServer(cfg *config.Config, logging *logrus.Logger) {
-	logging.WithField("metrics_server_port", cfg.OtelMetricsExposedPort).Info("Starting metrics server in the background")
-	observability.StartMetricsEndpoint(cfg.OtelMetricsExposedPort, logging)
-}
-
 func initializeShutdownManager(cfg *config.Config, logging *logrus.Logger) *shutdown.Manager {
 	return shutdown.NewManager(logging, time.Duration(cfg.GracefulShutdownTimeoutInSecs)*time.Second)
 }
 
-func setupAndStartCollector(ctx context.Context, cfg *config.Config, st storage.Storage, logging *logrus.Logger, shutdownManager *shutdown.Manager) error {
+func setupAndStartCollector(ctx context.Context, cfg *config.Config, st storage.Storage, logging *logrus.Logger) (*collector.Collector, error) {
 	logging.Info("Creating collector runner")
 	collectorConfig := collector.DefaultConfig()
 	meter := otel.Meter("smarty-pants-ai")
 	collectorRunner, err := collector.NewCollector(collectorConfig, st, logging, meter)
 	if err != nil {
 		logging.WithError(err).Fatal("Failed to create collector")
-		return err
+		return nil, err
 	}
-
-	shutdownManager.RegisterShutdownFn(func(ctx context.Context) error {
-		collectorRunner.Stop()
-		return nil
-	})
 
 	logging.Info("Starting collector")
 	if err := collectorRunner.Start(ctx); err != nil {
 		logging.WithError(err).Fatal("Failed to start collector")
-		return err
+		return nil, err
 	}
 
-	return nil
+	return collectorRunner, nil
 }
 
-func setupAndStartProcessor(ctx context.Context, cfg *config.Config, st storage.Storage, logging *logrus.Logger, shutdownManager *shutdown.Manager) error {
+func setupAndStartProcessor(ctx context.Context, cfg *config.Config, st storage.Storage, logging *logrus.Logger) (*processor.Processor, error) {
 	logging.Info("Creating processor engine")
 	meter := otel.Meter("smarty-pants-ai")
 	processingEngine, err := processor.NewProcessor(processor.Config{
@@ -206,21 +238,16 @@ func setupAndStartProcessor(ctx context.Context, cfg *config.Config, st storage.
 
 	if err != nil {
 		logging.WithError(err).Fatal("Failed to create processor")
-		return err
+		return nil, err
 	}
-
-	shutdownManager.RegisterShutdownFn(func(_ context.Context) error {
-		processingEngine.Stop()
-		return nil
-	})
 
 	logging.Info("Starting processor in the background")
 	if err := processingEngine.Start(ctx); err != nil {
 		logging.WithError(err).Fatal("Failed to start processor")
-		return err
+		return nil, err
 	}
 
-	return nil
+	return processingEngine, nil
 }
 
 func setupAPIServer(cfg *config.Config, logging *logrus.Logger, st storage.Storage, userManager *auth.UserManager) *api.API {
