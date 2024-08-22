@@ -55,7 +55,7 @@ jobs:
       - name: Merge unit & integration tests code coverage
         run: |
           go install github.com/wadey/gocovmerge@latest
-          gocovmerge backend/coverage_unit.out backend/coverage_integration.out > coverage.out
+          gocovmerge backend/coverage_unit.out backend/coverage_integration.out > backend/coverage.out
 
       - name: Publish artifacts
         uses: actions/upload-artifact@v3
