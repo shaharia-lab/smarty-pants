@@ -2,6 +2,9 @@ package api
 
 import (
 	"context"
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/x509"
 	"fmt"
 	"net"
 	"net/http"
@@ -10,11 +13,15 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/google/uuid"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/auth"
+	"github.com/shaharia-lab/smarty-pants/backend/internal/logger"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/search"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/storage"
+	"github.com/shaharia-lab/smarty-pants/backend/internal/types"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
 func TestNewAPI(t *testing.T) {
@@ -201,5 +208,83 @@ func createTestAPIWithoutSetup() *API {
 		searchSystem: searchSystem,
 		userManager:  userManager,
 		aclManager:   auth.NewACLManager(logger, false),
+	}
+}
+
+func TestAnalyticsOverviewEndpoint(t *testing.T) {
+	user := &types.User{
+		UUID:      uuid.MustParse("bc1d183a-1003-436c-97b8-2937b34dd0f4"),
+		Name:      "Test User",
+		Email:     "test@hello-world.com",
+		Status:    types.UserStatusActive,
+		Roles:     []types.UserRole{types.UserRoleAdmin},
+		CreatedAt: time.Time{},
+		UpdatedAt: time.Time{},
+	}
+	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	assert.NoError(t, err)
+
+	privateKeyBytes := x509.MarshalPKCS1PrivateKey(privateKey)
+	publicKeyBytes, err := x509.MarshalPKIXPublicKey(&privateKey.PublicKey)
+	assert.NoError(t, err)
+
+	mockStorage := new(storage.StorageMock)
+	mockStorage.On("GetKeyPair").Return(privateKeyBytes, publicKeyBytes, nil)
+	mockStorage.On("GetUser", mock.Anything, user.UUID).Return(user, nil)
+	mockStorage.On("GetAnalyticsOverview", mock.Anything).Return(types.AnalyticsOverview{}, nil).Once()
+
+	mockLogger := logger.NoOpsLogger()
+	mockACLManager := auth.NewACLManager(mockLogger, true)
+	userManager := auth.NewUserManager(mockStorage, mockLogger)
+
+	jwtManager := auth.NewJWTManager(auth.NewKeyManager(mockStorage, mockLogger), userManager, mockLogger)
+	accessToken, err := jwtManager.IssueTokenForUser(context.Background(), user.UUID, []string{"web"}, 10*time.Hour)
+	assert.NoError(t, err)
+
+	// Create a new router
+	r := chi.NewRouter()
+	r.Use(jwtManager.AuthMiddleware(true))
+
+	// Set up the route
+	r.Get("/api/v1/analytics/overview", getAnalyticsOverview(mockStorage, mockLogger, mockACLManager))
+
+	// Create a test server
+	ts := httptest.NewServer(r)
+	defer ts.Close()
+
+	// Test cases
+	tests := []struct {
+		name           string
+		withToken      bool
+		hasPermission  bool
+		expectedStatus int
+	}{
+		{"With valid token and permission", true, true, http.StatusOK},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Create a new request
+			req, err := http.NewRequest("GET", ts.URL+"/api/v1/analytics/overview", nil)
+			assert.NoError(t, err)
+
+			// Add token if needed
+			if tt.withToken {
+				req.Header.Set("Authorization", "Bearer "+accessToken)
+			}
+
+			// Send the request
+			client := &http.Client{}
+			resp, err := client.Do(req)
+			assert.NoError(t, err)
+			defer resp.Body.Close()
+
+			// Check the status code
+			assert.Equal(t, tt.expectedStatus, resp.StatusCode)
+
+			assert.Equal(t, http.StatusOK, resp.StatusCode)
+
+			mockStorage.AssertExpectations(t)
+		})
 	}
 }

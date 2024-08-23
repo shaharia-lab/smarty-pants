@@ -40,12 +40,12 @@ func (km *KeyManager) GetKeyPair() (*rsa.PrivateKey, *rsa.PublicKey, error) {
 	privateKeyBytes, publicKeyBytes, err := km.storage.GetKeyPair()
 	if err == nil {
 		km.logger.Info("Retrieved existing key pair from storage")
-		privateKey, err := ParseRSAPrivateKey(privateKeyBytes)
+		privateKey, err := parseRSAPrivateKey(privateKeyBytes)
 		if err != nil {
 			km.logger.WithError(err).Error("Failed to parse private key")
 			return nil, nil, fmt.Errorf("failed to parse private key: %w", err)
 		}
-		publicKey, err := ParseRSAPublicKey(publicKeyBytes)
+		publicKey, err := parseRSAPublicKey(publicKeyBytes)
 		if err != nil {
 			km.logger.WithError(err).Error("Failed to parse public key")
 			return nil, nil, fmt.Errorf("failed to parse public key: %w", err)
@@ -80,13 +80,13 @@ func (km *KeyManager) GetKeyPair() (*rsa.PrivateKey, *rsa.PublicKey, error) {
 	return privateKey, &privateKey.PublicKey, nil
 }
 
-// GetJWTSigningMethod returns the JWT signing method (always RS256)
-func (km *KeyManager) GetJWTSigningMethod() jwt.SigningMethod {
+// getJWTSigningMethod returns the JWT signing method (always RS256)
+func (km *KeyManager) getJWTSigningMethod() jwt.SigningMethod {
 	return jwt.SigningMethodRS256
 }
 
-// ParseRSAPrivateKey parses a DER encoded private key
-func ParseRSAPrivateKey(derBytes []byte) (*rsa.PrivateKey, error) {
+// parseRSAPrivateKey parses a DER encoded private key
+func parseRSAPrivateKey(derBytes []byte) (*rsa.PrivateKey, error) {
 	privateKey, err := x509.ParsePKCS1PrivateKey(derBytes)
 	if err != nil {
 		// Try PKCS8 format if PKCS1 fails
@@ -103,8 +103,8 @@ func ParseRSAPrivateKey(derBytes []byte) (*rsa.PrivateKey, error) {
 	return privateKey, nil
 }
 
-// ParseRSAPublicKey parses a DER encoded public key
-func ParseRSAPublicKey(derBytes []byte) (*rsa.PublicKey, error) {
+// parseRSAPublicKey parses a DER encoded public key
+func parseRSAPublicKey(derBytes []byte) (*rsa.PublicKey, error) {
 	publicKey, err := x509.ParsePKIXPublicKey(derBytes)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse public key: %w", err)
