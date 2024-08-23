@@ -15,7 +15,7 @@ const EmbeddingProviderDetailsPage: React.FC = () => {
     const [isEditing, setIsEditing] = useState(false);
     const [error, setError] = useState<string | null>(null);
     useRouter();
-    const params = useParams();
+    const params = useParams() as { uuid: string };
     const uuid = params.uuid as string;
 
     const headerConfig: HeaderConfig = {

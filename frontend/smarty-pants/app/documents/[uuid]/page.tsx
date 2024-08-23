@@ -7,7 +7,7 @@ import DocumentDetailsClient from '../../../components/DocumentDetailsClient';
 import {Document} from '@/types';
 
 export default function DocumentDetailsPage() {
-    const params = useParams();
+    const params = useParams() as { uuid: string };
     const uuid = params.uuid as string;
     const [document, setDocument] = useState<Document | null>(null);
     const [loading, setLoading] = useState(true);

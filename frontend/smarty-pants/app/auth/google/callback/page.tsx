@@ -2,11 +2,11 @@
 
 "use client";
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import authService from '@/services/authService';
 
-const CallbackPage: React.FC = () => {
+const CallbackPageContent: React.FC = () => {
     const router = useRouter();
     const searchParams = useSearchParams();
     const [error, setError] = useState<string | null>(null);
@@ -18,8 +18,8 @@ const CallbackPage: React.FC = () => {
             if (callbackExecuted.current) return;
             callbackExecuted.current = true;
 
-            const code = searchParams.get('code');
-            const state = searchParams.get('state');
+            const code = (searchParams as URLSearchParams).get('code');
+            const state = (searchParams as URLSearchParams).get('state');
 
             if (typeof code !== 'string' || typeof state !== 'string') {
                 setError('Invalid code or state');
@@ -77,6 +77,14 @@ const CallbackPage: React.FC = () => {
     }
 
     return null;
+};
+
+const CallbackPage: React.FC = () => {
+    return (
+        <Suspense fallback={<div className="flex items-center justify-center min-h-screen bg-gray-100">Loading...</div>}>
+            <CallbackPageContent />
+        </Suspense>
+    );
 };
 
 export default CallbackPage;
