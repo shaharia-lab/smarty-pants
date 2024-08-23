@@ -15,7 +15,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-const authenticatedUserCtxKey contextKey = "authenticated_user"
+const AuthenticatedUserCtxKey contextKey = "authenticated_user"
 
 // JWTClaims represents the structure of your custom claims
 type JWTClaims struct {
@@ -171,7 +171,7 @@ func (m *JWTManager) AuthMiddleware() func(http.Handler) http.Handler {
 			}
 
 			m.logger.WithField("userUUID", user.UUID).Debug("User authenticated successfully. Setting user in request context")
-			ctx := context.WithValue(r.Context(), authenticatedUserCtxKey, user)
+			ctx := context.WithValue(r.Context(), AuthenticatedUserCtxKey, user)
 			r = r.WithContext(ctx)
 
 			next.ServeHTTP(w, r)

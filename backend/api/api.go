@@ -40,6 +40,7 @@ type API struct {
 	server       *http.Server
 	userManager  *auth.UserManager
 	jwtManager   *auth.JWTManager
+	aclManager   auth.ACLProvider
 }
 
 type Config struct {
@@ -49,7 +50,7 @@ type Config struct {
 	IdleTimeout       int
 }
 
-func NewAPI(logger *logrus.Logger, storage storage.Storage, searchSystem search.System, config Config, userManager *auth.UserManager, jwtManager *auth.JWTManager) *API {
+func NewAPI(logger *logrus.Logger, storage storage.Storage, searchSystem search.System, config Config, userManager *auth.UserManager, jwtManager *auth.JWTManager, aclManager auth.ACLProvider) *API {
 	api := &API{
 		config:       config,
 		router:       chi.NewRouter(),
@@ -59,6 +60,7 @@ func NewAPI(logger *logrus.Logger, storage storage.Storage, searchSystem search.
 		searchSystem: searchSystem,
 		userManager:  userManager,
 		jwtManager:   jwtManager,
+		aclManager:   aclManager,
 	}
 	api.setupMiddleware()
 	api.setupRoutes()
@@ -125,8 +127,10 @@ func (a *API) setupRoutes() {
 
 	a.router.Route("/api", func(r chi.Router) {
 		r.Route("/v1", func(r chi.Router) {
+			r.Use(a.jwtManager.AuthMiddleware())
+
 			r.Route("/analytics", func(r chi.Router) {
-				r.Get("/overview", getAnalyticsOverview(a.storage, a.logger))
+				r.Get("/overview", getAnalyticsOverview(a.storage, a.logger, a.aclManager))
 			})
 
 			r.Route("/datasource", func(r chi.Router) {
@@ -188,7 +192,7 @@ func (a *API) setupRoutes() {
 				r.Get("/", getSettingsHandler(a.storage, a.logger))
 				r.Put("/", updateSettingsHandler(a.storage, a.logger))
 			})
-		}).With(a.jwtManager.AuthMiddleware())
+		})
 	})
 
 	a.userManager.RegisterRoutes(a.router)

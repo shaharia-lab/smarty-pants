@@ -4,16 +4,21 @@ package api
 import (
 	"net/http"
 
+	"github.com/shaharia-lab/smarty-pants/backend/internal/auth"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/observability"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/storage"
+	"github.com/shaharia-lab/smarty-pants/backend/internal/types"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/util"
 	"github.com/sirupsen/logrus"
 )
 
 // getAnalyticsOverview returns a handler function that fetches analytics overview from storage
-func getAnalyticsOverview(st storage.Storage, logger *logrus.Logger) http.HandlerFunc {
+func getAnalyticsOverview(st storage.Storage, logger *logrus.Logger, aclManager auth.ACLProvider) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		routeCtx := r.Context()
+		if !aclManager.IsAllowed(w, r, types.UserRoleUser, "analytics") {
+			return
+		}
 
 		ctx, span := observability.StartSpan(routeCtx, "api.GetAnalyticsOverview")
 		defer span.End()

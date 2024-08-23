@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/shaharia-lab/smarty-pants/backend/internal/auth"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/config"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/observability"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/storage"
@@ -135,7 +136,7 @@ func TestGetAnalyticsOverview(t *testing.T) {
 
 			logger := logrus.New()
 
-			handler := getAnalyticsOverview(mockStorage, logger)
+			handler := getAnalyticsOverview(mockStorage, logger, auth.NewNoOpACLManager())
 			handler.ServeHTTP(rr, req)
 
 			assert.Equal(t, tc.expectedStatus, rr.Code)
