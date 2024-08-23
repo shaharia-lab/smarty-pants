@@ -1,7 +1,20 @@
-import React, {act} from 'react';
-import {fireEvent, render, screen, waitFor} from '@testing-library/react';
+import React from 'react';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import DatasourcesPage from "@/app/datasources/page";
+import { useRouter } from 'next/navigation';
+import authService from '@/services/authService';
+
+// Mock Next.js modules
+jest.mock('next/navigation', () => ({
+    useRouter: jest.fn(),
+    usePathname: jest.fn(),
+}));
+
+// Mock auth service
+jest.mock('@/services/authService', () => ({
+    isAuthenticated: jest.fn(),
+}));
 
 // Mock the fetch function
 global.fetch = jest.fn();
@@ -12,6 +25,8 @@ process.env.NEXT_PUBLIC_API_BASE_URL = 'http://test-api.com';
 describe('DatasourcesPage', () => {
     beforeEach(() => {
         jest.clearAllMocks();
+        (useRouter as jest.Mock).mockReturnValue({ push: jest.fn() });
+        (authService.isAuthenticated as jest.Mock).mockReturnValue(true);
     });
 
     it('renders loading state initially', async () => {

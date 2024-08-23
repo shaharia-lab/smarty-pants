@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import authService from '../services/authService';
 import SVGLogo from "@/components/SVGLogo";
 
@@ -12,33 +12,24 @@ interface NavbarProps {
 
 const Navbar: React.FC<NavbarProps> = ({ initialPath = '' }) => {
     const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
-    const [currentPath, setCurrentPath] = useState<string>(initialPath);
-
     const [isAuthenticated, setIsAuthenticated] = useState(false);
-    //const router = useRouter();
+    const router = useRouter();
+    const pathname = usePathname();
 
     useEffect(() => {
-        setIsAuthenticated(authService.isAuthenticated());
-    }, []);
+        const checkAuth = () => {
+            const auth = authService.isAuthenticated();
+            setIsAuthenticated(auth);
+        };
+
+        checkAuth();
+    }, [pathname]);
 
     const handleLogout = () => {
         authService.logout();
         setIsAuthenticated(false);
-        //router.push('/login');
-        setCurrentPath(window.location.pathname);
+        router.push('/login');
     };
-
-    useEffect(() => {
-        if (typeof window !== "undefined") {
-            const updatePath = () => {
-                setCurrentPath(window.location.pathname);
-            };
-
-            if (!initialPath) {
-                updatePath();
-            }
-        }
-    }, [initialPath]);
 
     const navItems = [
         {
@@ -161,9 +152,9 @@ const Navbar: React.FC<NavbarProps> = ({ initialPath = '' }) => {
     };
 
     const isActive = (item: any): boolean => {
-        if (item.href === currentPath) return true;
+        if (item.href === pathname) return true;
         if (item.children) {
-            return item.children.some((child: any) => child.href === currentPath);
+            return item.children.some((child: any) => child.href === pathname);
         }
         return false;
     };
@@ -212,37 +203,33 @@ const Navbar: React.FC<NavbarProps> = ({ initialPath = '' }) => {
                                                         </svg>
                                                     </button>
                                                     {activeDropdown === item.name && (
-                                                    <div
-                                                        className="absolute z-10 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5">
-                                                        <div className="py-1" role="menu" aria-orientation="vertical"
-                                                             aria-labelledby="options-menu">
-                                                            {item.children.map((subItem: any) => (
-                                                                <Link
-                                                                    key={subItem.name}
-                                                                    href={subItem.href}
-                                                                    className={`${
-                                                                        currentPath === subItem.href
-                                                                            ? 'bg-gray-100 text-gray-900'
-                                                                            : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
-                                                                    } block px-4 py-2 text-sm flex items-center`}
-                                                                    onClick={() => {
-                                                                        setCurrentPath(subItem.href);
-                                                                        setActiveDropdown(null);
-                                                                    }}
-                                                                >
-                                                                    {subItem.icon}
-                                                                    <span className="ml-2">{subItem.name}</span>
-                                                                </Link>
-                                                            ))}
+                                                        <div
+                                                            className="absolute z-10 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5">
+                                                            <div className="py-1" role="menu" aria-orientation="vertical"
+                                                                 aria-labelledby="options-menu">
+                                                                {item.children.map((subItem: any) => (
+                                                                    <Link
+                                                                        key={subItem.name}
+                                                                        href={subItem.href}
+                                                                        className={`${
+                                                                            pathname === subItem.href
+                                                                                ? 'bg-gray-100 text-gray-900'
+                                                                                : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
+                                                                        } block px-4 py-2 text-sm flex items-center`}
+                                                                        onClick={() => setActiveDropdown(null)}
+                                                                    >
+                                                                        {subItem.icon}
+                                                                        <span className="ml-2">{subItem.name}</span>
+                                                                    </Link>
+                                                                ))}
+                                                            </div>
                                                         </div>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        ) : (
+                                                    )}
+                                                </div>
+                                            ) : (
                                                 <Link
                                                     href={item.href}
                                                     className={className}
-                                                    onClick={() => setCurrentPath(item.href)}
                                                     data-testid={`nav-${item.name.toLowerCase()}`}
                                                 >
                                                     {item.icon}
@@ -252,20 +239,26 @@ const Navbar: React.FC<NavbarProps> = ({ initialPath = '' }) => {
                                         </div>
                                     );
                                 })}
-
-                                {isAuthenticated ? (
-                                    <button
-                                        onClick={handleLogout}
-                                        className="text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium"
-                                    >
-                                        Logout
-                                    </button>
-                                ) : (
-                                    <Link href="/login" className="text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium">
-                                        Login
-                                    </Link>
-                                )}
                             </div>
+                        </div>
+                    </div>
+                    <div className="hidden md:block">
+                        <div className="ml-4 flex items-center md:ml-6">
+                            {isAuthenticated ? (
+                                <button
+                                    onClick={handleLogout}
+                                    className="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded-md text-sm font-medium transition duration-150 ease-in-out"
+                                >
+                                    Logout
+                                </button>
+                            ) : (
+                                <Link
+                                    href="/login"
+                                    className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-md text-sm font-medium transition duration-150 ease-in-out"
+                                >
+                                    Login
+                                </Link>
+                            )}
                         </div>
                     </div>
                 </div>

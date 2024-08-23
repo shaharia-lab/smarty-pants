@@ -1,19 +1,29 @@
-import { useEffect } from 'react';
+// components/withAuth.tsx
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
-import authService from '../services/authService';
+import authService from '@/services/authService';
+import LoadingSpinner from '@/components/LoadingSpinner';
 
 const withAuth = <P extends object>(WrappedComponent: React.ComponentType<P>) => {
     const AuthWrapper: React.FC<P> = (props) => {
         const router = useRouter();
+        const [isAuthenticated, setIsAuthenticated] = useState(false);
 
         useEffect(() => {
-            if (!authService.isAuthenticated()) {
-                router.push('/login');
-            }
-        }, []);
+            const checkAuth = async () => {
+                const auth = await authService.isAuthenticated();
+                if (!auth) {
+                    router.push('/login');
+                } else {
+                    setIsAuthenticated(true);
+                }
+            };
 
-        if (!authService.isAuthenticated()) {
-            return null; // or a loading spinner
+            checkAuth();
+        }, [router]);
+
+        if (!isAuthenticated) {
+            return <LoadingSpinner />;
         }
 
         return <WrappedComponent {...props} />;
