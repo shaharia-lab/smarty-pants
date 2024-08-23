@@ -38,6 +38,8 @@ type Config struct {
 	ProcessorRetryDelayInSecs      int `envconfig:"PROCESSOR_RETRY_DELAY_IN_SECS" default:"5"`
 	ProcessorShutdownTimeoutInSecs int `envconfig:"PROCESSOR_SHUTDOWN_TIMEOUT_IN_SECS" default:"10"`
 	ProcessorRefreshIntervalInSecs int `envconfig:"PROCESSOR_REFRESH_INTERVAL_IN_SECS" default:"60"`
+
+	EnableAuthentication bool `envconfig:"ENABLE_AUTH" default:"false"`
 }
 
 // Load loads the configuration options from the environment

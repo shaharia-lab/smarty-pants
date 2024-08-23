@@ -41,6 +41,7 @@ type API struct {
 	userManager  *auth.UserManager
 	jwtManager   *auth.JWTManager
 	aclManager   auth.ACLManager
+	enableAuth   bool
 }
 
 type Config struct {
@@ -50,7 +51,7 @@ type Config struct {
 	IdleTimeout       int
 }
 
-func NewAPI(logger *logrus.Logger, storage storage.Storage, searchSystem search.System, config Config, userManager *auth.UserManager, jwtManager *auth.JWTManager, aclManager auth.ACLManager) *API {
+func NewAPI(logger *logrus.Logger, storage storage.Storage, searchSystem search.System, config Config, userManager *auth.UserManager, jwtManager *auth.JWTManager, aclManager auth.ACLManager, enableAuth bool) *API {
 	api := &API{
 		config:       config,
 		router:       chi.NewRouter(),
@@ -61,6 +62,7 @@ func NewAPI(logger *logrus.Logger, storage storage.Storage, searchSystem search.
 		userManager:  userManager,
 		jwtManager:   jwtManager,
 		aclManager:   aclManager,
+		enableAuth:   enableAuth,
 	}
 	api.setupMiddleware()
 	api.setupRoutes()
@@ -127,7 +129,7 @@ func (a *API) setupRoutes() {
 
 	a.router.Route("/api", func(r chi.Router) {
 		r.Route("/v1", func(r chi.Router) {
-			r.Use(a.jwtManager.AuthMiddleware())
+			r.Use(a.jwtManager.AuthMiddleware(a.enableAuth))
 
 			r.Route("/analytics", func(r chi.Router) {
 				r.Get("/overview", getAnalyticsOverview(a.storage, a.logger, a.aclManager))

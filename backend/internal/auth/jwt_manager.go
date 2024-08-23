@@ -11,6 +11,7 @@ import (
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
+	"github.com/shaharia-lab/smarty-pants/backend/internal/types"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/util"
 	"github.com/sirupsen/logrus"
 )
@@ -133,50 +134,76 @@ func (m *JWTManager) ValidateToken(tokenString string) (*JWTClaims, error) {
 }
 
 // AuthMiddleware is a middleware function that accepts multiple arguments
-func (m *JWTManager) AuthMiddleware() func(http.Handler) http.Handler {
+func (m *JWTManager) AuthMiddleware(authEnabled bool) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			accessToken, err := m.resolveAccessTokenFromRequest(r)
-			if err != nil {
-				m.logger.WithError(err).Error("Failed to resolve access token from request header")
-				util.SendAPIErrorResponse(w, http.StatusUnauthorized, &util.APIError{Message: "Un-Authorized", Err: err.Error()})
-				return
+			if !authEnabled {
+				r = m.processAnonymousUser(w, r, next)
 			}
 
-			if accessToken == "" {
-				m.logger.Error("Access token is missing or empty")
-				util.SendAPIErrorResponse(w, http.StatusUnauthorized, &util.APIError{Message: "Invalid credentials", Err: "Access token is missing"})
-				return
-			}
-
-			jwtClaims, err := m.ValidateToken(accessToken)
-			if err != nil {
-				m.logger.WithError(err).Error("Failed to validate token")
-				util.SendAPIErrorResponse(w, http.StatusUnauthorized, &util.APIError{Message: "Un-Authorized", Err: err.Error()})
-				return
-			}
-
-			userUUID, err := uuid.Parse(jwtClaims.Subject)
-			if err != nil {
-				m.logger.WithError(err).Error("Failed to parse user UUID")
-				util.SendAPIErrorResponse(w, http.StatusUnauthorized, &util.APIError{Message: "Un-Authorized", Err: "Invalid authentication"})
-				return
-			}
-
-			user, err := m.userManager.GetUser(r.Context(), userUUID)
-			if err != nil {
-				m.logger.WithField("jwt_claim_subject", jwtClaims.Subject).WithError(err).Error("Failed to get user")
-				util.SendAPIErrorResponse(w, http.StatusUnauthorized, &util.APIError{Message: "Un-Authorized", Err: "Invalid authentication"})
-				return
-			}
-
-			m.logger.WithField("userUUID", user.UUID).Debug("User authenticated successfully. Setting user in request context")
-			ctx := context.WithValue(r.Context(), AuthenticatedUserCtxKey, user)
-			r = r.WithContext(ctx)
-
-			next.ServeHTTP(w, r)
+			m.processAccessToken(w, r, next)
 		})
 	}
+}
+
+func (m *JWTManager) processAnonymousUser(w http.ResponseWriter, r *http.Request, next http.Handler) *http.Request {
+	anonymousUser := &types.User{
+		UUID:      uuid.MustParse("00000000-0000-0000-0000-000000000000"),
+		Name:      "Anonymous User",
+		Email:     "anonymous@example.com",
+		Status:    types.UserStatusActive,
+		Roles:     []types.UserRole{types.UserRoleAdmin},
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	}
+
+	ctx := context.WithValue(r.Context(), AuthenticatedUserCtxKey, anonymousUser)
+	r = r.WithContext(ctx)
+
+	next.ServeHTTP(w, r)
+	return r
+}
+
+func (m *JWTManager) processAccessToken(w http.ResponseWriter, r *http.Request, next http.Handler) {
+	accessToken, err := m.resolveAccessTokenFromRequest(r)
+	if err != nil {
+		m.logger.WithError(err).Error("Failed to resolve access token from request header")
+		util.SendAPIErrorResponse(w, http.StatusUnauthorized, &util.APIError{Message: "Un-Authorized", Err: err.Error()})
+		return
+	}
+
+	if accessToken == "" {
+		m.logger.Error("Access token is missing or empty")
+		util.SendAPIErrorResponse(w, http.StatusUnauthorized, &util.APIError{Message: "Invalid credentials", Err: "Access token is missing"})
+		return
+	}
+
+	jwtClaims, err := m.ValidateToken(accessToken)
+	if err != nil {
+		m.logger.WithError(err).Error("Failed to validate token")
+		util.SendAPIErrorResponse(w, http.StatusUnauthorized, &util.APIError{Message: "Un-Authorized", Err: err.Error()})
+		return
+	}
+
+	userUUID, err := uuid.Parse(jwtClaims.Subject)
+	if err != nil {
+		m.logger.WithError(err).Error("Failed to parse user UUID")
+		util.SendAPIErrorResponse(w, http.StatusUnauthorized, &util.APIError{Message: "Un-Authorized", Err: "Invalid authentication"})
+		return
+	}
+
+	user, err := m.userManager.GetUser(r.Context(), userUUID)
+	if err != nil {
+		m.logger.WithField("jwt_claim_subject", jwtClaims.Subject).WithError(err).Error("Failed to get user")
+		util.SendAPIErrorResponse(w, http.StatusUnauthorized, &util.APIError{Message: "Un-Authorized", Err: "Invalid authentication"})
+		return
+	}
+
+	m.logger.WithField("userUUID", user.UUID).Debug("User authenticated successfully. Setting user in request context")
+	ctx := context.WithValue(r.Context(), AuthenticatedUserCtxKey, user)
+	r = r.WithContext(ctx)
+
+	next.ServeHTTP(w, r)
 }
 
 func (m *JWTManager) resolveAccessTokenFromRequest(r *http.Request) (string, error) {
