@@ -136,7 +136,7 @@ func TestGetAnalyticsOverview(t *testing.T) {
 
 			logger := logrus.New()
 
-			handler := getAnalyticsOverview(mockStorage, logger, auth.NewNoOpACLManager())
+			handler := getAnalyticsOverview(mockStorage, logger, auth.NewACLManager(logger, false))
 			handler.ServeHTTP(rr, req)
 
 			assert.Equal(t, tc.expectedStatus, rr.Code)

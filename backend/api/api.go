@@ -40,7 +40,7 @@ type API struct {
 	server       *http.Server
 	userManager  *auth.UserManager
 	jwtManager   *auth.JWTManager
-	aclManager   auth.ACLProvider
+	aclManager   auth.ACLManager
 }
 
 type Config struct {
@@ -50,7 +50,7 @@ type Config struct {
 	IdleTimeout       int
 }
 
-func NewAPI(logger *logrus.Logger, storage storage.Storage, searchSystem search.System, config Config, userManager *auth.UserManager, jwtManager *auth.JWTManager, aclManager auth.ACLProvider) *API {
+func NewAPI(logger *logrus.Logger, storage storage.Storage, searchSystem search.System, config Config, userManager *auth.UserManager, jwtManager *auth.JWTManager, aclManager auth.ACLManager) *API {
 	api := &API{
 		config:       config,
 		router:       chi.NewRouter(),

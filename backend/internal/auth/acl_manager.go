@@ -17,22 +17,24 @@ var roleHierarchy = map[types.UserRole][]types.UserRole{
 	types.UserRoleDeveloper: {types.UserRoleUser},
 }
 
-type ACLProvider interface {
-	IsAllowed(w http.ResponseWriter, r *http.Request, requiredRole types.UserRole, resource interface{}) bool
-}
-
 type ACLManager struct {
-	logger *logrus.Logger
+	logger     *logrus.Logger
+	enableAuth bool
 }
 
-func NewACLManager(logger *logrus.Logger) *ACLManager {
-	return &ACLManager{
-		logger: logger,
+func NewACLManager(logger *logrus.Logger, enableAuth bool) ACLManager {
+	return ACLManager{
+		logger:     logger,
+		enableAuth: enableAuth,
 	}
 }
 
 // IsAllowed checks if the user has the required role to access the resource.
 func (m *ACLManager) IsAllowed(w http.ResponseWriter, r *http.Request, requiredRole types.UserRole, resource interface{}) bool {
+	if !m.enableAuth {
+		return true
+	}
+
 	user, err := m.getUserFromContext(r.Context())
 	if err != nil {
 		m.logger.WithError(err).Error("Failed to get user role from context")
@@ -97,16 +99,4 @@ func (m *ACLManager) isHigherRole(userRole, requiredRole types.UserRole) bool {
 	}
 
 	return false
-}
-
-// NoOpACLManager is a manager for access control operations.
-type NoOpACLManager struct {
-}
-
-func NewNoOpACLManager() *NoOpACLManager {
-	return &NoOpACLManager{}
-}
-
-func (m *NoOpACLManager) IsAllowed(w http.ResponseWriter, r *http.Request, requiredRole types.UserRole, resource interface{}) bool {
-	return true
 }

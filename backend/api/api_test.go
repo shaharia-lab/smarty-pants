@@ -200,6 +200,6 @@ func createTestAPIWithoutSetup() *API {
 		storage:      mockStorage,
 		searchSystem: searchSystem,
 		userManager:  userManager,
-		aclManager:   auth.NewACLManager(logger),
+		aclManager:   auth.NewACLManager(logger, false),
 	}
 }

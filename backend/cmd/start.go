@@ -102,7 +102,7 @@ func runStart(cmd *cobra.Command, _ []string) error {
 		st,
 		userManager,
 		auth.NewJWTManager(auth.NewKeyManager(st, logging), userManager, logging),
-		auth.NewACLManager(logging),
+		auth.NewACLManager(logging, true),
 	)
 
 	shutdownManager.RegisterShutdownFn(func(ctx context.Context) error {
@@ -257,7 +257,7 @@ func setupAndStartProcessor(ctx context.Context, cfg *config.Config, st storage.
 	return processingEngine, nil
 }
 
-func setupAPIServer(cfg *config.Config, logging *logrus.Logger, st storage.Storage, userManager *auth.UserManager, jwtmanager *auth.JWTManager, aclManager *auth.ACLManager) *api.API {
+func setupAPIServer(cfg *config.Config, logging *logrus.Logger, st storage.Storage, userManager *auth.UserManager, jwtmanager *auth.JWTManager, aclManager auth.ACLManager) *api.API {
 	logging.Info("Creating API server")
 	return api.NewAPI(
 		logging,
