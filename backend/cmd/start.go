@@ -96,7 +96,7 @@ func runStart(cmd *cobra.Command, _ []string) error {
 		return err
 	}
 
-	apiServer := setupAPIServer(cfg, logging, st, userManager)
+	apiServer := setupAPIServer(cfg, logging, st, userManager, auth.NewJWTManager(auth.NewKeyManager(st, logging), userManager, logging))
 
 	shutdownManager.RegisterShutdownFn(func(ctx context.Context) error {
 		return apiServer.Shutdown(ctx)
@@ -250,7 +250,7 @@ func setupAndStartProcessor(ctx context.Context, cfg *config.Config, st storage.
 	return processingEngine, nil
 }
 
-func setupAPIServer(cfg *config.Config, logging *logrus.Logger, st storage.Storage, userManager *auth.UserManager) *api.API {
+func setupAPIServer(cfg *config.Config, logging *logrus.Logger, st storage.Storage, userManager *auth.UserManager, jwtmanager *auth.JWTManager) *api.API {
 	logging.Info("Creating API server")
 	return api.NewAPI(
 		logging,
@@ -263,6 +263,7 @@ func setupAPIServer(cfg *config.Config, logging *logrus.Logger, st storage.Stora
 			IdleTimeout:       cfg.APIServerIdleTimeoutInSecs,
 		},
 		userManager,
+		jwtmanager,
 	)
 }
 

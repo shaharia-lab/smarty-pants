@@ -39,6 +39,7 @@ type API struct {
 	searchSystem search.System
 	server       *http.Server
 	userManager  *auth.UserManager
+	jwtManager   *auth.JWTManager
 }
 
 type Config struct {
@@ -48,7 +49,7 @@ type Config struct {
 	IdleTimeout       int
 }
 
-func NewAPI(logger *logrus.Logger, storage storage.Storage, searchSystem search.System, config Config, userManager *auth.UserManager) *API {
+func NewAPI(logger *logrus.Logger, storage storage.Storage, searchSystem search.System, config Config, userManager *auth.UserManager, jwtManager *auth.JWTManager) *API {
 	api := &API{
 		config:       config,
 		router:       chi.NewRouter(),
@@ -57,6 +58,7 @@ func NewAPI(logger *logrus.Logger, storage storage.Storage, searchSystem search.
 		storage:      storage,
 		searchSystem: searchSystem,
 		userManager:  userManager,
+		jwtManager:   jwtManager,
 	}
 	api.setupMiddleware()
 	api.setupRoutes()
@@ -186,7 +188,7 @@ func (a *API) setupRoutes() {
 				r.Get("/", getSettingsHandler(a.storage, a.logger))
 				r.Put("/", updateSettingsHandler(a.storage, a.logger))
 			})
-		})
+		}).With(a.jwtManager.AuthMiddleware())
 	})
 
 	a.userManager.RegisterRoutes(a.router)
