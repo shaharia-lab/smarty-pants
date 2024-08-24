@@ -98,7 +98,7 @@ func TestIssueTokenForUser(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			mockStorage.On("GetUser", mock.Anything, tt.userUUID).Return(tt.mockUser, tt.mockError).Once()
 
-			token, err := jwtManager.IssueTokenForUser(context.Background(), tt.userUUID, tt.audience, tt.expiration)
+			token, err := jwtManager.IssueToken(context.Background(), tt.userUUID, tt.audience, tt.expiration)
 
 			if tt.expectError {
 				assert.Error(t, err)
@@ -151,7 +151,7 @@ func TestValidateToken(t *testing.T) {
 	}
 	mockStorage.On("GetUser", mock.Anything, uuid.MustParse("123e4567-e89b-12d3-a456-426614174000")).Return(validUser, nil)
 
-	validToken, err := jwtManager.IssueTokenForUser(context.Background(), uuid.MustParse("123e4567-e89b-12d3-a456-426614174000"), []string{"web"}, time.Hour)
+	validToken, err := jwtManager.IssueToken(context.Background(), uuid.MustParse("123e4567-e89b-12d3-a456-426614174000"), []string{"web"}, time.Hour)
 	assert.NoError(t, err)
 
 	expiredClaims := JWTClaims{
@@ -233,8 +233,8 @@ func TestJWTManagerWithKeyManagerErrors(t *testing.T) {
 	}
 	mockStorage.On("GetUser", mock.Anything, uuid.MustParse("123e4567-e89b-12d3-a456-426614174000")).Return(validUser, nil)
 
-	t.Run("IssueTokenForUser with KeyManager error", func(t *testing.T) {
-		token, err := jwtManager.IssueTokenForUser(context.Background(), uuid.MustParse("123e4567-e89b-12d3-a456-426614174000"), []string{"web"}, time.Hour)
+	t.Run("IssueToken with KeyManager error", func(t *testing.T) {
+		token, err := jwtManager.IssueToken(context.Background(), uuid.MustParse("123e4567-e89b-12d3-a456-426614174000"), []string{"web"}, time.Hour)
 		assert.Error(t, err)
 		assert.Empty(t, token)
 		assert.Contains(t, err.Error(), "failed to get private key")

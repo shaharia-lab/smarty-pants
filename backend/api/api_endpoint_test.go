@@ -94,7 +94,7 @@ func TestAPIEndpoints(t *testing.T) {
 			mockStorage.On("GetAnalyticsOverview", mock.Anything).Return(types.AnalyticsOverview{}, nil)
 
 			// Generate token for the user
-			accessToken, err := jwtManager.IssueTokenForUser(context.Background(), tt.user.UUID, []string{"web"}, 10*time.Hour)
+			accessToken, err := jwtManager.IssueToken(context.Background(), tt.user.UUID, []string{"web"}, 10*time.Hour)
 			assert.NoError(t, err)
 
 			// Create a new request

@@ -39,8 +39,8 @@ func NewJWTManager(keyManager *KeyManager, userManager *UserManager, logger *log
 	}
 }
 
-// IssueTokenForUser creates and signs a new JWT token for a user
-func (m *JWTManager) IssueTokenForUser(ctx context.Context, userUUID uuid.UUID, audience []string, expiration time.Duration) (string, error) {
+// IssueToken creates and signs a new JWT token for a user
+func (m *JWTManager) IssueToken(ctx context.Context, userUUID uuid.UUID, audience []string, expiration time.Duration) (string, error) {
 	m.logger.WithFields(logrus.Fields{
 		"userUUID":   userUUID,
 		"audience":   audience,
