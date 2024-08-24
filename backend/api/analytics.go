@@ -16,7 +16,7 @@ import (
 func getAnalyticsOverview(st storage.Storage, logger *logrus.Logger, aclManager auth.ACLManager) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		routeCtx := r.Context()
-		if !aclManager.IsAllowed(w, r, types.UserRoleUser, "analytics") {
+		if !aclManager.IsAllowed(w, r, types.UserRoleAdmin, "analytics") {
 			return
 		}
 

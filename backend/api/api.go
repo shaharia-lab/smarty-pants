@@ -136,7 +136,7 @@ func (a *API) setupRoutes() {
 			})
 
 			r.Route("/datasource", func(r chi.Router) {
-				r.Post("/", addDatasourceHandler(a.storage, a.logger))
+				r.Post("/", addDatasourceHandler(a.storage, a.logger, a.aclManager))
 				r.Route(uuidPath, func(r chi.Router) {
 					r.Delete("/", deleteDatasourceHandler(a.storage, a.logger))
 					r.Get("/", getDatasourceHandler(a.storage, a.logger))

@@ -9,6 +9,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
+	"github.com/shaharia-lab/smarty-pants/backend/internal/auth"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/datasource"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/observability"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/storage"
@@ -26,9 +27,13 @@ const (
 	datasourceDeletedSuccessfullyMsg = "Datasource has been deleted successfully"
 )
 
-func addDatasourceHandler(st storage.Storage, logging *logrus.Logger) http.HandlerFunc {
+func addDatasourceHandler(st storage.Storage, logging *logrus.Logger, aclManager auth.ACLManager) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
+
+		if !aclManager.IsAllowed(w, r, types.UserRoleAdmin, "analytics") {
+			return
+		}
 
 		ctx, span := observability.StartSpan(ctx, "api.addDatasourceHandler")
 		defer span.End()
