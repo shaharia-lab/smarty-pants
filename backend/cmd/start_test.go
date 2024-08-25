@@ -23,9 +23,9 @@ func TestStartCommand(t *testing.T) {
 	logger := logrus.New()
 	logger.SetLevel(logrus.DebugLevel)
 
-	apiPort, err := guti.GetFreePortFromPortRange(10000, 20000, 3)
+	apiPort, err := guti.GetFreePortFromPortRange(10000, 20000)
 	require.NoError(t, err, "Failed to get free port for API")
-	metricsPort, err := guti.GetFreePortFromPortRange(20100, 30000, 3)
+	metricsPort, err := guti.GetFreePortFromPortRange(20100, 30000)
 	require.NoError(t, err, "Failed to get free port for metrics")
 
 	os.Setenv("API_PORT", strconv.Itoa(apiPort))
