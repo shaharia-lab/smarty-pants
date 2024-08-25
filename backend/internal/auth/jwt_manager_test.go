@@ -5,7 +5,10 @@ import (
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
+	"encoding/json"
 	"errors"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 	"time"
 
@@ -14,6 +17,7 @@ import (
 	"github.com/shaharia-lab/smarty-pants/backend/internal/logger"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/storage"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/types"
+	"github.com/shaharia-lab/smarty-pants/backend/internal/util"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -98,7 +102,7 @@ func TestIssueTokenForUser(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			mockStorage.On("GetUser", mock.Anything, tt.userUUID).Return(tt.mockUser, tt.mockError).Once()
 
-			token, err := jwtManager.IssueTokenForUser(context.Background(), tt.userUUID, tt.audience, tt.expiration)
+			token, err := jwtManager.IssueToken(context.Background(), tt.userUUID, tt.audience, tt.expiration)
 
 			if tt.expectError {
 				assert.Error(t, err)
@@ -151,7 +155,7 @@ func TestValidateToken(t *testing.T) {
 	}
 	mockStorage.On("GetUser", mock.Anything, uuid.MustParse("123e4567-e89b-12d3-a456-426614174000")).Return(validUser, nil)
 
-	validToken, err := jwtManager.IssueTokenForUser(context.Background(), uuid.MustParse("123e4567-e89b-12d3-a456-426614174000"), []string{"web"}, time.Hour)
+	validToken, err := jwtManager.IssueToken(context.Background(), uuid.MustParse("123e4567-e89b-12d3-a456-426614174000"), []string{"web"}, time.Hour)
 	assert.NoError(t, err)
 
 	expiredClaims := JWTClaims{
@@ -233,8 +237,8 @@ func TestJWTManagerWithKeyManagerErrors(t *testing.T) {
 	}
 	mockStorage.On("GetUser", mock.Anything, uuid.MustParse("123e4567-e89b-12d3-a456-426614174000")).Return(validUser, nil)
 
-	t.Run("IssueTokenForUser with KeyManager error", func(t *testing.T) {
-		token, err := jwtManager.IssueTokenForUser(context.Background(), uuid.MustParse("123e4567-e89b-12d3-a456-426614174000"), []string{"web"}, time.Hour)
+	t.Run("IssueToken with KeyManager error", func(t *testing.T) {
+		token, err := jwtManager.IssueToken(context.Background(), uuid.MustParse("123e4567-e89b-12d3-a456-426614174000"), []string{"web"}, time.Hour)
 		assert.Error(t, err)
 		assert.Empty(t, token)
 		assert.Contains(t, err.Error(), "failed to get private key")
@@ -249,4 +253,260 @@ func TestJWTManagerWithKeyManagerErrors(t *testing.T) {
 
 	mockStorage.AssertCalled(t, "GetKeyPair")
 	mockStorage.AssertExpectations(t)
+}
+
+func TestAuthMiddleware(t *testing.T) {
+	mockStorage := new(storage.StorageMock)
+	l := logger.NoOpsLogger()
+	mockUserManager := NewUserManager(mockStorage, l)
+	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	assert.NoError(t, err)
+
+	privateKeyBytes := x509.MarshalPKCS1PrivateKey(privateKey)
+	publicKeyBytes, err := x509.MarshalPKIXPublicKey(&privateKey.PublicKey)
+	assert.NoError(t, err)
+
+	mockStorage.On("GetKeyPair").Return(privateKeyBytes, publicKeyBytes, nil).Maybe()
+
+	keyManager := NewKeyManager(mockStorage, l)
+	jwtManager := NewJWTManager(keyManager, mockUserManager, l)
+
+	validUser := &types.User{
+		UUID:   uuid.MustParse("123e4567-e89b-12d3-a456-426614174000"),
+		Email:  "user@example.com",
+		Status: types.UserStatusActive,
+		Roles:  []types.UserRole{types.UserRoleUser},
+	}
+
+	mockStorage.On("GetUser", mock.Anything, validUser.UUID).Return(validUser, nil).Maybe()
+
+	validToken, err := jwtManager.IssueToken(context.Background(), validUser.UUID, []string{"web"}, time.Hour)
+	assert.NoError(t, err)
+
+	tests := []struct {
+		name           string
+		authEnabled    bool
+		setupRequest   func(*http.Request)
+		expectedStatus int
+		expectedUser   *types.User
+		expectedError  *util.APIError
+	}{
+		{
+			name:        "Auth disabled",
+			authEnabled: false,
+			setupRequest: func(req *http.Request) {
+				// No token needed
+			},
+			expectedStatus: http.StatusOK,
+			expectedUser: &types.User{
+				UUID:   uuid.MustParse("00000000-0000-0000-0000-000000000000"),
+				Name:   "Anonymous User",
+				Email:  "anonymous@example.com",
+				Status: types.UserStatusActive,
+				Roles:  []types.UserRole{types.UserRoleAdmin},
+			},
+		},
+		{
+			name:        "Auth enabled, valid token",
+			authEnabled: true,
+			setupRequest: func(req *http.Request) {
+				req.Header.Set("Authorization", "Bearer "+validToken)
+			},
+			expectedStatus: http.StatusOK,
+			expectedUser:   validUser,
+		},
+		{
+			name:        "Auth enabled, no Authorization header",
+			authEnabled: true,
+			setupRequest: func(req *http.Request) {
+				// No Authorization header
+			},
+			expectedStatus: http.StatusUnauthorized,
+			expectedError: &util.APIError{
+				Message: "Un-Authorized",
+				Err:     "authorization header is missing",
+			},
+		},
+		{
+			name:        "Auth enabled, empty Authorization header",
+			authEnabled: true,
+			setupRequest: func(req *http.Request) {
+				req.Header.Set("Authorization", "")
+			},
+			expectedStatus: http.StatusUnauthorized,
+			expectedError: &util.APIError{
+				Message: "Un-Authorized",
+				Err:     "authorization header is missing",
+			},
+		},
+		{
+			name:        "Auth enabled, invalid Authorization header format",
+			authEnabled: true,
+			setupRequest: func(req *http.Request) {
+				req.Header.Set("Authorization", "InvalidFormat")
+			},
+			expectedStatus: http.StatusUnauthorized,
+			expectedError: &util.APIError{
+				Message: "Un-Authorized",
+				Err:     "authorization header format must be Bearer {token}",
+			},
+		},
+		{
+			name:        "Auth enabled, no space after Bearer",
+			authEnabled: true,
+			setupRequest: func(req *http.Request) {
+				req.Header.Set("Authorization", "Bearer"+validToken)
+			},
+			expectedStatus: http.StatusUnauthorized,
+			expectedError: &util.APIError{
+				Message: "Un-Authorized",
+				Err:     "authorization header format must be Bearer {token}",
+			},
+		},
+		{
+			name:        "Auth enabled, invalid token",
+			authEnabled: true,
+			setupRequest: func(req *http.Request) {
+				req.Header.Set("Authorization", "Bearer invalidtoken")
+			},
+			expectedStatus: http.StatusUnauthorized,
+			expectedError: &util.APIError{
+				Message: "Un-Authorized",
+				Err:     "failed to parse token: token is malformed: token contains an invalid number of segments",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req, err := http.NewRequest("GET", "/test", nil)
+			assert.NoError(t, err)
+
+			tt.setupRequest(req)
+
+			rr := httptest.NewRecorder()
+
+			handler := jwtManager.AuthMiddleware(tt.authEnabled)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if tt.expectedUser != nil {
+					user := r.Context().Value(AuthenticatedUserCtxKey).(*types.User)
+					assert.Equal(t, tt.expectedUser.UUID, user.UUID)
+					assert.Equal(t, tt.expectedUser.Email, user.Email)
+					assert.Equal(t, tt.expectedUser.Status, user.Status)
+					assert.ElementsMatch(t, tt.expectedUser.Roles, user.Roles)
+				}
+				w.WriteHeader(http.StatusOK)
+			}))
+
+			handler.ServeHTTP(rr, req)
+
+			assert.Equal(t, tt.expectedStatus, rr.Code)
+
+			if tt.expectedError != nil {
+				var apiError util.APIError
+				err := json.Unmarshal(rr.Body.Bytes(), &apiError)
+				assert.NoError(t, err)
+				assert.Equal(t, tt.expectedError.Message, apiError.Message)
+				assert.Equal(t, tt.expectedError.Err, apiError.Err)
+			}
+		})
+	}
+}
+
+func TestAuthMiddlewareWithErrors(t *testing.T) {
+	l := logger.NoOpsLogger()
+	validUserUUID := uuid.MustParse("123e4567-e89b-12d3-a456-426614174000")
+
+	tests := []struct {
+		name           string
+		setupMocks     func(*storage.StorageMock) string // Return the token to be used in the test
+		expectedStatus int
+		expectedError  *util.APIError
+	}{
+		{
+			name: "Error getting key pair",
+			setupMocks: func(mockStorage *storage.StorageMock) string {
+				mockStorage.On("UpdateKeyPair", mock.Anything, mock.Anything).Return(errors.New("key pair error")).Once()
+				mockStorage.On("GetKeyPair").Return([]byte{}, []byte{}, errors.New("key pair error")).Once()
+				return "validtokenformat"
+			},
+			expectedStatus: http.StatusUnauthorized,
+			expectedError: &util.APIError{
+				Message: "Un-Authorized",
+				Err:     "failed to get public key: failed to store new key pair: key pair error",
+			},
+		},
+		{
+			name: "Invalid token",
+			setupMocks: func(mockStorage *storage.StorageMock) string {
+				privateKey, _ := rsa.GenerateKey(rand.Reader, 2048)
+				privateKeyBytes := x509.MarshalPKCS1PrivateKey(privateKey)
+				publicKeyBytes, _ := x509.MarshalPKIXPublicKey(&privateKey.PublicKey)
+				mockStorage.On("GetKeyPair").Return(privateKeyBytes, publicKeyBytes, nil).Once()
+				return "invalidtoken"
+			},
+			expectedStatus: http.StatusUnauthorized,
+			expectedError: &util.APIError{
+				Message: "Un-Authorized",
+				Err:     "failed to parse token: token is malformed: token contains an invalid number of segments",
+			},
+		},
+		{
+			name: "Error getting user",
+			setupMocks: func(mockStorage *storage.StorageMock) string {
+				privateKey, _ := rsa.GenerateKey(rand.Reader, 2048)
+				token := jwt.NewWithClaims(jwt.SigningMethodRS256, &JWTClaims{
+					RegisteredClaims: jwt.RegisteredClaims{
+						Subject: validUserUUID.String(),
+					},
+				})
+				validToken, _ := token.SignedString(privateKey)
+
+				privateKeyBytes := x509.MarshalPKCS1PrivateKey(privateKey)
+				publicKeyBytes, _ := x509.MarshalPKIXPublicKey(&privateKey.PublicKey)
+				mockStorage.On("GetKeyPair").Return(privateKeyBytes, publicKeyBytes, nil).Once()
+				mockStorage.On("GetUser", mock.Anything, validUserUUID).Return(nil, errors.New("user not found")).Once()
+
+				return validToken
+			},
+			expectedStatus: http.StatusUnauthorized,
+			expectedError: &util.APIError{
+				Message: "Un-Authorized",
+				Err:     "Invalid authentication",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockStorage := new(storage.StorageMock)
+			mockUserManager := NewUserManager(mockStorage, l)
+			keyManager := NewKeyManager(mockStorage, l)
+			jwtManager := NewJWTManager(keyManager, mockUserManager, l)
+
+			token := tt.setupMocks(mockStorage)
+
+			req, err := http.NewRequest("GET", "/test", nil)
+			assert.NoError(t, err)
+
+			req.Header.Set("Authorization", "Bearer "+token)
+
+			rr := httptest.NewRecorder()
+
+			handler := jwtManager.AuthMiddleware(true)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				t.Error("Handler should not be called")
+			}))
+
+			handler.ServeHTTP(rr, req)
+
+			assert.Equal(t, tt.expectedStatus, rr.Code)
+
+			var apiError util.APIError
+			err = json.Unmarshal(rr.Body.Bytes(), &apiError)
+			assert.NoError(t, err)
+			assert.Equal(t, tt.expectedError.Message, apiError.Message)
+			assert.Contains(t, apiError.Err, tt.expectedError.Err, "Error message should contain expected error")
+
+			mockStorage.AssertExpectations(t)
+		})
+	}
 }

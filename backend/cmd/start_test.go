@@ -7,7 +7,6 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"net"
 	"net/http"
 	"os"
 	"strconv"
@@ -15,6 +14,7 @@ import (
 	"time"
 
 	_ "github.com/lib/pq"
+	"github.com/shaharia-lab/guti"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"
 )
@@ -23,9 +23,9 @@ func TestStartCommand(t *testing.T) {
 	logger := logrus.New()
 	logger.SetLevel(logrus.DebugLevel)
 
-	apiPort, err := getFreePort()
+	apiPort, err := guti.GetFreePortFromPortRange(10000, 20000)
 	require.NoError(t, err, "Failed to get free port for API")
-	metricsPort, err := getFreePort()
+	metricsPort, err := guti.GetFreePortFromPortRange(20100, 30000)
 	require.NoError(t, err, "Failed to get free port for metrics")
 
 	os.Setenv("API_PORT", strconv.Itoa(apiPort))
@@ -82,21 +82,6 @@ func TestStartCommand(t *testing.T) {
 		_, err = http.Get(fmt.Sprintf("http://localhost:%d/metrics", metricsPort))
 		require.Error(t, err, "Expected metrics endpoint to be inaccessible after shutdown")
 	})
-}
-
-// getFreePort asks the kernel for a free open port that is ready to use.
-func getFreePort() (int, error) {
-	addr, err := net.ResolveTCPAddr("tcp", "localhost:0")
-	if err != nil {
-		return 0, err
-	}
-
-	l, err := net.ListenTCP("tcp", addr)
-	if err != nil {
-		return 0, err
-	}
-	defer l.Close()
-	return l.Addr().(*net.TCPAddr).Port, nil
 }
 
 func resetDatabase(t *testing.T, dbConn *sql.DB) {

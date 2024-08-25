@@ -132,6 +132,7 @@ Make sure to configure any necessary network settings to allow the frontend to c
 | `PROCESSOR_RETRY_DELAY_IN_SECS`      | No       | `5`                 | Delay between processor retry attempts in seconds |
 | `PROCESSOR_SHUTDOWN_TIMEOUT_IN_SECS` | No       | `10`                | Processor shutdown timeout in seconds             |
 | `PROCESSOR_REFRESH_INTERVAL_IN_SECS` | No       | `60`                | Processor refresh interval in seconds             |
+| `ENABLE_AUTH`                        | No       | `false`             | Enable authentication system for the application  |
 
 ## 📋 Development
 

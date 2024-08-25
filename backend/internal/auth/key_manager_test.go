@@ -168,7 +168,7 @@ func TestGetJWTSigningMethod(t *testing.T) {
 
 	km := NewKeyManager(mockStorage, l)
 
-	signingMethod := km.GetJWTSigningMethod()
+	signingMethod := km.getJWTSigningMethod()
 
 	assert.Equal(t, jwt.SigningMethodRS256, signingMethod)
 }
@@ -180,7 +180,7 @@ func TestParseRSAPrivateKey(t *testing.T) {
 
 		privateKeyBytes := x509.MarshalPKCS1PrivateKey(privateKey)
 
-		parsedKey, err := ParseRSAPrivateKey(privateKeyBytes)
+		parsedKey, err := parseRSAPrivateKey(privateKeyBytes)
 
 		assert.NoError(t, err)
 		assert.NotNil(t, parsedKey)
@@ -194,7 +194,7 @@ func TestParseRSAPrivateKey(t *testing.T) {
 		privateKeyBytes, err := x509.MarshalPKCS8PrivateKey(privateKey)
 		assert.NoError(t, err)
 
-		parsedKey, err := ParseRSAPrivateKey(privateKeyBytes)
+		parsedKey, err := parseRSAPrivateKey(privateKeyBytes)
 
 		assert.NoError(t, err)
 		assert.NotNil(t, parsedKey)
@@ -204,7 +204,7 @@ func TestParseRSAPrivateKey(t *testing.T) {
 	t.Run("Invalid private key", func(t *testing.T) {
 		invalidKeyBytes := []byte("invalid key")
 
-		parsedKey, err := ParseRSAPrivateKey(invalidKeyBytes)
+		parsedKey, err := parseRSAPrivateKey(invalidKeyBytes)
 
 		assert.Error(t, err)
 		assert.Nil(t, parsedKey)
@@ -220,7 +220,7 @@ func TestParseRSAPublicKey(t *testing.T) {
 		publicKeyBytes, err := x509.MarshalPKIXPublicKey(&privateKey.PublicKey)
 		assert.NoError(t, err)
 
-		parsedKey, err := ParseRSAPublicKey(publicKeyBytes)
+		parsedKey, err := parseRSAPublicKey(publicKeyBytes)
 
 		assert.NoError(t, err)
 		assert.NotNil(t, parsedKey)
@@ -230,7 +230,7 @@ func TestParseRSAPublicKey(t *testing.T) {
 	t.Run("Invalid public key", func(t *testing.T) {
 		invalidKeyBytes := []byte("invalid key")
 
-		parsedKey, err := ParseRSAPublicKey(invalidKeyBytes)
+		parsedKey, err := parseRSAPublicKey(invalidKeyBytes)
 
 		assert.Error(t, err)
 		assert.Nil(t, parsedKey)

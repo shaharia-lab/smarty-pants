@@ -11,6 +11,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
+	"github.com/shaharia-lab/smarty-pants/backend/internal/auth"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/config"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/datasource"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/observability"
@@ -123,7 +124,7 @@ func TestAddDatasourceHandler(t *testing.T) {
 			mockStorage := new(storage.StorageMock)
 			tt.mockSetup(mockStorage)
 
-			handler := addDatasourceHandler(mockStorage, logger)
+			handler := addDatasourceHandler(mockStorage, logger, auth.NewACLManager(logger, false))
 
 			body, _ := json.Marshal(tt.payload)
 			req, _ := http.NewRequest("POST", "/api/v1/datasources", bytes.NewBuffer(body))

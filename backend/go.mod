@@ -44,6 +44,7 @@ require (
 	github.com/prometheus/client_model v0.6.0 // indirect
 	github.com/prometheus/common v0.49.1-0.20240306132007-4199f18c3e92 // indirect
 	github.com/prometheus/procfs v0.12.0 // indirect
+	github.com/shaharia-lab/guti v1.3.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/stretchr/objx v0.5.2 // indirect
 	go.opentelemetry.io/proto/otlp v1.3.1 // indirect
