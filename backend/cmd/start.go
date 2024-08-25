@@ -89,14 +89,22 @@ func runStart(cmd *cobra.Command, _ []string) error {
 
 	userManager := auth.NewUserManager(st, logging)
 
+	var oauthProviders = map[string]auth.OAuthProvider{}
+	if cfg.GoogleOAuthClientID != "" && cfg.GoogleOAuthClientSecret != "" && cfg.GoogleOAuthRedirectURL != "" {
+		oauthProviders["google"] = auth.NewGoogleProvider(
+			cfg.GoogleOAuthClientID,
+			cfg.GoogleOAuthClientSecret,
+			cfg.GoogleOAuthRedirectURL,
+		)
+	}
+
+	if cfg.EnableAuthentication && len(oauthProviders) == 0 {
+		logging.Warn("No OAuth providers configured")
+		return errors.New("authentication is enabled but no OAuth providers configured")
+	}
+
 	oauthManager := auth.NewOAuthManager(
-		map[string]auth.OAuthProvider{
-			"google": auth.NewGoogleProvider(
-				cfg.GoogleOAuthClientID,
-				cfg.GoogleOAuthClientSecret,
-				cfg.GoogleOAuthRedirectURL,
-			),
-		},
+		oauthProviders,
 		userManager,
 		auth.NewJWTManager(auth.NewKeyManager(st, logging), userManager, logging),
 		logging,

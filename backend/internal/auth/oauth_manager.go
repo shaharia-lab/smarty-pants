@@ -171,7 +171,7 @@ func (om *OAuthManager) HandleAuthCode(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	jwtToken, err := om.jwtManager.IssueTokenForUser(r.Context(), user.UUID, []string{"user"}, 24*time.Hour)
+	jwtToken, err := om.jwtManager.IssueToken(r.Context(), user.UUID, []string{"user"}, 24*time.Hour)
 	if err != nil {
 		om.logger.WithError(err).Error("Failed to issue JWT token")
 		http.Error(w, "Failed to issue token", http.StatusInternalServerError)
