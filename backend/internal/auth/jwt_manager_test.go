@@ -5,7 +5,10 @@ import (
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
+	"encoding/json"
 	"errors"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 	"time"
 
@@ -14,6 +17,7 @@ import (
 	"github.com/shaharia-lab/smarty-pants/backend/internal/logger"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/storage"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/types"
+	"github.com/shaharia-lab/smarty-pants/backend/internal/util"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -249,4 +253,111 @@ func TestJWTManagerWithKeyManagerErrors(t *testing.T) {
 
 	mockStorage.AssertCalled(t, "GetKeyPair")
 	mockStorage.AssertExpectations(t)
+}
+
+func TestAuthMiddleware(t *testing.T) {
+	mockStorage := new(storage.StorageMock)
+	l := logger.NoOpsLogger()
+	mockUserManager := NewUserManager(mockStorage, l)
+	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	assert.NoError(t, err)
+
+	privateKeyBytes := x509.MarshalPKCS1PrivateKey(privateKey)
+	publicKeyBytes, err := x509.MarshalPKIXPublicKey(&privateKey.PublicKey)
+	assert.NoError(t, err)
+
+	mockStorage.On("GetKeyPair").Return(privateKeyBytes, publicKeyBytes, nil)
+
+	keyManager := NewKeyManager(mockStorage, l)
+	jwtManager := NewJWTManager(keyManager, mockUserManager, l)
+
+	validUser := &types.User{
+		UUID:   uuid.MustParse("123e4567-e89b-12d3-a456-426614174000"),
+		Email:  "user@example.com",
+		Status: types.UserStatusActive,
+		Roles:  []types.UserRole{types.UserRoleUser},
+	}
+
+	mockStorage.On("GetUser", mock.Anything, validUser.UUID).Return(validUser, nil)
+
+	validToken, err := jwtManager.IssueToken(context.Background(), validUser.UUID, []string{"web"}, time.Hour)
+	assert.NoError(t, err)
+
+	tests := []struct {
+		name           string
+		authEnabled    bool
+		token          string
+		expectedStatus int
+		expectedUser   *types.User
+	}{
+		{
+			name:           "An anonymous user will be set if auth is disabled",
+			authEnabled:    false,
+			token:          "",
+			expectedStatus: http.StatusOK,
+			expectedUser: &types.User{
+				UUID:   uuid.MustParse("00000000-0000-0000-0000-000000000000"),
+				Name:   "Anonymous User",
+				Email:  "anonymous@example.com",
+				Status: types.UserStatusActive,
+				Roles:  []types.UserRole{types.UserRoleAdmin},
+			},
+		},
+		{
+			name:           "Auth enabled, valid token",
+			authEnabled:    true,
+			token:          validToken,
+			expectedStatus: http.StatusOK,
+			expectedUser:   validUser,
+		},
+		{
+			name:           "Auth enabled, no token",
+			authEnabled:    true,
+			token:          "",
+			expectedStatus: http.StatusUnauthorized,
+			expectedUser:   nil,
+		},
+		{
+			name:           "Auth enabled, invalid token",
+			authEnabled:    true,
+			token:          "invalid.token.string",
+			expectedStatus: http.StatusUnauthorized,
+			expectedUser:   nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req, err := http.NewRequest("GET", "/test", nil)
+			assert.NoError(t, err)
+
+			if tt.token != "" {
+				req.Header.Set("Authorization", "Bearer "+tt.token)
+			}
+
+			rr := httptest.NewRecorder()
+
+			handler := jwtManager.AuthMiddleware(tt.authEnabled)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if tt.expectedUser != nil {
+					user := r.Context().Value(AuthenticatedUserCtxKey).(*types.User)
+					assert.Equal(t, tt.expectedUser.UUID, user.UUID)
+					assert.Equal(t, tt.expectedUser.Email, user.Email)
+					assert.Equal(t, tt.expectedUser.Status, user.Status)
+					assert.ElementsMatch(t, tt.expectedUser.Roles, user.Roles)
+				}
+				w.WriteHeader(http.StatusOK)
+			}))
+
+			handler.ServeHTTP(rr, req)
+
+			assert.Equal(t, tt.expectedStatus, rr.Code)
+
+			if tt.expectedStatus != http.StatusOK {
+				var apiError util.APIError
+				err := json.Unmarshal(rr.Body.Bytes(), &apiError)
+				assert.NoError(t, err)
+				assert.Equal(t, "Un-Authorized", apiError.Message)
+			}
+		})
+	}
 }
