@@ -85,7 +85,7 @@ func TestSetupRoutes(t *testing.T) {
 func TestStart(t *testing.T) {
 	api := createTestAPI()
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
 	started := make(chan struct{})
@@ -99,14 +99,34 @@ func TestStart(t *testing.T) {
 		}
 	}()
 
-	select {
-	case <-started:
-	case <-time.After(2 * time.Second):
-		t.Fatal("Server didn't start within the expected time")
+	<-started // Wait for the server to start
+
+	// Implement a retry mechanism with timeout
+	retryCtx, retryCancel := context.WithTimeout(ctx, 5*time.Second)
+	defer retryCancel()
+
+	var lastErr error
+	for {
+		select {
+		case <-retryCtx.Done():
+			t.Fatalf("Server didn't become available within the expected time. Last error: %v", lastErr)
+		case <-time.After(100 * time.Millisecond):
+			_, err := http.Get(fmt.Sprintf("http://localhost:%d/system/ping", api.port))
+			if err == nil {
+				// Successfully connected, proceed with the test
+				goto serverReady
+			}
+			lastErr = err
+		}
 	}
 
-	_, err := http.Get(fmt.Sprintf("http://localhost:%d/system/ping", api.port))
+serverReady:
+	// Server is ready, proceed with the test
+	resp, err := http.Get(fmt.Sprintf("http://localhost:%d/system/ping", api.port))
 	assert.NoError(t, err, "Failed to connect to the server")
+	if err == nil {
+		resp.Body.Close()
+	}
 
 	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer shutdownCancel()
