@@ -6,26 +6,24 @@ import { Pie } from 'react-chartjs-2';
 import { Loader2 } from 'lucide-react';
 import AuthService from "@/services/authService";
 import axios from "axios";
-import { ApiError, createApiService, AnalyticsOverview } from "@/services/apiService";
+import { ApiError, createApiService } from "@/services/apiService";
+import {AnalyticsOverview} from "@/types/api";
 
 ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, Title);
 
 const Dashboard = () => {
     const [analyticsData, setAnalyticsData] = useState<AnalyticsOverview | null>(null);
-    const [isLoading, setIsLoading] = useState(true);
     const apiService = createApiService(AuthService);
+    const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
         const source = axios.CancelToken.source();
-
         const fetchAnalytics = async () => {
             try {
-                const data = await apiService.getAnalyticsOverview(source.token);
+                const data = await apiService.analytics.getAnalyticsOverview(source.token);
                 setAnalyticsData(data);
             } catch (error) {
-                if (error instanceof ApiError) {
-                    // Handle specific API errors
-                } else {
+                if (!axios.isCancel(error)) {
                     console.error('Error fetching analytics data:', error);
                 }
             } finally {

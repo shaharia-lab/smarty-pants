@@ -158,3 +158,7 @@ class AuthService {
 }
 
 export default AuthService.getInstance();
+
+export interface IAuthService {
+    getAuthenticatedAxiosInstance(): AxiosInstance;
+}
