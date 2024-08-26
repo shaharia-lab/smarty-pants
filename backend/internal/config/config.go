@@ -43,9 +43,9 @@ type Config struct {
 
 	EnableAuthentication bool `envconfig:"ENABLE_AUTH" default:"false"`
 
-	GoogleOAuthClientID     string `envconfig:"GOOGLE_OAUTH_CLIENT_ID" required:"true"`
+	GoogleOAuthClientID     string `envconfig:"GOOGLE_OAUTH_CLIENT_ID"`
 	GoogleOAuthClientSecret string `envconfig:"GOOGLE_OAUTH_CLIENT_SECRET"`
-	GoogleOAuthRedirectURL  string `envconfig:"GOOGLE_OAUTH_REDIRECT_URL" default:"http://localhost:8080/auth/google/callback"`
+	GoogleOAuthRedirectURL  string `envconfig:"GOOGLE_OAUTH_REDIRECT_URL"`
 }
 
 // Load loads the configuration options from the environment
