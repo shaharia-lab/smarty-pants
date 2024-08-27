@@ -16,8 +16,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-const AuthenticatedUserCtxKey contextKey = "authenticated_user"
-
 // JWTClaims represents the structure of your custom claims
 type JWTClaims struct {
 	jwt.RegisteredClaims
@@ -140,13 +138,13 @@ func (m *JWTManager) AuthMiddleware(authEnabled bool) func(http.Handler) http.Ha
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if !authEnabled {
-				r = m.processAnonymousUser(w, r)
+				r.WithContext(context.WithValue(r.Context(), types.AuthenticatedUserCtxKey, types.DefaultAnonymousUser()))
 				next.ServeHTTP(w, r)
 				return
 			}
 
 			if m.isPathInSkipList(r.URL.Path) {
-				r = m.processAnonymousUser(w, r)
+				r.WithContext(context.WithValue(r.Context(), types.AuthenticatedUserCtxKey, types.DefaultAnonymousUser()))
 				next.ServeHTTP(w, r)
 				return
 			}
@@ -164,20 +162,6 @@ func (m *JWTManager) isPathInSkipList(path string) bool {
 	}
 
 	return false
-}
-
-func (m *JWTManager) processAnonymousUser(w http.ResponseWriter, r *http.Request) *http.Request {
-	anonymousUser := &types.User{
-		UUID:      uuid.MustParse("00000000-0000-0000-0000-000000000000"),
-		Name:      "Anonymous User",
-		Email:     "anonymous@example.com",
-		Status:    types.UserStatusActive,
-		Roles:     []types.UserRole{types.UserRoleAdmin},
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
-	}
-
-	return r.WithContext(context.WithValue(r.Context(), AuthenticatedUserCtxKey, anonymousUser))
 }
 
 func (m *JWTManager) processAccessToken(w http.ResponseWriter, r *http.Request, next http.Handler) {
@@ -216,7 +200,7 @@ func (m *JWTManager) processAccessToken(w http.ResponseWriter, r *http.Request, 
 	}
 
 	m.logger.WithField("userUUID", user.UUID).Debug("User authenticated successfully. Setting user in request context")
-	ctx := context.WithValue(r.Context(), AuthenticatedUserCtxKey, user)
+	ctx := context.WithValue(r.Context(), types.AuthenticatedUserCtxKey, user)
 	r = r.WithContext(ctx)
 
 	next.ServeHTTP(w, r)

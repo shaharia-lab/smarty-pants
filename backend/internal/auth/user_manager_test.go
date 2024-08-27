@@ -94,7 +94,7 @@ func TestUserManager_handleActivateUser(t *testing.T) {
 	r := chi.NewRouter()
 	r.Use(func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			ctx := context.WithValue(r.Context(), userContextKey, user)
+			ctx := context.WithValue(r.Context(), types.UserDetailsCtxKey, user)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	})
@@ -126,7 +126,7 @@ func TestUserManager_handleDeactivateUser(t *testing.T) {
 	r := chi.NewRouter()
 	r.Use(func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			ctx := context.WithValue(r.Context(), userContextKey, user)
+			ctx := context.WithValue(r.Context(), types.UserDetailsCtxKey, user)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	})
@@ -200,7 +200,7 @@ func TestUserManager_ResolveUserFromRequest(t *testing.T) {
 			tt.setupMock(mockStorage)
 
 			handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				resolvedUser, ok := r.Context().Value(userContextKey).(*types.User)
+				resolvedUser, ok := r.Context().Value(types.UserDetailsCtxKey).(*types.User)
 				if tt.expectedUser != nil {
 					assert.True(t, ok)
 					assert.Equal(t, tt.expectedUser, resolvedUser)

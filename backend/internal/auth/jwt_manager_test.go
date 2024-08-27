@@ -284,14 +284,6 @@ func TestAuthMiddleware(t *testing.T) {
 	validToken, err := jwtManager.IssueToken(context.Background(), validUser.UUID, []string{"web"}, time.Hour)
 	assert.NoError(t, err)
 
-	anonymousUser := &types.User{
-		UUID:   uuid.MustParse("00000000-0000-0000-0000-000000000000"),
-		Name:   "Anonymous User",
-		Email:  "anonymous@example.com",
-		Status: types.UserStatusActive,
-		Roles:  []types.UserRole{types.UserRoleAdmin},
-	}
-
 	tests := []struct {
 		name           string
 		authEnabled    bool
@@ -308,13 +300,7 @@ func TestAuthMiddleware(t *testing.T) {
 				// No token needed
 			},
 			expectedStatus: http.StatusOK,
-			expectedUser: &types.User{
-				UUID:   uuid.MustParse("00000000-0000-0000-0000-000000000000"),
-				Name:   "Anonymous User",
-				Email:  "anonymous@example.com",
-				Status: types.UserStatusActive,
-				Roles:  []types.UserRole{types.UserRoleAdmin},
-			},
+			expectedUser:   types.DefaultAnonymousUser(),
 		},
 		{
 			name:        "Auth enabled, valid token",
@@ -393,7 +379,7 @@ func TestAuthMiddleware(t *testing.T) {
 				// No token provided
 			},
 			expectedStatus: http.StatusOK,
-			expectedUser:   anonymousUser,
+			expectedUser:   types.DefaultAnonymousUser(),
 		},
 		{
 			name:        "Auth enabled, skip path, with valid token",
@@ -403,7 +389,7 @@ func TestAuthMiddleware(t *testing.T) {
 				req.Header.Set("Authorization", "Bearer "+validToken)
 			},
 			expectedStatus: http.StatusOK,
-			expectedUser:   anonymousUser, // Should still be anonymous due to skip path
+			expectedUser:   types.DefaultAnonymousUser(), // Should still be anonymous due to skip path
 		},
 		{
 			name:        "Auth enabled, non-skip path, no token",
@@ -431,7 +417,7 @@ func TestAuthMiddleware(t *testing.T) {
 
 			handler := jwtManager.AuthMiddleware(tt.authEnabled)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				if tt.expectedUser != nil {
-					user := r.Context().Value(AuthenticatedUserCtxKey).(*types.User)
+					user := types.GetAuthenticatedUser(r.Context())
 					assert.Equal(t, tt.expectedUser.UUID, user.UUID)
 					assert.Equal(t, tt.expectedUser.Email, user.Email)
 					assert.Equal(t, tt.expectedUser.Status, user.Status)

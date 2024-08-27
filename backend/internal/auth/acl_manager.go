@@ -65,7 +65,7 @@ func (m *ACLManager) IsAllowed(w http.ResponseWriter, r *http.Request, requiredR
 
 // getUserFromContext retrieves the user from the context.
 func (m *ACLManager) getUserFromContext(ctx context.Context) (*types.User, error) {
-	user, ok := ctx.Value(AuthenticatedUserCtxKey).(*types.User)
+	user, ok := ctx.Value(types.AuthenticatedUserCtxKey).(*types.User)
 	if !ok {
 		return nil, errors.New("user not found in context")
 	}

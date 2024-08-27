@@ -15,10 +15,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type contextKey string
-
-const userContextKey contextKey = "user_details"
-
 // UserManager is a manager for user operations.
 type UserManager struct {
 	storage storage.Storage
@@ -127,7 +123,7 @@ func (um *UserManager) ResolveUserFromRequest(next http.Handler) http.Handler {
 			return
 		}
 
-		ctx := context.WithValue(r.Context(), userContextKey, user)
+		ctx := context.WithValue(r.Context(), types.UserDetailsCtxKey, user)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
@@ -199,7 +195,7 @@ func (um *UserManager) handleGetUser(w http.ResponseWriter, r *http.Request) {
 	_, span := observability.StartSpan(r.Context(), "auth.UserManager.handleGetUser")
 	defer span.End()
 
-	user := r.Context().Value(userContextKey).(*types.User)
+	user := r.Context().Value(types.UserDetailsCtxKey).(*types.User)
 	util.SendSuccessResponse(w, http.StatusOK, user, um.logger, nil)
 }
 
@@ -207,7 +203,7 @@ func (um *UserManager) handleActivateUser(w http.ResponseWriter, r *http.Request
 	_, span := observability.StartSpan(r.Context(), "auth.UserManager.handleActivateUser")
 	defer span.End()
 
-	user := r.Context().Value(userContextKey).(*types.User)
+	user := r.Context().Value(types.UserDetailsCtxKey).(*types.User)
 	err := um.ActivateUser(r.Context(), user.UUID)
 	if err != nil {
 		util.SendErrorResponse(w, http.StatusInternalServerError, "Failed to activate user", um.logger, nil)
@@ -220,7 +216,7 @@ func (um *UserManager) handleDeactivateUser(w http.ResponseWriter, r *http.Reque
 	_, span := observability.StartSpan(r.Context(), "auth.UserManager.handleDeactivateUser")
 	defer span.End()
 
-	user := r.Context().Value(userContextKey).(*types.User)
+	user := r.Context().Value(types.UserDetailsCtxKey).(*types.User)
 	err := um.DeactivateUser(r.Context(), user.UUID)
 	if err != nil {
 		util.SendErrorResponse(w, http.StatusInternalServerError, "Failed to deactivate user", um.logger, nil)
