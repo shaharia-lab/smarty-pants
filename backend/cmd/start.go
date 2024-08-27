@@ -96,12 +96,15 @@ func runStart(cmd *cobra.Command, _ []string) error {
 		return err
 	}
 
+	authSkipEndpoints := []string{
+		"/api/v1/analytics/overviews",
+	}
 	apiServer := setupAPIServer(
 		cfg,
 		logging,
 		st,
 		userManager,
-		auth.NewJWTManager(auth.NewKeyManager(st, logging), userManager, logging),
+		auth.NewJWTManager(auth.NewKeyManager(st, logging), userManager, logging, authSkipEndpoints),
 		auth.NewACLManager(logging, cfg.EnableAuthentication),
 		cfg.EnableAuthentication,
 	)

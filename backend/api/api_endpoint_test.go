@@ -34,7 +34,7 @@ func TestAPIEndpoints(t *testing.T) {
 	mockLogger := logger.NoOpsLogger()
 	mockACLManager := auth.NewACLManager(mockLogger, true)
 	userManager := auth.NewUserManager(mockStorage, mockLogger)
-	jwtManager := auth.NewJWTManager(auth.NewKeyManager(mockStorage, mockLogger), userManager, mockLogger)
+	jwtManager := auth.NewJWTManager(auth.NewKeyManager(mockStorage, mockLogger), userManager, mockLogger, []string{})
 
 	// Create a new router
 	r := chi.NewRouter()

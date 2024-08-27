@@ -25,17 +25,19 @@ type JWTClaims struct {
 
 // JWTManager handles JWT operations
 type JWTManager struct {
-	keyManager  *KeyManager
-	userManager *UserManager
-	logger      *logrus.Logger
+	keyManager        *KeyManager
+	userManager       *UserManager
+	logger            *logrus.Logger
+	skipAuthEndpoints []string
 }
 
 // NewJWTManager creates a new JWTManager with the given KeyManager, UserManager and logger
-func NewJWTManager(keyManager *KeyManager, userManager *UserManager, logger *logrus.Logger) *JWTManager {
+func NewJWTManager(keyManager *KeyManager, userManager *UserManager, logger *logrus.Logger, skipAuthEndpoints []string) *JWTManager {
 	return &JWTManager{
-		keyManager:  keyManager,
-		userManager: userManager,
-		logger:      logger,
+		keyManager:        keyManager,
+		userManager:       userManager,
+		logger:            logger,
+		skipAuthEndpoints: skipAuthEndpoints,
 	}
 }
 
@@ -138,7 +140,15 @@ func (m *JWTManager) AuthMiddleware(authEnabled bool) func(http.Handler) http.Ha
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if !authEnabled {
-				r = m.processAnonymousUser(w, r, next)
+				r = m.processAnonymousUser(w, r)
+				next.ServeHTTP(w, r)
+				return
+			}
+
+			if m.isPathInSkipList(r.URL.Path) {
+				r = m.processAnonymousUser(w, r)
+				next.ServeHTTP(w, r)
+				return
 			}
 
 			m.processAccessToken(w, r, next)
@@ -146,7 +156,17 @@ func (m *JWTManager) AuthMiddleware(authEnabled bool) func(http.Handler) http.Ha
 	}
 }
 
-func (m *JWTManager) processAnonymousUser(w http.ResponseWriter, r *http.Request, next http.Handler) *http.Request {
+func (m *JWTManager) isPathInSkipList(path string) bool {
+	for _, skipPath := range m.skipAuthEndpoints {
+		if path == skipPath {
+			return true
+		}
+	}
+
+	return false
+}
+
+func (m *JWTManager) processAnonymousUser(w http.ResponseWriter, r *http.Request) *http.Request {
 	anonymousUser := &types.User{
 		UUID:      uuid.MustParse("00000000-0000-0000-0000-000000000000"),
 		Name:      "Anonymous User",
@@ -157,11 +177,7 @@ func (m *JWTManager) processAnonymousUser(w http.ResponseWriter, r *http.Request
 		UpdatedAt: time.Now(),
 	}
 
-	ctx := context.WithValue(r.Context(), AuthenticatedUserCtxKey, anonymousUser)
-	r = r.WithContext(ctx)
-
-	next.ServeHTTP(w, r)
-	return r
+	return r.WithContext(context.WithValue(r.Context(), AuthenticatedUserCtxKey, anonymousUser))
 }
 
 func (m *JWTManager) processAccessToken(w http.ResponseWriter, r *http.Request, next http.Handler) {

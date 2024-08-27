@@ -28,7 +28,7 @@ func TestNewJWTManager(t *testing.T) {
 	mockUserManager := NewUserManager(mockStorage, l)
 	keyManager := NewKeyManager(mockStorage, l)
 
-	jwtManager := NewJWTManager(keyManager, mockUserManager, l)
+	jwtManager := NewJWTManager(keyManager, mockUserManager, l, []string{})
 
 	assert.NotNil(t, jwtManager)
 	assert.Equal(t, keyManager, jwtManager.keyManager)
@@ -50,7 +50,7 @@ func TestIssueTokenForUser(t *testing.T) {
 	mockStorage.On("GetKeyPair").Return(privateKeyBytes, publicKeyBytes, nil)
 
 	keyManager := NewKeyManager(mockStorage, l)
-	jwtManager := NewJWTManager(keyManager, mockUserManager, l)
+	jwtManager := NewJWTManager(keyManager, mockUserManager, l, []string{})
 
 	tests := []struct {
 		name        string
@@ -146,7 +146,7 @@ func TestValidateToken(t *testing.T) {
 	mockStorage.On("GetKeyPair").Return(privateKeyBytes, publicKeyBytes, nil)
 
 	keyManager := NewKeyManager(mockStorage, l)
-	jwtManager := NewJWTManager(keyManager, mockUserManager, l)
+	jwtManager := NewJWTManager(keyManager, mockUserManager, l, []string{})
 
 	validUser := &types.User{
 		UUID:   uuid.MustParse("123e4567-e89b-12d3-a456-426614174000"),
@@ -228,7 +228,7 @@ func TestJWTManagerWithKeyManagerErrors(t *testing.T) {
 	mockStorage.On("UpdateKeyPair", mock.Anything, mock.Anything).Return(errors.New("update key pair error"))
 
 	keyManager := NewKeyManager(mockStorage, l)
-	jwtManager := NewJWTManager(keyManager, mockUserManager, l)
+	jwtManager := NewJWTManager(keyManager, mockUserManager, l, []string{})
 
 	validUser := &types.User{
 		UUID:   uuid.MustParse("123e4567-e89b-12d3-a456-426614174000"),
@@ -269,7 +269,8 @@ func TestAuthMiddleware(t *testing.T) {
 	mockStorage.On("GetKeyPair").Return(privateKeyBytes, publicKeyBytes, nil).Maybe()
 
 	keyManager := NewKeyManager(mockStorage, l)
-	jwtManager := NewJWTManager(keyManager, mockUserManager, l)
+	skipAuthEndpoints := []string{"/api/v1/public", "/api/v1/analytics/overview"}
+	jwtManager := NewJWTManager(keyManager, mockUserManager, l, skipAuthEndpoints)
 
 	validUser := &types.User{
 		UUID:   uuid.MustParse("123e4567-e89b-12d3-a456-426614174000"),
@@ -283,9 +284,18 @@ func TestAuthMiddleware(t *testing.T) {
 	validToken, err := jwtManager.IssueToken(context.Background(), validUser.UUID, []string{"web"}, time.Hour)
 	assert.NoError(t, err)
 
+	anonymousUser := &types.User{
+		UUID:   uuid.MustParse("00000000-0000-0000-0000-000000000000"),
+		Name:   "Anonymous User",
+		Email:  "anonymous@example.com",
+		Status: types.UserStatusActive,
+		Roles:  []types.UserRole{types.UserRoleAdmin},
+	}
+
 	tests := []struct {
 		name           string
 		authEnabled    bool
+		path           string
 		setupRequest   func(*http.Request)
 		expectedStatus int
 		expectedUser   *types.User
@@ -375,11 +385,44 @@ func TestAuthMiddleware(t *testing.T) {
 				Err:     "failed to parse token: token is malformed: token contains an invalid number of segments",
 			},
 		},
+		{
+			name:        "Auth enabled, skip path, no token",
+			authEnabled: true,
+			path:        "/api/v1/public",
+			setupRequest: func(req *http.Request) {
+				// No token provided
+			},
+			expectedStatus: http.StatusOK,
+			expectedUser:   anonymousUser,
+		},
+		{
+			name:        "Auth enabled, skip path, with valid token",
+			authEnabled: true,
+			path:        "/api/v1/analytics/overview",
+			setupRequest: func(req *http.Request) {
+				req.Header.Set("Authorization", "Bearer "+validToken)
+			},
+			expectedStatus: http.StatusOK,
+			expectedUser:   anonymousUser, // Should still be anonymous due to skip path
+		},
+		{
+			name:        "Auth enabled, non-skip path, no token",
+			authEnabled: true,
+			path:        "/api/v1/protected",
+			setupRequest: func(req *http.Request) {
+				// No token provided
+			},
+			expectedStatus: http.StatusUnauthorized,
+			expectedError: &util.APIError{
+				Message: "Un-Authorized",
+				Err:     "authorization header is missing",
+			},
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			req, err := http.NewRequest("GET", "/test", nil)
+			req, err := http.NewRequest("GET", tt.path, nil)
 			assert.NoError(t, err)
 
 			tt.setupRequest(req)
@@ -481,7 +524,7 @@ func TestAuthMiddlewareWithErrors(t *testing.T) {
 			mockStorage := new(storage.StorageMock)
 			mockUserManager := NewUserManager(mockStorage, l)
 			keyManager := NewKeyManager(mockStorage, l)
-			jwtManager := NewJWTManager(keyManager, mockUserManager, l)
+			jwtManager := NewJWTManager(keyManager, mockUserManager, l, []string{})
 
 			token := tt.setupMocks(mockStorage)
 
