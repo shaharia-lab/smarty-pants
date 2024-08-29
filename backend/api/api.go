@@ -16,6 +16,7 @@ import (
 	"github.com/shaharia-lab/smarty-pants/backend/internal/analytics"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/auth"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/datasource"
+	"github.com/shaharia-lab/smarty-pants/backend/internal/document"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/embedding"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/search"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/storage"
@@ -46,6 +47,7 @@ type API struct {
 	enableAuth        bool
 	analyticsManager  *analytics.Analytics
 	datasourceManager *datasource.Manager
+	documentManager   *document.DocumentManager
 }
 
 type Config struct {
@@ -66,6 +68,7 @@ func NewAPI(
 	enableAuth bool,
 	analyticsManager *analytics.Analytics,
 	datasourceManager *datasource.Manager,
+	documentManager *document.DocumentManager,
 ) *API {
 	api := &API{
 		config:            config,
@@ -80,6 +83,7 @@ func NewAPI(
 		enableAuth:        enableAuth,
 		analyticsManager:  analyticsManager,
 		datasourceManager: datasourceManager,
+		documentManager:   documentManager,
 	}
 	api.setupMiddleware()
 	api.setupRoutes()
@@ -148,24 +152,6 @@ func (a *API) setupRoutes() {
 		r.Route("/v1", func(r chi.Router) {
 			r.Use(a.jwtManager.AuthMiddleware(a.enableAuth))
 
-			/*r.Route("/datasource", func(r chi.Router) {
-				r.Post("/", datasource.AddDatasourceHandler(a.storage, a.logger, a.aclManager))
-				r.Route(uuidPath, func(r chi.Router) {
-					r.Delete("/", datasource.DeleteDatasourceHandler(a.storage, a.logger))
-					r.Get("/", datasource.GetDatasourceHandler(a.storage, a.logger))
-					r.Get("/validate", datasource.ValidateDatasourceHandler(a.storage, a.logger))
-					r.Put("/", datasource.UpdateDatasourceHandler(a.storage, a.logger))
-					r.Put(activatePath, datasource.SetActiveDatasourceHandler(a.storage, a.logger))
-					r.Put(deactivatePath, datasource.SetDisableDatasourceHandler(a.storage, a.logger))
-				})
-				r.Get("/", datasource.GetDatasourcesHandler(a.storage, a.logger))
-			})*/
-
-			r.Route("/document", func(r chi.Router) {
-				r.Get(uuidPath, getDocumentHandler(a.storage, a.logger))
-				r.Get("/", getDocumentsHandler(a.storage, a.logger))
-			})
-
 			r.Route("/embedding-provider", func(r chi.Router) {
 				r.Post("/", addEmbeddingProviderHandler(a.storage, a.logger))
 				r.Route(uuidPath, func(r chi.Router) {
@@ -213,6 +199,7 @@ func (a *API) setupRoutes() {
 	a.userManager.RegisterRoutes(a.router)
 	a.analyticsManager.RegisterRoutes(a.router)
 	a.datasourceManager.RegisterRoutes(a.router)
+	a.documentManager.RegisterRoutes(a.router)
 }
 
 // Start starts the API server

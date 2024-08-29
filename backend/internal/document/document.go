@@ -1,4 +1,4 @@
-package api
+package document
 
 import (
 	"net/http"
@@ -14,8 +14,26 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 )
 
-// getDocumentsHandler returns a handler function that fetches documents from storage
-func getDocumentsHandler(st storage.Storage, logging *logrus.Logger) http.HandlerFunc {
+type DocumentManager struct {
+	storage storage.Storage
+	logger  *logrus.Logger
+}
+
+func NewDocumentManager(storage storage.Storage, logger *logrus.Logger) *DocumentManager {
+	return &DocumentManager{
+		storage: storage,
+		logger:  logger,
+	}
+}
+
+func (dm *DocumentManager) RegisterRoutes(r chi.Router) {
+	r.Route("/api/v1/document", func(r chi.Router) {
+		r.Get("/", dm.GetDocumentsHandler())
+		r.Get("/{uuid}", dm.GetDocumentHandler())
+	})
+}
+
+func (dm *DocumentManager) GetDocumentsHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx, span := observability.StartSpan(r.Context(), "/api/v1/documents")
 		defer span.End()
@@ -28,10 +46,10 @@ func getDocumentsHandler(st storage.Storage, logging *logrus.Logger) http.Handle
 		)
 
 		_, storageSpan := observability.StartSpan(ctx, "storage.get")
-		paginatedDocuments, err := st.Get(ctx, filter, option)
+		paginatedDocuments, err := dm.storage.Get(ctx, filter, option)
 		if err != nil {
-			logging.WithError(err).Error("Failed to fetch documents")
-			util.SendErrorResponse(w, http.StatusInternalServerError, "Failed to fetch documents", logging, span)
+			dm.logger.WithError(err).Error("Failed to fetch documents")
+			util.SendErrorResponse(w, http.StatusInternalServerError, "Failed to fetch documents", dm.logger, span)
 			return
 		}
 		storageSpan.End()
@@ -40,12 +58,11 @@ func getDocumentsHandler(st storage.Storage, logging *logrus.Logger) http.Handle
 			paginatedDocuments = createEmptyPaginatedDocuments(option.Page, option.Limit)
 		}
 
-		util.SendSuccessResponse(w, http.StatusOK, paginatedDocuments, logging, span)
+		util.SendSuccessResponse(w, http.StatusOK, paginatedDocuments, dm.logger, span)
 	}
 }
 
-// getDocumentHandler returns a handler function that fetches a single document from storage
-func getDocumentHandler(st storage.Storage, logging *logrus.Logger) http.HandlerFunc {
+func (dm *DocumentManager) GetDocumentHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx, span := otel.Tracer("api").Start(r.Context(), "GetDocumentHandler")
 		defer span.End()
@@ -56,26 +73,26 @@ func getDocumentHandler(st storage.Storage, logging *logrus.Logger) http.Handler
 		filter := types.DocumentFilter{UUID: uuid}
 		option := types.DocumentFilterOption{Limit: 1, Page: 1}
 
-		paginatedDocuments, err := st.Get(ctx, filter, option)
+		paginatedDocuments, err := dm.storage.Get(ctx, filter, option)
 		if err != nil {
-			logging.WithError(err).Error("Failed to fetch document")
-			util.SendErrorResponse(w, http.StatusInternalServerError, "Failed to fetch document", logging, span)
+			dm.logger.WithError(err).Error("Failed to fetch document")
+			util.SendErrorResponse(w, http.StatusInternalServerError, "Failed to fetch document", dm.logger, span)
 			return
 		}
 
 		if len(paginatedDocuments.Documents) == 0 {
-			logging.WithField("uuid", uuid).Warning("Document not found")
-			util.SendErrorResponse(w, http.StatusNotFound, "Document not found", logging, span)
+			dm.logger.WithField("uuid", uuid).Warning("Document not found")
+			util.SendErrorResponse(w, http.StatusNotFound, "Document not found", dm.logger, span)
 			return
 		}
 
 		if len(paginatedDocuments.Documents) > 1 {
-			logging.Error("Multiple documents found")
-			util.SendErrorResponse(w, http.StatusInternalServerError, "Unexpected error: multiple documents found", logging, span)
+			dm.logger.Error("Multiple documents found")
+			util.SendErrorResponse(w, http.StatusInternalServerError, "Unexpected error: multiple documents found", dm.logger, span)
 			return
 		}
 
-		util.SendSuccessResponse(w, http.StatusOK, &paginatedDocuments.Documents[0], logging, span)
+		util.SendSuccessResponse(w, http.StatusOK, &paginatedDocuments.Documents[0], dm.logger, span)
 	}
 }
 
