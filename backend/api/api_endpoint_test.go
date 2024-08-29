@@ -12,6 +12,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
+	"github.com/shaharia-lab/smarty-pants/backend/internal/analytics"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/auth"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/logger"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/storage"
@@ -41,7 +42,7 @@ func TestAPIEndpoints(t *testing.T) {
 	r.Use(jwtManager.AuthMiddleware(true))
 
 	// Set up routes
-	r.Get("/api/v1/analytics/overview", getAnalyticsOverview(mockStorage, mockLogger, mockACLManager))
+	r.Get("/api/v1/analytics/overview", analytics.GetAnalyticsOverview(mockStorage, mockLogger, mockACLManager))
 
 	// Add more routes here as needed
 

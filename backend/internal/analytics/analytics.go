@@ -1,5 +1,4 @@
-// Package api provides an API for the application.
-package api
+package analytics
 
 import (
 	"net/http"
@@ -12,8 +11,8 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// getAnalyticsOverview returns a handler function that fetches analytics overview from storage
-func getAnalyticsOverview(st storage.Storage, logger *logrus.Logger, aclManager auth.ACLManager) http.HandlerFunc {
+// GetAnalyticsOverview returns a handler function that fetches analytics overview from storage
+func GetAnalyticsOverview(st storage.Storage, logger *logrus.Logger, aclManager auth.ACLManager) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		routeCtx := r.Context()
 		if !aclManager.IsAllowed(w, r, types.UserRoleAdmin, "analytics") {

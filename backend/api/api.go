@@ -13,6 +13,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
+	"github.com/shaharia-lab/smarty-pants/backend/internal/analytics"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/auth"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/embedding"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/search"
@@ -132,7 +133,7 @@ func (a *API) setupRoutes() {
 			r.Use(a.jwtManager.AuthMiddleware(a.enableAuth))
 
 			r.Route("/analytics", func(r chi.Router) {
-				r.Get("/overview", getAnalyticsOverview(a.storage, a.logger, a.aclManager))
+				r.Get("/overview", analytics.GetAnalyticsOverview(a.storage, a.logger, a.aclManager))
 			})
 
 			r.Route("/datasource", func(r chi.Router) {
