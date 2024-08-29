@@ -49,8 +49,8 @@ func updateLLMProviderHandler(s storage.Storage, l *logrus.Logger) http.HandlerF
 	return func(w http.ResponseWriter, r *http.Request) {
 		id, err := uuid.Parse(chi.URLParam(r, "uuid"))
 		if err != nil {
-			l.Error(invalidUUIDMsg, "error", err)
-			http.Error(w, invalidUUIDMsg, http.StatusBadRequest)
+			l.Error(types.InvalidUUIDMessage, "error", err)
+			http.Error(w, types.InvalidUUIDMessage, http.StatusBadRequest)
 			return
 		}
 
@@ -79,8 +79,8 @@ func deleteLLMProviderHandler(s storage.Storage, l *logrus.Logger) http.HandlerF
 	return func(w http.ResponseWriter, r *http.Request) {
 		id, err := uuid.Parse(chi.URLParam(r, "uuid"))
 		if err != nil {
-			l.Error(invalidUUIDMsg, "error", err)
-			http.Error(w, invalidUUIDMsg, http.StatusBadRequest)
+			l.Error(types.InvalidUUIDMessage, "error", err)
+			http.Error(w, types.InvalidUUIDMessage, http.StatusBadRequest)
 			return
 		}
 
@@ -99,7 +99,7 @@ func getLLMProviderHandler(s storage.Storage, l *logrus.Logger) http.HandlerFunc
 	return func(w http.ResponseWriter, r *http.Request) {
 		id, err := uuid.Parse(chi.URLParam(r, "uuid"))
 		if err != nil {
-			datasource.SendJSONError(w, invalidUUIDMsg, http.StatusBadRequest)
+			datasource.SendJSONError(w, types.InvalidUUIDMessage, http.StatusBadRequest)
 			return
 		}
 
@@ -156,8 +156,8 @@ func setActiveLLMProviderHandler(s storage.Storage, l *logrus.Logger) http.Handl
 	return func(w http.ResponseWriter, r *http.Request) {
 		id, err := uuid.Parse(chi.URLParam(r, "uuid"))
 		if err != nil {
-			l.WithError(err).Error(invalidUUIDMsg)
-			datasource.SendJSONError(w, invalidUUIDMsg, http.StatusBadRequest)
+			l.WithError(err).Error(types.InvalidUUIDMessage)
+			datasource.SendJSONError(w, types.InvalidUUIDMessage, http.StatusBadRequest)
 			return
 		}
 
@@ -178,8 +178,8 @@ func setDisableLLMProviderHandler(s storage.Storage, l *logrus.Logger) http.Hand
 	return func(w http.ResponseWriter, r *http.Request) {
 		id, err := uuid.Parse(chi.URLParam(r, "uuid"))
 		if err != nil {
-			l.WithError(err).Error(invalidUUIDMsg)
-			datasource.SendJSONError(w, invalidUUIDMsg, http.StatusBadRequest)
+			l.WithError(err).Error(types.InvalidUUIDMessage)
+			datasource.SendJSONError(w, types.InvalidUUIDMessage, http.StatusBadRequest)
 			return
 		}
 

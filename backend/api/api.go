@@ -29,8 +29,6 @@ const (
 	uuidPath       = "/{uuid}"
 	activatePath   = "/activate"
 	deactivatePath = "/deactivate"
-
-	invalidUUIDMsg = "Invalid UUID"
 )
 
 type API struct {
@@ -48,6 +46,7 @@ type API struct {
 	analyticsManager  *analytics.Analytics
 	datasourceManager *datasource.Manager
 	documentManager   *document.DocumentManager
+	embeddingManager  *embedding.EmbeddingManager
 }
 
 type Config struct {
@@ -69,6 +68,7 @@ func NewAPI(
 	analyticsManager *analytics.Analytics,
 	datasourceManager *datasource.Manager,
 	documentManager *document.DocumentManager,
+	embeddingManager *embedding.EmbeddingManager,
 ) *API {
 	api := &API{
 		config:            config,
@@ -84,6 +84,7 @@ func NewAPI(
 		analyticsManager:  analyticsManager,
 		datasourceManager: datasourceManager,
 		documentManager:   documentManager,
+		embeddingManager:  embeddingManager,
 	}
 	api.setupMiddleware()
 	api.setupRoutes()
@@ -152,18 +153,6 @@ func (a *API) setupRoutes() {
 		r.Route("/v1", func(r chi.Router) {
 			r.Use(a.jwtManager.AuthMiddleware(a.enableAuth))
 
-			r.Route("/embedding-provider", func(r chi.Router) {
-				r.Post("/", addEmbeddingProviderHandler(a.storage, a.logger))
-				r.Route(uuidPath, func(r chi.Router) {
-					r.Delete("/", deleteEmbeddingProviderHandler(a.storage, a.logger))
-					r.Get("/", getEmbeddingProviderHandler(a.storage, a.logger))
-					r.Put("/", updateEmbeddingProviderHandler(a.storage, a.logger))
-					r.Put(activatePath, setActiveEmbeddingProviderHandler(a.storage, a.logger))
-					r.Put(deactivatePath, setDisableEmbeddingProviderHandler(a.storage, a.logger))
-				})
-				r.Get("/", getEmbeddingProvidersHandler(a.storage, a.logger))
-			})
-
 			r.Route("/interactions", func(r chi.Router) {
 				r.Post("/", createInteractionHandler(a.storage, a.logger))
 				r.Get("/", getInteractionsHandler(a.logger))
@@ -200,6 +189,7 @@ func (a *API) setupRoutes() {
 	a.analyticsManager.RegisterRoutes(a.router)
 	a.datasourceManager.RegisterRoutes(a.router)
 	a.documentManager.RegisterRoutes(a.router)
+	a.embeddingManager.RegisterRoutes(a.router)
 }
 
 // Start starts the API server

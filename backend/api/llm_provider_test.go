@@ -409,14 +409,14 @@ func TestSetActiveLLMProviderHandler(t *testing.T) {
 			},
 		},
 		{
-			name: invalidUUIDMsg,
+			name: types.InvalidUUIDMessage,
 			uuid: "invalid-uuid",
 			mockBehavior: func(ms *storage.StorageMock) {
 
 			},
 			expectedStatus: http.StatusBadRequest,
 			expectedBody: map[string]string{
-				"error": invalidUUIDMsg,
+				"error": types.InvalidUUIDMessage,
 			},
 		},
 		{

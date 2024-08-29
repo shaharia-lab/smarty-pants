@@ -1,4 +1,4 @@
-package api
+package embedding
 
 import (
 	"bytes"
@@ -77,7 +77,8 @@ func TestAddEmbeddingProviderHandler(t *testing.T) {
 			req, _ := http.NewRequest("POST", "/api/v1/embedding-provider", bytes.NewBuffer(body))
 			rr := httptest.NewRecorder()
 
-			handler := addEmbeddingProviderHandler(mockStorage, logger)
+			em := NewEmbeddingManager(mockStorage, logger)
+			handler := http.HandlerFunc(em.AddEmbeddingProvider)
 			handler.ServeHTTP(rr, req)
 
 			assert.Equal(t, tt.expectedStatus, rr.Code)
@@ -151,7 +152,8 @@ func TestUpdateEmbeddingProviderHandler(t *testing.T) {
 			chiCtx.URLParams.Add("uuid", tt.uuid)
 			req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, chiCtx))
 
-			handler := updateEmbeddingProviderHandler(mockStorage, l)
+			em := NewEmbeddingManager(mockStorage, l)
+			handler := http.HandlerFunc(em.UpdateEmbeddingProvider)
 			handler.ServeHTTP(rr, req)
 
 			assert.Equal(t, tt.expectedStatus, rr.Code)
@@ -198,7 +200,9 @@ func TestDeleteEmbeddingProviderHandler(t *testing.T) {
 			chiCtx.URLParams.Add("uuid", tt.uuid)
 			req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, chiCtx))
 
-			handler := deleteEmbeddingProviderHandler(mockStorage, l)
+			em := NewEmbeddingManager(mockStorage, l)
+
+			handler := http.HandlerFunc(em.DeleteEmbeddingProvider)
 			handler.ServeHTTP(rr, req)
 
 			assert.Equal(t, tt.expectedStatus, rr.Code)
@@ -260,7 +264,8 @@ func TestGetEmbeddingProviderHandler(t *testing.T) {
 			chiCtx.URLParams.Add("uuid", tt.uuid)
 			req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, chiCtx))
 
-			handler := getEmbeddingProviderHandler(mockStorage, l)
+			em := NewEmbeddingManager(mockStorage, l)
+			handler := http.HandlerFunc(em.GetEmbeddingProvider)
 			handler.ServeHTTP(rr, req)
 
 			assert.Equal(t, tt.expectedStatus, rr.Code)
@@ -295,14 +300,14 @@ func TestSetActiveEmbeddingProviderHandler(t *testing.T) {
 			},
 		},
 		{
-			name: invalidUUIDMsg,
+			name: types.InvalidUUIDMessage,
 			uuid: "invalid-uuid",
 			mockBehavior: func(ms *storage.StorageMock) {
 
 			},
 			expectedStatus: http.StatusBadRequest,
 			expectedBody: map[string]string{
-				"error": invalidUUIDMsg,
+				"error": types.InvalidUUIDMessage,
 			},
 		},
 		{
@@ -334,7 +339,8 @@ func TestSetActiveEmbeddingProviderHandler(t *testing.T) {
 			chiCtx.URLParams.Add("uuid", tt.uuid)
 			req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, chiCtx))
 
-			handler := setActiveEmbeddingProviderHandler(mockStorage, l)
+			em := NewEmbeddingManager(mockStorage, l)
+			handler := http.HandlerFunc(em.SetActiveEmbeddingProvider)
 			handler.ServeHTTP(rr, req)
 
 			assert.Equal(t, tt.expectedStatus, rr.Code, "DocumentStatus code mismatch")
@@ -415,7 +421,8 @@ func TestGetEmbeddingProvidersHandler(t *testing.T) {
 			req, _ := http.NewRequest("GET", "/api/v1/embedding-providers"+tt.queryParams, nil)
 			rr := httptest.NewRecorder()
 
-			handler := getEmbeddingProvidersHandler(mockStorage, l)
+			em := NewEmbeddingManager(mockStorage, l)
+			handler := http.HandlerFunc(em.GetEmbeddingProviders)
 			handler.ServeHTTP(rr, req)
 
 			assert.Equal(t, tt.expectedStatus, rr.Code, "DocumentStatus code mismatch")
@@ -486,7 +493,7 @@ func TestSetDisableEmbeddingProviderHandler(t *testing.T) {
 			},
 			expectedStatus: http.StatusBadRequest,
 			expectedBody: map[string]string{
-				"error": invalidUUIDMsg,
+				"error": types.InvalidUUIDMessage,
 			},
 		},
 		{
@@ -517,7 +524,8 @@ func TestSetDisableEmbeddingProviderHandler(t *testing.T) {
 			chiCtx.URLParams.Add("uuid", tt.uuid)
 			req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, chiCtx))
 
-			handler := setDisableEmbeddingProviderHandler(mockStorage, l)
+			em := NewEmbeddingManager(mockStorage, l)
+			handler := http.HandlerFunc(em.SetDisableEmbeddingProvider)
 			handler.ServeHTTP(rr, req)
 
 			assert.Equal(t, tt.expectedStatus, rr.Code, "Status code mismatch")
