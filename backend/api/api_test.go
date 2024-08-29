@@ -227,5 +227,6 @@ func createTestAPIWithoutSetup() *API {
 		analyticsManager:   analytics.NewManager(mockStorage, logger, auth.NewACLManager(logger, false)),
 		interactionManager: interaction.NewManager(mockStorage, logger, searchSystem),
 		llmManager:         llm.NewManager(mockStorage, logger),
+		searchManager:      search.NewManager(searchSystem, logger),
 	}
 }

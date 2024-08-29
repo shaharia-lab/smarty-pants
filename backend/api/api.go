@@ -51,6 +51,7 @@ type API struct {
 	embeddingManager   *embedding.EmbeddingManager
 	interactionManager *interaction.Manager
 	llmManager         *llm.Manager
+	searchManager      *search.Manager
 }
 
 type Config struct {
@@ -60,7 +61,7 @@ type Config struct {
 	IdleTimeout       int
 }
 
-func NewAPI(logger *logrus.Logger, storage storage.Storage, searchSystem search.System, config Config, userManager *auth.UserManager, jwtManager *auth.JWTManager, aclManager auth.ACLManager, enableAuth bool, analyticsManager *analytics.Analytics, datasourceManager *datasource.Manager, documentManager *document.DocumentManager, embeddingManager *embedding.EmbeddingManager, interactionManager *interaction.Manager, llmManager *llm.Manager) *API {
+func NewAPI(logger *logrus.Logger, storage storage.Storage, searchSystem search.System, config Config, userManager *auth.UserManager, jwtManager *auth.JWTManager, aclManager auth.ACLManager, enableAuth bool, analyticsManager *analytics.Analytics, datasourceManager *datasource.Manager, documentManager *document.DocumentManager, embeddingManager *embedding.EmbeddingManager, interactionManager *interaction.Manager, llmManager *llm.Manager, searchManager *search.Manager) *API {
 	api := &API{
 		config:             config,
 		router:             chi.NewRouter(),
@@ -78,6 +79,7 @@ func NewAPI(logger *logrus.Logger, storage storage.Storage, searchSystem search.
 		embeddingManager:   embeddingManager,
 		interactionManager: interactionManager,
 		llmManager:         llmManager,
+		searchManager:      searchManager,
 	}
 	api.setupMiddleware()
 	api.setupRoutes()
@@ -167,9 +169,9 @@ func (a *API) setupRoutes() {
 				r.Get("/", llm.GetLLMProvidersHandler(a.storage, a.logger))
 			})*/
 
-			r.Route("/search", func(r chi.Router) {
-				r.Post("/", addSearchHandler(a.searchSystem, a.logger))
-			})
+			/*r.Route("/search", func(r chi.Router) {
+				r.Post("/", search.AddSearchHandler(a.searchSystem, a.logger))
+			})*/
 
 			r.Route("/settings", func(r chi.Router) {
 				r.Get("/", getSettingsHandler(a.storage, a.logger))
@@ -184,6 +186,7 @@ func (a *API) setupRoutes() {
 	a.documentManager.RegisterRoutes(a.router)
 	a.embeddingManager.RegisterRoutes(a.router)
 	a.interactionManager.RegisterRoutes(a.router)
+	a.searchManager.RegisterRoutes(a.router)
 }
 
 // Start starts the API server

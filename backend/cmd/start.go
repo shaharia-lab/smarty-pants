@@ -106,6 +106,8 @@ func runStart(cmd *cobra.Command, _ []string) error {
 	authSkipEndpoints := []string{
 		//"/api/v1/analytics/overview",
 	}
+
+	searchSystem := search.NewSearchSystem(logging, st)
 	apiServer := setupAPIServer(
 		cfg,
 		logging,
@@ -118,8 +120,9 @@ func runStart(cmd *cobra.Command, _ []string) error {
 		datasource.NewDatasourceManager(st, logging, aclManager),
 		document.NewManager(st, logging),
 		embedding.NewEmbeddingManager(st, logging),
-		interaction.NewManager(st, logging, search.NewSearchSystem(logging, st)),
+		interaction.NewManager(st, logging, searchSystem),
 		llm.NewManager(st, logging),
+		search.NewManager(searchSystem, logging),
 	)
 
 	shutdownManager.RegisterShutdownFn(func(ctx context.Context) error {
@@ -288,6 +291,7 @@ func setupAPIServer(
 	embeddingManager *embedding.EmbeddingManager,
 	interactionManager *interaction.Manager,
 	llmManager *llm.Manager,
+	searchManager *search.Manager,
 ) *api.API {
 	logging.Info("Creating API server")
 	return api.NewAPI(
@@ -310,6 +314,7 @@ func setupAPIServer(
 		embeddingManager,
 		interactionManager,
 		llmManager,
+		searchManager,
 	)
 }
 
