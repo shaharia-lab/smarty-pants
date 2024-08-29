@@ -1,4 +1,4 @@
-package api
+package interaction
 
 import (
 	"encoding/json"
@@ -37,6 +37,33 @@ type MessageRequest struct {
 // MessageResponse represents a response containing a message
 type MessageResponse struct {
 	Response string `json:"response"`
+}
+
+type Manager struct {
+	storage      storage.Storage
+	logger       *logrus.Logger
+	searchSystem search.System
+}
+
+func NewManager(storage storage.Storage, logger *logrus.Logger, searchSystem search.System) *Manager {
+	return &Manager{
+		storage:      storage,
+		logger:       logger,
+		searchSystem: searchSystem,
+	}
+}
+
+func (m *Manager) RegisterRoutes(r chi.Router) {
+	r.Route("/api/v1/interactions", func(r chi.Router) {
+		r.Post("/", createInteractionHandler(m.storage, m.logger))
+		r.Get("/", getInteractionsHandler(m.logger))
+		r.Route("/{uuid}", func(r chi.Router) {
+			r.Get("/", getInteractionHandler(m.logger))
+			r.Post("/message", sendMessageHandler(m.searchSystem, m.storage, m.logger))
+		})
+	})
+
+	r.Post("/message", sendMessageHandler(m.searchSystem, m.storage, m.logger))
 }
 
 func createInteractionHandler(st storage.Storage, logger *logrus.Logger) http.HandlerFunc {

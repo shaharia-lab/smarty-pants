@@ -18,6 +18,7 @@ import (
 	"github.com/shaharia-lab/smarty-pants/backend/internal/datasource"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/document"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/embedding"
+	"github.com/shaharia-lab/smarty-pants/backend/internal/interaction"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/search"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/storage"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/util"
@@ -32,21 +33,22 @@ const (
 )
 
 type API struct {
-	config            Config
-	router            *chi.Mux
-	port              int
-	logger            *logrus.Logger
-	storage           storage.Storage
-	searchSystem      search.System
-	server            *http.Server
-	userManager       *auth.UserManager
-	jwtManager        *auth.JWTManager
-	aclManager        auth.ACLManager
-	enableAuth        bool
-	analyticsManager  *analytics.Analytics
-	datasourceManager *datasource.Manager
-	documentManager   *document.DocumentManager
-	embeddingManager  *embedding.EmbeddingManager
+	config             Config
+	router             *chi.Mux
+	port               int
+	logger             *logrus.Logger
+	storage            storage.Storage
+	searchSystem       search.System
+	server             *http.Server
+	userManager        *auth.UserManager
+	jwtManager         *auth.JWTManager
+	aclManager         auth.ACLManager
+	enableAuth         bool
+	analyticsManager   *analytics.Analytics
+	datasourceManager  *datasource.Manager
+	documentManager    *document.DocumentManager
+	embeddingManager   *embedding.EmbeddingManager
+	interactionManager *interaction.Manager
 }
 
 type Config struct {
@@ -69,22 +71,24 @@ func NewAPI(
 	datasourceManager *datasource.Manager,
 	documentManager *document.DocumentManager,
 	embeddingManager *embedding.EmbeddingManager,
+	interactionManager *interaction.Manager,
 ) *API {
 	api := &API{
-		config:            config,
-		router:            chi.NewRouter(),
-		port:              config.Port,
-		logger:            logger,
-		storage:           storage,
-		searchSystem:      searchSystem,
-		userManager:       userManager,
-		jwtManager:        jwtManager,
-		aclManager:        aclManager,
-		enableAuth:        enableAuth,
-		analyticsManager:  analyticsManager,
-		datasourceManager: datasourceManager,
-		documentManager:   documentManager,
-		embeddingManager:  embeddingManager,
+		config:             config,
+		router:             chi.NewRouter(),
+		port:               config.Port,
+		logger:             logger,
+		storage:            storage,
+		searchSystem:       searchSystem,
+		userManager:        userManager,
+		jwtManager:         jwtManager,
+		aclManager:         aclManager,
+		enableAuth:         enableAuth,
+		analyticsManager:   analyticsManager,
+		datasourceManager:  datasourceManager,
+		documentManager:    documentManager,
+		embeddingManager:   embeddingManager,
+		interactionManager: interactionManager,
 	}
 	api.setupMiddleware()
 	api.setupRoutes()
@@ -153,14 +157,14 @@ func (a *API) setupRoutes() {
 		r.Route("/v1", func(r chi.Router) {
 			r.Use(a.jwtManager.AuthMiddleware(a.enableAuth))
 
-			r.Route("/interactions", func(r chi.Router) {
+			/*r.Route("/interactions", func(r chi.Router) {
 				r.Post("/", createInteractionHandler(a.storage, a.logger))
 				r.Get("/", getInteractionsHandler(a.logger))
 				r.Route(uuidPath, func(r chi.Router) {
 					r.Get("/", getInteractionHandler(a.logger))
 					r.Post("/message", sendMessageHandler(a.searchSystem, a.storage, a.logger))
 				})
-			})
+			})*/
 
 			r.Route("/llm-provider", func(r chi.Router) {
 				r.Post("/", addLLMProviderHandler(a.storage, a.logger))
@@ -190,6 +194,7 @@ func (a *API) setupRoutes() {
 	a.datasourceManager.RegisterRoutes(a.router)
 	a.documentManager.RegisterRoutes(a.router)
 	a.embeddingManager.RegisterRoutes(a.router)
+	a.interactionManager.RegisterRoutes(a.router)
 }
 
 // Start starts the API server
