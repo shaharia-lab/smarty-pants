@@ -21,6 +21,7 @@ import (
 	"github.com/shaharia-lab/smarty-pants/backend/internal/interaction"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/llm"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/search"
+	"github.com/shaharia-lab/smarty-pants/backend/internal/settings"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/storage"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/util"
 	"github.com/sirupsen/logrus"
@@ -52,6 +53,7 @@ type API struct {
 	interactionManager *interaction.Manager
 	llmManager         *llm.Manager
 	searchManager      *search.Manager
+	settingsManager    *settings.Manager
 }
 
 type Config struct {
@@ -61,7 +63,7 @@ type Config struct {
 	IdleTimeout       int
 }
 
-func NewAPI(logger *logrus.Logger, storage storage.Storage, searchSystem search.System, config Config, userManager *auth.UserManager, jwtManager *auth.JWTManager, aclManager auth.ACLManager, enableAuth bool, analyticsManager *analytics.Analytics, datasourceManager *datasource.Manager, documentManager *document.DocumentManager, embeddingManager *embedding.EmbeddingManager, interactionManager *interaction.Manager, llmManager *llm.Manager, searchManager *search.Manager) *API {
+func NewAPI(logger *logrus.Logger, storage storage.Storage, searchSystem search.System, config Config, userManager *auth.UserManager, jwtManager *auth.JWTManager, aclManager auth.ACLManager, enableAuth bool, analyticsManager *analytics.Analytics, datasourceManager *datasource.Manager, documentManager *document.DocumentManager, embeddingManager *embedding.EmbeddingManager, interactionManager *interaction.Manager, llmManager *llm.Manager, searchManager *search.Manager, settingsManager *settings.Manager) *API {
 	api := &API{
 		config:             config,
 		router:             chi.NewRouter(),
@@ -80,6 +82,7 @@ func NewAPI(logger *logrus.Logger, storage storage.Storage, searchSystem search.
 		interactionManager: interactionManager,
 		llmManager:         llmManager,
 		searchManager:      searchManager,
+		settingsManager:    settingsManager,
 	}
 	api.setupMiddleware()
 	api.setupRoutes()
@@ -173,10 +176,10 @@ func (a *API) setupRoutes() {
 				r.Post("/", search.AddSearchHandler(a.searchSystem, a.logger))
 			})*/
 
-			r.Route("/settings", func(r chi.Router) {
-				r.Get("/", getSettingsHandler(a.storage, a.logger))
-				r.Put("/", updateSettingsHandler(a.storage, a.logger))
-			})
+			/*r.Route("/settings", func(r chi.Router) {
+				r.Get("/", settings.GetSettingsHandler(a.storage, a.logger))
+				r.Put("/", settings.UpdateSettingsHandler(a.storage, a.logger))
+			})*/
 		})
 	})
 
@@ -187,6 +190,7 @@ func (a *API) setupRoutes() {
 	a.embeddingManager.RegisterRoutes(a.router)
 	a.interactionManager.RegisterRoutes(a.router)
 	a.searchManager.RegisterRoutes(a.router)
+	a.settingsManager.RegisterRoutes(a.router)
 }
 
 // Start starts the API server

@@ -26,6 +26,7 @@ import (
 	"github.com/shaharia-lab/smarty-pants/backend/internal/observability"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/processor"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/search"
+	"github.com/shaharia-lab/smarty-pants/backend/internal/settings"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/shutdown"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/storage"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/types"
@@ -123,6 +124,7 @@ func runStart(cmd *cobra.Command, _ []string) error {
 		interaction.NewManager(st, logging, searchSystem),
 		llm.NewManager(st, logging),
 		search.NewManager(searchSystem, logging),
+		settings.NewManager(st, logging),
 	)
 
 	shutdownManager.RegisterShutdownFn(func(ctx context.Context) error {
@@ -292,6 +294,7 @@ func setupAPIServer(
 	interactionManager *interaction.Manager,
 	llmManager *llm.Manager,
 	searchManager *search.Manager,
+	settingsManager *settings.Manager,
 ) *api.API {
 	logging.Info("Creating API server")
 	return api.NewAPI(
@@ -315,6 +318,7 @@ func setupAPIServer(
 		interactionManager,
 		llmManager,
 		searchManager,
+		settingsManager,
 	)
 }
 

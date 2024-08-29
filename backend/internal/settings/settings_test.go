@@ -1,4 +1,4 @@
-package api
+package settings
 
 import (
 	"bytes"
@@ -55,7 +55,7 @@ func TestGetSettingsHandler(t *testing.T) {
 			l := logrus.New()
 			l.Out = &bytes.Buffer{}
 
-			handler := getSettingsHandler(mockStorage, l)
+			handler := GetSettingsHandler(mockStorage, l)
 
 			req, err := http.NewRequest("GET", "/settings", nil)
 			assert.NoError(t, err)
@@ -114,7 +114,7 @@ func TestUpdateSettingsHandler(t *testing.T) {
 			l := logrus.New()
 			l.Out = &bytes.Buffer{}
 
-			handler := updateSettingsHandler(mockStorage, l)
+			handler := UpdateSettingsHandler(mockStorage, l)
 
 			req, err := http.NewRequest("PUT", "/settings", bytes.NewBufferString(tt.inputBody))
 			assert.NoError(t, err)

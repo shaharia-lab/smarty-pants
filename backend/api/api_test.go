@@ -15,6 +15,7 @@ import (
 	"github.com/shaharia-lab/smarty-pants/backend/internal/interaction"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/llm"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/search"
+	"github.com/shaharia-lab/smarty-pants/backend/internal/settings"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/storage"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
@@ -228,5 +229,6 @@ func createTestAPIWithoutSetup() *API {
 		interactionManager: interaction.NewManager(mockStorage, logger, searchSystem),
 		llmManager:         llm.NewManager(mockStorage, logger),
 		searchManager:      search.NewManager(searchSystem, logger),
+		settingsManager:    settings.NewManager(mockStorage, logger),
 	}
 }

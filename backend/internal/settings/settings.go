@@ -1,9 +1,10 @@
-package api
+package settings
 
 import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/observability"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/storage"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/types"
@@ -11,7 +12,26 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func updateSettingsHandler(st storage.Storage, logging *logrus.Logger) http.HandlerFunc {
+type Manager struct {
+	storage storage.Storage
+	logger  *logrus.Logger
+}
+
+func NewManager(storage storage.Storage, logger *logrus.Logger) *Manager {
+	return &Manager{
+		storage: storage,
+		logger:  logger,
+	}
+}
+
+func (m *Manager) RegisterRoutes(r chi.Router) {
+	r.Route("/api/v1/settings", func(r chi.Router) {
+		r.Put("/", UpdateSettingsHandler(m.storage, m.logger))
+		r.Get("/", GetSettingsHandler(m.storage, m.logger))
+	})
+}
+
+func UpdateSettingsHandler(st storage.Storage, logging *logrus.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx, span := observability.StartSpan(r.Context(), "api.updateSettingsHandler")
 		defer span.End()
@@ -33,7 +53,7 @@ func updateSettingsHandler(st storage.Storage, logging *logrus.Logger) http.Hand
 	}
 }
 
-func getSettingsHandler(st storage.Storage, logging *logrus.Logger) http.HandlerFunc {
+func GetSettingsHandler(st storage.Storage, logging *logrus.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx, span := observability.StartSpan(r.Context(), "api.getSettingsHandler")
 		defer span.End()
