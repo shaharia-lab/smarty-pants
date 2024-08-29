@@ -106,33 +106,34 @@ Make sure to configure any necessary network settings to allow the frontend to c
 
 ## Environment Variables
 
-| Variable                             | Required | Default value       | Description                                       |
-|--------------------------------------|----------|---------------------|---------------------------------------------------|
-| `APP_NAME`                           | No       | `"smarty-pants-ai"` | Name of the application                           |
-| `DB_HOST`                            | Yes      | `"localhost"`       | Database host address                             |
-| `DB_PORT`                            | Yes      | `5432`              | Database port number                              |
-| `DB_USER`                            | Yes      | `"app"`             | Database user name                                |
-| `DB_PASS`                            | Yes      | `"pass"`            | Database password                                 |
-| `DB_NAME`                            | Yes      | `"app"`             | Database name                                     |
-| `API_PORT`                           | No       | `8080`              | Port number for the API server                    |
-| `API_SERVER_READ_TIMEOUT_IN_SECS`    | No       | `10`                | API server read timeout in seconds                |
-| `API_SERVER_WRITE_TIMEOUT_IN_SECS`   | No       | `30`                | API server write timeout in seconds               |
-| `API_SERVER_IDLE_TIMEOUT_IN_SECS`    | No       | `120`               | API server idle timeout in seconds                |
-| `TRACING_ENABLED`                    | No       | `false`             | Enable or disable tracing                         |
-| `OTLP_TRACER_HOST`                   | No       | `"localhost"`       | OpenTelemetry Protocol (OTLP) tracer host         |
-| `OTLP_TRACER_PORT`                   | No       | `4317`              | OTLP tracer port                                  |
-| `OTEL_METRICS_ENABLED`               | No       | `false`             | Enable or disable OpenTelemetry metrics           |
-| `OTEL_METRICS_EXPOSED_PORT`          | No       | `2223`              | Port to expose OpenTelemetry metrics              |
-| `COLLECTOR_WORKER_COUNT`             | No       | `1`                 | Number of collector workers                       |
-| `GRACEFUL_SHUTDOWN_TIMEOUT_IN_SECS`  | No       | `30`                | Graceful shutdown timeout in seconds              |
-| `PROCESSOR_WORKER_COUNT`             | No       | `1`                 | Number of processor workers                       |
-| `PROCESSOR_BATCH_SIZE`               | No       | `2`                 | Batch size for the processor                      |
-| `PROCESSOR_INTERVAL_IN_SECS`         | No       | `10`                | Processor interval in seconds                     |
-| `PROCESSOR_RETRY_ATTEMPTS`           | No       | `3`                 | Number of processor retry attempts                |
-| `PROCESSOR_RETRY_DELAY_IN_SECS`      | No       | `5`                 | Delay between processor retry attempts in seconds |
-| `PROCESSOR_SHUTDOWN_TIMEOUT_IN_SECS` | No       | `10`                | Processor shutdown timeout in seconds             |
-| `PROCESSOR_REFRESH_INTERVAL_IN_SECS` | No       | `60`                | Processor refresh interval in seconds             |
-| `ENABLE_AUTH`                        | No       | `false`             | Enable authentication system for the application  |
+| Variable                             | Required | Default value     | Description                                       |
+|--------------------------------------|----------|-------------------|---------------------------------------------------|
+| `APP_NAME`                           | No       | `smarty-pants-ai` | Name of the application                           |
+| `ADMIN_EMAIL`                        | No       | `""`              | Email address of the application super-admin      |
+| `DB_HOST`                            | Yes      | `"localhost"`     | Database host address                             |
+| `DB_PORT`                            | Yes      | `5432`            | Database port number                              |
+| `DB_USER`                            | Yes      | `"app"`           | Database user name                                |
+| `DB_PASS`                            | Yes      | `"pass"`          | Database password                                 |
+| `DB_NAME`                            | Yes      | `"app"`           | Database name                                     |
+| `API_PORT`                           | No       | `8080`            | Port number for the API server                    |
+| `API_SERVER_READ_TIMEOUT_IN_SECS`    | No       | `10`              | API server read timeout in seconds                |
+| `API_SERVER_WRITE_TIMEOUT_IN_SECS`   | No       | `30`              | API server write timeout in seconds               |
+| `API_SERVER_IDLE_TIMEOUT_IN_SECS`    | No       | `120`             | API server idle timeout in seconds                |
+| `TRACING_ENABLED`                    | No       | `false`           | Enable or disable tracing                         |
+| `OTLP_TRACER_HOST`                   | No       | `"localhost"`     | OpenTelemetry Protocol (OTLP) tracer host         |
+| `OTLP_TRACER_PORT`                   | No       | `4317`            | OTLP tracer port                                  |
+| `OTEL_METRICS_ENABLED`               | No       | `false`           | Enable or disable OpenTelemetry metrics           |
+| `OTEL_METRICS_EXPOSED_PORT`          | No       | `2223`            | Port to expose OpenTelemetry metrics              |
+| `COLLECTOR_WORKER_COUNT`             | No       | `1`               | Number of collector workers                       |
+| `GRACEFUL_SHUTDOWN_TIMEOUT_IN_SECS`  | No       | `30`              | Graceful shutdown timeout in seconds              |
+| `PROCESSOR_WORKER_COUNT`             | No       | `1`               | Number of processor workers                       |
+| `PROCESSOR_BATCH_SIZE`               | No       | `2`               | Batch size for the processor                      |
+| `PROCESSOR_INTERVAL_IN_SECS`         | No       | `10`              | Processor interval in seconds                     |
+| `PROCESSOR_RETRY_ATTEMPTS`           | No       | `3`               | Number of processor retry attempts                |
+| `PROCESSOR_RETRY_DELAY_IN_SECS`      | No       | `5`               | Delay between processor retry attempts in seconds |
+| `PROCESSOR_SHUTDOWN_TIMEOUT_IN_SECS` | No       | `10`              | Processor shutdown timeout in seconds             |
+| `PROCESSOR_REFRESH_INTERVAL_IN_SECS` | No       | `60`              | Processor refresh interval in seconds             |
+| `ENABLE_AUTH`                        | No       | `false`           | Enable authentication system for the application  |
 
 ## 📋 Development
 
