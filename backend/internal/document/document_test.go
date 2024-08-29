@@ -383,7 +383,7 @@ func TestGetDocumentsHandler(t *testing.T) {
 
 			_, _ = observability.InitTracer(context.Background(), "test-service", logrus.New(), &config.Config{})
 
-			dm := NewDocumentManager(mockStorage, logrus.New())
+			dm := NewManager(mockStorage, logrus.New())
 			handler := dm.GetDocumentsHandler()
 
 			req := httptest.NewRequest("GET", "/api/v1/documents", nil)
@@ -612,7 +612,7 @@ func TestGetDocumentHandler(t *testing.T) {
 			mockStorage := new(storage.StorageMock)
 			tt.mockSetup(mockStorage)
 
-			dm := NewDocumentManager(mockStorage, logrus.New())
+			dm := NewManager(mockStorage, logrus.New())
 			handler := dm.GetDocumentHandler()
 
 			req := httptest.NewRequest("GET", "/api/v1/document/"+tt.uuid, nil)

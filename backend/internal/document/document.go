@@ -19,7 +19,7 @@ type DocumentManager struct {
 	logger  *logrus.Logger
 }
 
-func NewDocumentManager(storage storage.Storage, logger *logrus.Logger) *DocumentManager {
+func NewManager(storage storage.Storage, logger *logrus.Logger) *DocumentManager {
 	return &DocumentManager{
 		storage: storage,
 		logger:  logger,

@@ -113,9 +113,9 @@ func runStart(cmd *cobra.Command, _ []string) error {
 		auth.NewJWTManager(auth.NewKeyManager(st, logging), userManager, logging, authSkipEndpoints),
 		aclManager,
 		cfg.EnableAuthentication,
-		analytics.NewAnalyticsManager(st, logging, aclManager),
+		analytics.NewManager(st, logging, aclManager),
 		datasource.NewDatasourceManager(st, logging, aclManager),
-		document.NewDocumentManager(st, logging),
+		document.NewManager(st, logging),
 		embedding.NewEmbeddingManager(st, logging),
 		interaction.NewManager(st, logging, search.NewSearchSystem(logging, st)),
 	)

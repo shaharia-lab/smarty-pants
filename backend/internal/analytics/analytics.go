@@ -20,8 +20,8 @@ type Analytics struct {
 	aclManager auth.ACLManager
 }
 
-// NewAnalyticsManager creates a new Analytics API with the given storage, logger and ACLManager
-func NewAnalyticsManager(storage storage.Storage, logger *logrus.Logger, aclManager auth.ACLManager) *Analytics {
+// NewManager creates a new Analytics API with the given storage, logger and ACLManager
+func NewManager(storage storage.Storage, logger *logrus.Logger, aclManager auth.ACLManager) *Analytics {
 	return &Analytics{
 		storage:    storage,
 		logger:     logger,
