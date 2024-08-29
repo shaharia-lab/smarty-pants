@@ -17,14 +17,16 @@ import (
 )
 
 type EmbeddingManager struct {
-	storage storage.Storage
-	logger  *logrus.Logger
+	storage    storage.Storage
+	logger     *logrus.Logger
+	aclManager auth.ACLManager
 }
 
-func NewEmbeddingManager(s storage.Storage, l *logrus.Logger, manager auth.ACLManager) *EmbeddingManager {
+func NewEmbeddingManager(s storage.Storage, l *logrus.Logger, aclManager auth.ACLManager) *EmbeddingManager {
 	return &EmbeddingManager{
-		storage: s,
-		logger:  l,
+		storage:    s,
+		logger:     l,
+		aclManager: aclManager,
 	}
 }
 

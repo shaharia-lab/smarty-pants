@@ -16,15 +16,17 @@ import (
 
 // Manager represents the settings API
 type Manager struct {
-	storage storage.Storage
-	logger  *logrus.Logger
+	storage    storage.Storage
+	logger     *logrus.Logger
+	aclManager auth.ACLManager
 }
 
 // NewManager creates a new settings API with the given storage and logger
-func NewManager(storage storage.Storage, logger *logrus.Logger, manager auth.ACLManager) *Manager {
+func NewManager(storage storage.Storage, logger *logrus.Logger, aclManager auth.ACLManager) *Manager {
 	return &Manager{
-		storage: storage,
-		logger:  logger,
+		storage:    storage,
+		logger:     logger,
+		aclManager: aclManager,
 	}
 }
 

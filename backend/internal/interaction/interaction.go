@@ -44,13 +44,15 @@ type Manager struct {
 	storage      storage.Storage
 	logger       *logrus.Logger
 	searchSystem search.System
+	aclManager   auth.ACLManager
 }
 
-func NewManager(storage storage.Storage, logger *logrus.Logger, searchSystem search.System, manager auth.ACLManager) *Manager {
+func NewManager(storage storage.Storage, logger *logrus.Logger, searchSystem search.System, aclManager auth.ACLManager) *Manager {
 	return &Manager{
 		storage:      storage,
 		logger:       logger,
 		searchSystem: searchSystem,
+		aclManager:   aclManager,
 	}
 }
 

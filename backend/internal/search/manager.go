@@ -16,13 +16,15 @@ import (
 type Manager struct {
 	searchSystem System
 	logger       *logrus.Logger
+	aclManager   auth.ACLManager
 }
 
 // NewManager creates a new search manager
-func NewManager(searchSystem System, logger *logrus.Logger, manager auth.ACLManager) *Manager {
+func NewManager(searchSystem System, logger *logrus.Logger, aclManager auth.ACLManager) *Manager {
 	return &Manager{
 		searchSystem: searchSystem,
 		logger:       logger,
+		aclManager:   aclManager,
 	}
 }
 
