@@ -19,6 +19,7 @@ import (
 	"github.com/shaharia-lab/smarty-pants/backend/internal/document"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/embedding"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/interaction"
+	"github.com/shaharia-lab/smarty-pants/backend/internal/llm"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/search"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/storage"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/util"
@@ -49,6 +50,7 @@ type API struct {
 	documentManager    *document.DocumentManager
 	embeddingManager   *embedding.EmbeddingManager
 	interactionManager *interaction.Manager
+	llmManager         *llm.Manager
 }
 
 type Config struct {
@@ -58,21 +60,7 @@ type Config struct {
 	IdleTimeout       int
 }
 
-func NewAPI(
-	logger *logrus.Logger,
-	storage storage.Storage,
-	searchSystem search.System,
-	config Config,
-	userManager *auth.UserManager,
-	jwtManager *auth.JWTManager,
-	aclManager auth.ACLManager,
-	enableAuth bool,
-	analyticsManager *analytics.Analytics,
-	datasourceManager *datasource.Manager,
-	documentManager *document.DocumentManager,
-	embeddingManager *embedding.EmbeddingManager,
-	interactionManager *interaction.Manager,
-) *API {
+func NewAPI(logger *logrus.Logger, storage storage.Storage, searchSystem search.System, config Config, userManager *auth.UserManager, jwtManager *auth.JWTManager, aclManager auth.ACLManager, enableAuth bool, analyticsManager *analytics.Analytics, datasourceManager *datasource.Manager, documentManager *document.DocumentManager, embeddingManager *embedding.EmbeddingManager, interactionManager *interaction.Manager, llmManager *llm.Manager) *API {
 	api := &API{
 		config:             config,
 		router:             chi.NewRouter(),
@@ -89,6 +77,7 @@ func NewAPI(
 		documentManager:    documentManager,
 		embeddingManager:   embeddingManager,
 		interactionManager: interactionManager,
+		llmManager:         llmManager,
 	}
 	api.setupMiddleware()
 	api.setupRoutes()
@@ -166,17 +155,17 @@ func (a *API) setupRoutes() {
 				})
 			})*/
 
-			r.Route("/llm-provider", func(r chi.Router) {
-				r.Post("/", addLLMProviderHandler(a.storage, a.logger))
+			/*r.Route("/llm-provider", func(r chi.Router) {
+				r.Post("/", llm.AddLLMProviderHandler(a.storage, a.logger))
 				r.Route(uuidPath, func(r chi.Router) {
-					r.Delete("/", deleteLLMProviderHandler(a.storage, a.logger))
-					r.Get("/", getLLMProviderHandler(a.storage, a.logger))
-					r.Put("/", updateLLMProviderHandler(a.storage, a.logger))
-					r.Put(activatePath, setActiveLLMProviderHandler(a.storage, a.logger))
-					r.Put(deactivatePath, setDisableLLMProviderHandler(a.storage, a.logger))
+					r.Delete("/", llm.DeleteLLMProviderHandler(a.storage, a.logger))
+					r.Get("/", llm.GetLLMProviderHandler(a.storage, a.logger))
+					r.Put("/", llm.UpdateLLMProviderHandler(a.storage, a.logger))
+					r.Put(activatePath, llm.SetActiveLLMProviderHandler(a.storage, a.logger))
+					r.Put(deactivatePath, llm.SetDisableLLMProviderHandler(a.storage, a.logger))
 				})
-				r.Get("/", getLLMProvidersHandler(a.storage, a.logger))
-			})
+				r.Get("/", llm.GetLLMProvidersHandler(a.storage, a.logger))
+			})*/
 
 			r.Route("/search", func(r chi.Router) {
 				r.Post("/", addSearchHandler(a.searchSystem, a.logger))

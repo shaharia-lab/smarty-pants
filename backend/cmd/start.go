@@ -21,6 +21,7 @@ import (
 	"github.com/shaharia-lab/smarty-pants/backend/internal/document"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/embedding"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/interaction"
+	"github.com/shaharia-lab/smarty-pants/backend/internal/llm"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/logger"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/observability"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/processor"
@@ -118,6 +119,7 @@ func runStart(cmd *cobra.Command, _ []string) error {
 		document.NewManager(st, logging),
 		embedding.NewEmbeddingManager(st, logging),
 		interaction.NewManager(st, logging, search.NewSearchSystem(logging, st)),
+		llm.NewManager(st, logging),
 	)
 
 	shutdownManager.RegisterShutdownFn(func(ctx context.Context) error {
@@ -285,6 +287,7 @@ func setupAPIServer(
 	documentManager *document.DocumentManager,
 	embeddingManager *embedding.EmbeddingManager,
 	interactionManager *interaction.Manager,
+	llmManager *llm.Manager,
 ) *api.API {
 	logging.Info("Creating API server")
 	return api.NewAPI(
@@ -306,6 +309,7 @@ func setupAPIServer(
 		documentManager,
 		embeddingManager,
 		interactionManager,
+		llmManager,
 	)
 }
 

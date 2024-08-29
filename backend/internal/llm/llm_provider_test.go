@@ -1,4 +1,4 @@
-package api
+package llm
 
 import (
 	"bytes"
@@ -78,7 +78,7 @@ func TestAddLLMProviderHandler(t *testing.T) {
 			req, _ := http.NewRequest("POST", "/api/v1/llm-provider", bytes.NewBuffer(body))
 			rr := httptest.NewRecorder()
 
-			handler := addLLMProviderHandler(mockStorage, logger)
+			handler := AddLLMProviderHandler(mockStorage, logger)
 			handler.ServeHTTP(rr, req)
 
 			assert.Equal(t, tt.expectedStatus, rr.Code)
@@ -152,7 +152,7 @@ func TestUpdateLLMProviderHandler(t *testing.T) {
 			chiCtx.URLParams.Add("uuid", tt.uuid)
 			req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, chiCtx))
 
-			handler := updateLLMProviderHandler(mockStorage, logger)
+			handler := UpdateLLMProviderHandler(mockStorage, logger)
 			handler.ServeHTTP(rr, req)
 
 			assert.Equal(t, tt.expectedStatus, rr.Code)
@@ -199,7 +199,7 @@ func TestDeleteLLMProviderHandler(t *testing.T) {
 			chiCtx.URLParams.Add("uuid", tt.uuid)
 			req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, chiCtx))
 
-			handler := deleteLLMProviderHandler(mockStorage, logger)
+			handler := DeleteLLMProviderHandler(mockStorage, logger)
 			handler.ServeHTTP(rr, req)
 
 			assert.Equal(t, tt.expectedStatus, rr.Code)
@@ -261,7 +261,7 @@ func TestGetLLMProviderHandler(t *testing.T) {
 			chiCtx.URLParams.Add("uuid", tt.uuid)
 			req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, chiCtx))
 
-			handler := getLLMProviderHandler(mockStorage, logger)
+			handler := GetLLMProviderHandler(mockStorage, logger)
 			handler.ServeHTTP(rr, req)
 
 			assert.Equal(t, tt.expectedStatus, rr.Code)
@@ -344,7 +344,7 @@ func TestGetLLMProvidersHandler(t *testing.T) {
 			req, _ := http.NewRequest("GET", "/api/v1/llm-providers"+tt.queryParams, nil)
 			rr := httptest.NewRecorder()
 
-			handler := getLLMProvidersHandler(mockStorage, logger)
+			handler := GetLLMProvidersHandler(mockStorage, logger)
 			handler.ServeHTTP(rr, req)
 
 			assert.Equal(t, tt.expectedStatus, rr.Code, "DocumentStatus code mismatch")
@@ -448,7 +448,7 @@ func TestSetActiveLLMProviderHandler(t *testing.T) {
 			chiCtx.URLParams.Add("uuid", tt.uuid)
 			req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, chiCtx))
 
-			handler := setActiveLLMProviderHandler(mockStorage, logger)
+			handler := SetActiveLLMProviderHandler(mockStorage, logger)
 			handler.ServeHTTP(rr, req)
 
 			assert.Equal(t, tt.expectedStatus, rr.Code, "DocumentStatus code mismatch")

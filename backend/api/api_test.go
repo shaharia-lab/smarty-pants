@@ -13,6 +13,7 @@ import (
 	"github.com/shaharia-lab/smarty-pants/backend/internal/analytics"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/auth"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/interaction"
+	"github.com/shaharia-lab/smarty-pants/backend/internal/llm"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/search"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/storage"
 	"github.com/sirupsen/logrus"
@@ -225,5 +226,6 @@ func createTestAPIWithoutSetup() *API {
 		aclManager:         auth.NewACLManager(logger, false),
 		analyticsManager:   analytics.NewManager(mockStorage, logger, auth.NewACLManager(logger, false)),
 		interactionManager: interaction.NewManager(mockStorage, logger, searchSystem),
+		llmManager:         llm.NewManager(mockStorage, logger),
 	}
 }
