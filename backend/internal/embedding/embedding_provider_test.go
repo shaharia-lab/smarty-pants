@@ -11,6 +11,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
+	"github.com/shaharia-lab/smarty-pants/backend/internal/auth"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/logger"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/storage"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/types"
@@ -77,7 +78,7 @@ func TestAddEmbeddingProviderHandler(t *testing.T) {
 			req, _ := http.NewRequest("POST", "/api/v1/embedding-provider", bytes.NewBuffer(body))
 			rr := httptest.NewRecorder()
 
-			em := NewEmbeddingManager(mockStorage, logger)
+			em := NewEmbeddingManager(mockStorage, logger, auth.NewACLManager(logger, false))
 			handler := http.HandlerFunc(em.addProviderHandler)
 			handler.ServeHTTP(rr, req)
 
@@ -152,7 +153,7 @@ func TestUpdateEmbeddingProviderHandler(t *testing.T) {
 			chiCtx.URLParams.Add("uuid", tt.uuid)
 			req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, chiCtx))
 
-			em := NewEmbeddingManager(mockStorage, l)
+			em := NewEmbeddingManager(mockStorage, l, auth.NewACLManager(l, false))
 			handler := http.HandlerFunc(em.updateProviderHandler)
 			handler.ServeHTTP(rr, req)
 
@@ -200,7 +201,7 @@ func TestDeleteEmbeddingProviderHandler(t *testing.T) {
 			chiCtx.URLParams.Add("uuid", tt.uuid)
 			req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, chiCtx))
 
-			em := NewEmbeddingManager(mockStorage, l)
+			em := NewEmbeddingManager(mockStorage, l, auth.NewACLManager(l, false))
 
 			handler := http.HandlerFunc(em.deleteProviderHandler)
 			handler.ServeHTTP(rr, req)
@@ -264,7 +265,7 @@ func TestGetEmbeddingProviderHandler(t *testing.T) {
 			chiCtx.URLParams.Add("uuid", tt.uuid)
 			req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, chiCtx))
 
-			em := NewEmbeddingManager(mockStorage, l)
+			em := NewEmbeddingManager(mockStorage, l, auth.NewACLManager(l, false))
 			handler := http.HandlerFunc(em.getProviderHandler)
 			handler.ServeHTTP(rr, req)
 
@@ -339,7 +340,7 @@ func TestSetActiveEmbeddingProviderHandler(t *testing.T) {
 			chiCtx.URLParams.Add("uuid", tt.uuid)
 			req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, chiCtx))
 
-			em := NewEmbeddingManager(mockStorage, l)
+			em := NewEmbeddingManager(mockStorage, l, auth.NewACLManager(l, false))
 			handler := http.HandlerFunc(em.setActiveProviderHandler)
 			handler.ServeHTTP(rr, req)
 
@@ -421,7 +422,7 @@ func TestGetEmbeddingProvidersHandler(t *testing.T) {
 			req, _ := http.NewRequest("GET", "/api/v1/embedding-providers"+tt.queryParams, nil)
 			rr := httptest.NewRecorder()
 
-			em := NewEmbeddingManager(mockStorage, l)
+			em := NewEmbeddingManager(mockStorage, l, auth.NewACLManager(l, false))
 			handler := http.HandlerFunc(em.GetEmbeddingProviders)
 			handler.ServeHTTP(rr, req)
 
@@ -524,7 +525,7 @@ func TestSetDisableEmbeddingProviderHandler(t *testing.T) {
 			chiCtx.URLParams.Add("uuid", tt.uuid)
 			req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, chiCtx))
 
-			em := NewEmbeddingManager(mockStorage, l)
+			em := NewEmbeddingManager(mockStorage, l, auth.NewACLManager(l, false))
 			handler := http.HandlerFunc(em.setDeactivateProviderHandler)
 			handler.ServeHTTP(rr, req)
 

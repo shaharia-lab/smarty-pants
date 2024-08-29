@@ -216,6 +216,8 @@ func createTestAPIWithoutSetup() *API {
 		IdleTimeout:       60,
 	}
 
+	aclManager := auth.NewACLManager(logger, false)
+
 	return &API{
 		config:             config,
 		router:             chi.NewRouter(),
@@ -224,11 +226,11 @@ func createTestAPIWithoutSetup() *API {
 		storage:            mockStorage,
 		searchSystem:       searchSystem,
 		userManager:        userManager,
-		aclManager:         auth.NewACLManager(logger, false),
+		aclManager:         aclManager,
 		analyticsManager:   analytics.NewManager(mockStorage, logger, auth.NewACLManager(logger, false)),
-		interactionManager: interaction.NewManager(mockStorage, logger, searchSystem),
-		llmManager:         llm.NewManager(mockStorage, logger),
-		searchManager:      search.NewManager(searchSystem, logger),
-		settingsManager:    settings.NewManager(mockStorage, logger),
+		interactionManager: interaction.NewManager(mockStorage, logger, searchSystem, aclManager),
+		llmManager:         llm.NewManager(mockStorage, logger, aclManager),
+		searchManager:      search.NewManager(searchSystem, logger, aclManager),
+		settingsManager:    settings.NewManager(mockStorage, logger, aclManager),
 	}
 }

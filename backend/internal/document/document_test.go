@@ -11,7 +11,9 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
+	"github.com/shaharia-lab/smarty-pants/backend/internal/auth"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/config"
+	logger2 "github.com/shaharia-lab/smarty-pants/backend/internal/logger"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/observability"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/storage"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/types"
@@ -383,7 +385,9 @@ func TestGetDocumentsHandler(t *testing.T) {
 
 			_, _ = observability.InitTracer(context.Background(), "test-service", logrus.New(), &config.Config{})
 
-			dm := NewManager(mockStorage, logrus.New())
+			logger := logger2.NoOpsLogger()
+
+			dm := NewManager(mockStorage, logger, auth.NewACLManager(logger, false))
 			handler := dm.GetDocumentsHandler()
 
 			req := httptest.NewRequest("GET", "/api/v1/documents", nil)
@@ -612,7 +616,9 @@ func TestGetDocumentHandler(t *testing.T) {
 			mockStorage := new(storage.StorageMock)
 			tt.mockSetup(mockStorage)
 
-			dm := NewManager(mockStorage, logrus.New())
+			logger := logger2.NoOpsLogger()
+
+			dm := NewManager(mockStorage, logger, auth.NewACLManager(logger, false))
 			handler := dm.getDocumentHandler()
 
 			req := httptest.NewRequest("GET", "/api/v1/document/"+tt.uuid, nil)

@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/shaharia-lab/smarty-pants/backend/internal/auth"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/observability"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/storage"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/types"
@@ -19,7 +20,7 @@ type Manager struct {
 	logger  *logrus.Logger
 }
 
-func NewManager(storage storage.Storage, logger *logrus.Logger) *Manager {
+func NewManager(storage storage.Storage, logger *logrus.Logger, manager auth.ACLManager) *Manager {
 	return &Manager{
 		storage: storage,
 		logger:  logger,

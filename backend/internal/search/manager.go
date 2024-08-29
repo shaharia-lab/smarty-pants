@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/shaharia-lab/smarty-pants/backend/internal/auth"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/util"
 	"github.com/sirupsen/logrus"
 )
@@ -18,7 +19,7 @@ type Manager struct {
 }
 
 // NewManager creates a new search manager
-func NewManager(searchSystem System, logger *logrus.Logger) *Manager {
+func NewManager(searchSystem System, logger *logrus.Logger, manager auth.ACLManager) *Manager {
 	return &Manager{
 		searchSystem: searchSystem,
 		logger:       logger,

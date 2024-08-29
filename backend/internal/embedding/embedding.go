@@ -8,6 +8,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
+	"github.com/shaharia-lab/smarty-pants/backend/internal/auth"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/datasource"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/storage"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/types"
@@ -20,7 +21,7 @@ type EmbeddingManager struct {
 	logger  *logrus.Logger
 }
 
-func NewEmbeddingManager(s storage.Storage, l *logrus.Logger) *EmbeddingManager {
+func NewEmbeddingManager(s storage.Storage, l *logrus.Logger, manager auth.ACLManager) *EmbeddingManager {
 	return &EmbeddingManager{
 		storage: s,
 		logger:  l,

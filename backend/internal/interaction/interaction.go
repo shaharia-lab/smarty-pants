@@ -6,6 +6,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
+	"github.com/shaharia-lab/smarty-pants/backend/internal/auth"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/llm"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/observability"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/search"
@@ -45,7 +46,7 @@ type Manager struct {
 	searchSystem search.System
 }
 
-func NewManager(storage storage.Storage, logger *logrus.Logger, searchSystem search.System) *Manager {
+func NewManager(storage storage.Storage, logger *logrus.Logger, searchSystem search.System, manager auth.ACLManager) *Manager {
 	return &Manager{
 		storage:      storage,
 		logger:       logger,

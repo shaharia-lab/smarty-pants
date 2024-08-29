@@ -119,12 +119,12 @@ func runStart(cmd *cobra.Command, _ []string) error {
 		cfg.EnableAuthentication,
 		analytics.NewManager(st, logging, aclManager),
 		datasource.NewDatasourceManager(st, logging, aclManager),
-		document.NewManager(st, logging),
-		embedding.NewEmbeddingManager(st, logging),
-		interaction.NewManager(st, logging, searchSystem),
-		llm.NewManager(st, logging),
-		search.NewManager(searchSystem, logging),
-		settings.NewManager(st, logging),
+		document.NewManager(st, logging, aclManager),
+		embedding.NewEmbeddingManager(st, logging, aclManager),
+		interaction.NewManager(st, logging, searchSystem, aclManager),
+		llm.NewManager(st, logging, aclManager),
+		search.NewManager(searchSystem, logging, aclManager),
+		settings.NewManager(st, logging, aclManager),
 	)
 
 	shutdownManager.RegisterShutdownFn(func(ctx context.Context) error {
