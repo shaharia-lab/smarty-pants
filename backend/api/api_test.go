@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/shaharia-lab/smarty-pants/backend/internal/analytics"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/auth"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/search"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/storage"
@@ -213,13 +214,14 @@ func createTestAPIWithoutSetup() *API {
 	}
 
 	return &API{
-		config:       config,
-		router:       chi.NewRouter(),
-		port:         port,
-		logger:       logger,
-		storage:      mockStorage,
-		searchSystem: searchSystem,
-		userManager:  userManager,
-		aclManager:   auth.NewACLManager(logger, false),
+		config:           config,
+		router:           chi.NewRouter(),
+		port:             port,
+		logger:           logger,
+		storage:          mockStorage,
+		searchSystem:     searchSystem,
+		userManager:      userManager,
+		aclManager:       auth.NewACLManager(logger, false),
+		analyticsManager: analytics.NewAnalytics(mockStorage, logger, auth.NewACLManager(logger, false)),
 	}
 }

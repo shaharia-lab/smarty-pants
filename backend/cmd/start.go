@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/shaharia-lab/smarty-pants/backend/api"
+	"github.com/shaharia-lab/smarty-pants/backend/internal/analytics"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/auth"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/collector"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/config"
@@ -96,6 +97,7 @@ func runStart(cmd *cobra.Command, _ []string) error {
 		return err
 	}
 
+	aclManager := auth.NewACLManager(logging, cfg.EnableAuthentication)
 	authSkipEndpoints := []string{
 		//"/api/v1/analytics/overview",
 	}
@@ -105,8 +107,9 @@ func runStart(cmd *cobra.Command, _ []string) error {
 		st,
 		userManager,
 		auth.NewJWTManager(auth.NewKeyManager(st, logging), userManager, logging, authSkipEndpoints),
-		auth.NewACLManager(logging, cfg.EnableAuthentication),
+		aclManager,
 		cfg.EnableAuthentication,
+		analytics.NewAnalytics(st, logging, aclManager),
 	)
 
 	shutdownManager.RegisterShutdownFn(func(ctx context.Context) error {
@@ -261,7 +264,16 @@ func setupAndStartProcessor(ctx context.Context, cfg *config.Config, st storage.
 	return processingEngine, nil
 }
 
-func setupAPIServer(cfg *config.Config, logging *logrus.Logger, st storage.Storage, userManager *auth.UserManager, jwtmanager *auth.JWTManager, aclManager auth.ACLManager, authEnabled bool) *api.API {
+func setupAPIServer(
+	cfg *config.Config,
+	logging *logrus.Logger,
+	st storage.Storage,
+	userManager *auth.UserManager,
+	jwtmanager *auth.JWTManager,
+	aclManager auth.ACLManager,
+	authEnabled bool,
+	analyticsManager *analytics.Analytics,
+) *api.API {
 	logging.Info("Creating API server")
 	return api.NewAPI(
 		logging,
@@ -277,6 +289,7 @@ func setupAPIServer(cfg *config.Config, logging *logrus.Logger, st storage.Stora
 		jwtmanager,
 		aclManager,
 		authEnabled,
+		analyticsManager,
 	)
 }
 

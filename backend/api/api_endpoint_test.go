@@ -41,8 +41,8 @@ func TestAPIEndpoints(t *testing.T) {
 	r := chi.NewRouter()
 	r.Use(jwtManager.AuthMiddleware(true))
 
-	// Set up routes
-	r.Get("/api/v1/analytics/overview", analytics.GetAnalyticsOverview(mockStorage, mockLogger, mockACLManager))
+	an := analytics.NewAnalytics(mockStorage, mockLogger, mockACLManager)
+	an.RegisterRoutes(r)
 
 	// Add more routes here as needed
 

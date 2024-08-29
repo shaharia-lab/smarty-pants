@@ -32,17 +32,18 @@ const (
 )
 
 type API struct {
-	config       Config
-	router       *chi.Mux
-	port         int
-	logger       *logrus.Logger
-	storage      storage.Storage
-	searchSystem search.System
-	server       *http.Server
-	userManager  *auth.UserManager
-	jwtManager   *auth.JWTManager
-	aclManager   auth.ACLManager
-	enableAuth   bool
+	config           Config
+	router           *chi.Mux
+	port             int
+	logger           *logrus.Logger
+	storage          storage.Storage
+	searchSystem     search.System
+	server           *http.Server
+	userManager      *auth.UserManager
+	jwtManager       *auth.JWTManager
+	aclManager       auth.ACLManager
+	enableAuth       bool
+	analyticsManager *analytics.Analytics
 }
 
 type Config struct {
@@ -52,18 +53,29 @@ type Config struct {
 	IdleTimeout       int
 }
 
-func NewAPI(logger *logrus.Logger, storage storage.Storage, searchSystem search.System, config Config, userManager *auth.UserManager, jwtManager *auth.JWTManager, aclManager auth.ACLManager, enableAuth bool) *API {
+func NewAPI(
+	logger *logrus.Logger,
+	storage storage.Storage,
+	searchSystem search.System,
+	config Config,
+	userManager *auth.UserManager,
+	jwtManager *auth.JWTManager,
+	aclManager auth.ACLManager,
+	enableAuth bool,
+	analyticsManager *analytics.Analytics,
+) *API {
 	api := &API{
-		config:       config,
-		router:       chi.NewRouter(),
-		port:         config.Port,
-		logger:       logger,
-		storage:      storage,
-		searchSystem: searchSystem,
-		userManager:  userManager,
-		jwtManager:   jwtManager,
-		aclManager:   aclManager,
-		enableAuth:   enableAuth,
+		config:           config,
+		router:           chi.NewRouter(),
+		port:             config.Port,
+		logger:           logger,
+		storage:          storage,
+		searchSystem:     searchSystem,
+		userManager:      userManager,
+		jwtManager:       jwtManager,
+		aclManager:       aclManager,
+		enableAuth:       enableAuth,
+		analyticsManager: analyticsManager,
 	}
 	api.setupMiddleware()
 	api.setupRoutes()
@@ -132,10 +144,6 @@ func (a *API) setupRoutes() {
 		r.Route("/v1", func(r chi.Router) {
 			r.Use(a.jwtManager.AuthMiddleware(a.enableAuth))
 
-			r.Route("/analytics", func(r chi.Router) {
-				r.Get("/overview", analytics.GetAnalyticsOverview(a.storage, a.logger, a.aclManager))
-			})
-
 			r.Route("/datasource", func(r chi.Router) {
 				r.Post("/", addDatasourceHandler(a.storage, a.logger, a.aclManager))
 				r.Route(uuidPath, func(r chi.Router) {
@@ -199,6 +207,7 @@ func (a *API) setupRoutes() {
 	})
 
 	a.userManager.RegisterRoutes(a.router)
+	a.analyticsManager.RegisterRoutes(a.router)
 }
 
 // Start starts the API server
