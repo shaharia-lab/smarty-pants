@@ -109,7 +109,7 @@ func runStart(cmd *cobra.Command, _ []string) error {
 		auth.NewJWTManager(auth.NewKeyManager(st, logging), userManager, logging, authSkipEndpoints),
 		aclManager,
 		cfg.EnableAuthentication,
-		analytics.NewAnalytics(st, logging, aclManager),
+		analytics.NewAnalyticsManager(st, logging, aclManager),
 	)
 
 	shutdownManager.RegisterShutdownFn(func(ctx context.Context) error {

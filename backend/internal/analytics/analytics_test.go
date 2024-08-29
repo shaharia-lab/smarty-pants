@@ -136,7 +136,7 @@ func TestGetAnalyticsOverview(t *testing.T) {
 
 			logger := logrus.New()
 
-			a := NewAnalytics(mockStorage, logger, auth.NewACLManager(logger, false))
+			a := NewAnalyticsManager(mockStorage, logger, auth.NewACLManager(logger, false))
 			handler := http.HandlerFunc(a.GetAnalyticsOverview)
 			handler.ServeHTTP(rr, req)
 
