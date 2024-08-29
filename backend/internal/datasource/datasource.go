@@ -1,4 +1,4 @@
-package api
+package datasource
 
 import (
 	"encoding/json"
@@ -10,7 +10,6 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/auth"
-	"github.com/shaharia-lab/smarty-pants/backend/internal/datasource"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/observability"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/storage"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/types"
@@ -21,13 +20,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
-const (
-	datasourceNotFoundMsg            = "Datasource not found"
-	failedToSetDatasourceActiveMsg   = "Failed to set datasource active"
-	datasourceDeletedSuccessfullyMsg = "Datasource has been deleted successfully"
-)
-
-func addDatasourceHandler(st storage.Storage, logging *logrus.Logger, aclManager auth.ACLManager) http.HandlerFunc {
+func AddDatasourceHandler(st storage.Storage, logging *logrus.Logger, aclManager auth.ACLManager) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 
@@ -44,8 +37,8 @@ func addDatasourceHandler(st storage.Storage, logging *logrus.Logger, aclManager
 			return
 		}
 
-		if err := validatePayload(payload); err != nil {
-			handleError(w, err.Error(), http.StatusBadRequest, logging, span)
+		if err := ValidatePayload(payload); err != nil {
+			HandleError(w, err.Error(), http.StatusBadRequest, logging, span)
 			return
 		}
 
@@ -74,7 +67,7 @@ func addDatasourceHandler(st storage.Storage, logging *logrus.Logger, aclManager
 			logging.Error("Failed to add datasource: ", err)
 			span.RecordError(err)
 			span.SetStatus(codes.Error, err.Error())
-			handleError(w, "Failed to add datasource", http.StatusInternalServerError, logging, span)
+			HandleError(w, "Failed to add datasource", http.StatusInternalServerError, logging, span)
 			return
 		}
 
@@ -86,7 +79,7 @@ func addDatasourceHandler(st storage.Storage, logging *logrus.Logger, aclManager
 	}
 }
 
-func getDatasourceHandler(storage storage.Storage, logging *logrus.Logger) http.HandlerFunc {
+func GetDatasourceHandler(storage storage.Storage, logging *logrus.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx, span := otel.Tracer("api").Start(r.Context(), "getDatasourceHandler")
 		defer span.End()
@@ -97,7 +90,7 @@ func getDatasourceHandler(storage storage.Storage, logging *logrus.Logger) http.
 		if err != nil {
 			span.RecordError(err)
 			span.SetStatus(codes.Error, err.Error())
-			handleError(w, invalidUUIDMsg, http.StatusBadRequest, logging, span)
+			HandleError(w, types.InvalidUUIDMessage, http.StatusBadRequest, logging, span)
 			return
 		}
 
@@ -105,7 +98,7 @@ func getDatasourceHandler(storage storage.Storage, logging *logrus.Logger) http.
 		if err != nil {
 			span.RecordError(err)
 			span.SetStatus(codes.Error, err.Error())
-			handleError(w, datasourceNotFoundMsg, http.StatusNotFound, logging, span)
+			HandleError(w, types.DatasourceNotFoundMsg, http.StatusNotFound, logging, span)
 			return
 		}
 
@@ -113,7 +106,7 @@ func getDatasourceHandler(storage storage.Storage, logging *logrus.Logger) http.
 	}
 }
 
-func validateDatasourceHandler(storage storage.Storage, logging *logrus.Logger) http.HandlerFunc {
+func ValidateDatasourceHandler(storage storage.Storage, logging *logrus.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx, span := otel.Tracer("api").Start(r.Context(), "api.validateDatasourceHandler")
 		defer span.End()
@@ -121,13 +114,13 @@ func validateDatasourceHandler(storage storage.Storage, logging *logrus.Logger) 
 		dsUUID := chi.URLParam(r, "uuid")
 		dsUUIDParsed, err := uuid.Parse(dsUUID)
 		if err != nil {
-			util.SendAPIErrorResponse(w, http.StatusBadRequest, util.NewAPIError(invalidUUIDMsg, err))
+			util.SendAPIErrorResponse(w, http.StatusBadRequest, util.NewAPIError(types.InvalidUUIDMessage, err))
 			return
 		}
 
 		ds, err := storage.GetDatasource(ctx, dsUUIDParsed)
 		if err != nil {
-			util.SendAPIErrorResponse(w, http.StatusNotFound, util.NewAPIError(datasourceNotFoundMsg, err))
+			util.SendAPIErrorResponse(w, http.StatusNotFound, util.NewAPIError(types.DatasourceNotFoundMsg, err))
 			return
 		}
 
@@ -138,7 +131,7 @@ func validateDatasourceHandler(storage storage.Storage, logging *logrus.Logger) 
 				return
 			}
 
-			slackDs, _ := datasource.NewSlackDatasource(ds, datasource.NewConcreteSlackClient(slackSettings.Token), logging)
+			slackDs, _ := NewSlackDatasource(ds, NewConcreteSlackClient(slackSettings.Token), logging)
 			if err := slackDs.Validate(); err != nil {
 				util.SendAPIErrorResponse(w, http.StatusBadRequest, util.NewAPIError("Datasource validation failed", err))
 				return
@@ -159,12 +152,12 @@ func validateDatasourceHandler(storage storage.Storage, logging *logrus.Logger) 
 	}
 }
 
-func getDatasourcesHandler(st storage.Storage, logging *logrus.Logger) http.HandlerFunc {
+func GetDatasourcesHandler(st storage.Storage, logging *logrus.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx, span := observability.StartSpan(r.Context(), "api.getDatasourcesHandler")
 		defer span.End()
 
-		page, perPage := getPaginationParams(r)
+		page, perPage := GetPaginationParams(r)
 
 		paginatedDatasources, err := st.GetAllDatasources(ctx, page, perPage)
 		if err != nil {
@@ -175,14 +168,14 @@ func getDatasourcesHandler(st storage.Storage, logging *logrus.Logger) http.Hand
 
 		if paginatedDatasources == nil || paginatedDatasources.Datasources == nil {
 			logging.Debug("No datasources found. Creating empty paginated datasources")
-			paginatedDatasources = createEmptyPaginatedDatasources(page, perPage)
+			paginatedDatasources = CreateEmptyPaginatedDatasources(page, perPage)
 		}
 
 		util.SendSuccessResponse(w, http.StatusOK, paginatedDatasources, logging, nil)
 	}
 }
 
-func updateDatasourceHandler(st storage.Storage, logging *logrus.Logger) http.HandlerFunc {
+func UpdateDatasourceHandler(st storage.Storage, logging *logrus.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx, span := observability.StartSpan(r.Context(), "api.updateDatasourceHandler")
 		defer span.End()
@@ -201,18 +194,18 @@ func updateDatasourceHandler(st storage.Storage, logging *logrus.Logger) http.Ha
 
 		dsUUIDParsed, err := uuid.Parse(dsUUID)
 		if err != nil {
-			util.SendAPIErrorResponse(w, http.StatusBadRequest, util.NewAPIError(invalidUUIDMsg, err))
+			util.SendAPIErrorResponse(w, http.StatusBadRequest, util.NewAPIError(types.InvalidUUIDMessage, err))
 			return
 		}
 
 		existingDS, err := st.GetDatasource(ctx, dsUUIDParsed)
 		if err != nil {
-			util.SendAPIErrorResponse(w, http.StatusNotFound, util.NewAPIError(datasourceNotFoundMsg, err))
+			util.SendAPIErrorResponse(w, http.StatusNotFound, util.NewAPIError(types.DatasourceNotFoundMsg, err))
 			return
 		}
 
 		logging.WithField("source_type", existingDS.SourceType).Info("Updating datasource")
-		newSettings, err := updateDatasourceSettings(existingDS, updatePayload)
+		newSettings, err := UpdateDatasourceSettings(existingDS, updatePayload)
 		if err != nil {
 			logging.Error("Failed to update datasource settings: ", err)
 			util.SendAPIErrorResponse(w, http.StatusBadRequest, util.NewAPIError("Failed to update datasource settings", err))
@@ -233,7 +226,7 @@ func updateDatasourceHandler(st storage.Storage, logging *logrus.Logger) http.Ha
 	}
 }
 
-func updateDatasourceSettings(existingDS types.DatasourceConfig, updatePayload map[string]interface{}) (types.DatasourceSettings, error) {
+func UpdateDatasourceSettings(existingDS types.DatasourceConfig, updatePayload map[string]interface{}) (types.DatasourceSettings, error) {
 	switch existingDS.SourceType {
 	case "slack":
 		slackSettings, ok := existingDS.Settings.(*types.SlackSettings)
@@ -258,20 +251,20 @@ func updateDatasourceSettings(existingDS types.DatasourceConfig, updatePayload m
 	}
 }
 
-func setActiveDatasourceHandler(s storage.Storage, l *logrus.Logger) http.HandlerFunc {
+func SetActiveDatasourceHandler(s storage.Storage, l *logrus.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		id, err := uuid.Parse(chi.URLParam(r, "uuid"))
 		if err != nil || id == uuid.Nil {
-			l.WithError(err).Error(invalidUUIDMsg)
-			sendJSONError(w, invalidUUIDMsg, http.StatusBadRequest)
+			l.WithError(err).Error(types.InvalidUUIDMessage)
+			SendJSONError(w, types.InvalidUUIDMessage, http.StatusBadRequest)
 			return
 		}
 
 		err = s.SetActiveDatasource(r.Context(), id)
 		if err != nil {
-			l.WithError(err).Error(failedToSetDatasourceActiveMsg)
+			l.WithError(err).Error(types.FailedToSetDatasourceActiveMsg)
 			util.SendAPIErrorResponse(w, http.StatusInternalServerError, &util.APIError{
-				Message: failedToSetDatasourceActiveMsg,
+				Message: types.FailedToSetDatasourceActiveMsg,
 				Err:     err.Error(),
 			})
 			return
@@ -282,12 +275,12 @@ func setActiveDatasourceHandler(s storage.Storage, l *logrus.Logger) http.Handle
 	}
 }
 
-func setDisableDatasourceHandler(s storage.Storage, l *logrus.Logger) http.HandlerFunc {
+func SetDisableDatasourceHandler(s storage.Storage, l *logrus.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		id, err := uuid.Parse(chi.URLParam(r, "uuid"))
 		if err != nil || id == uuid.Nil {
-			l.WithError(err).Error(invalidUUIDMsg)
-			sendJSONError(w, invalidUUIDMsg, http.StatusBadRequest)
+			l.WithError(err).Error(types.InvalidUUIDMessage)
+			SendJSONError(w, types.InvalidUUIDMessage, http.StatusBadRequest)
 			return
 		}
 
@@ -295,7 +288,7 @@ func setDisableDatasourceHandler(s storage.Storage, l *logrus.Logger) http.Handl
 		if err != nil {
 			l.WithError(err).Error("Failed to deactivate datasource")
 			util.SendAPIErrorResponse(w, http.StatusInternalServerError, &util.APIError{
-				Message: failedToSetDatasourceActiveMsg,
+				Message: types.FailedToSetDatasourceActiveMsg,
 				Err:     err.Error(),
 			})
 			return
@@ -306,12 +299,12 @@ func setDisableDatasourceHandler(s storage.Storage, l *logrus.Logger) http.Handl
 	}
 }
 
-func deleteDatasourceHandler(s storage.Storage, l *logrus.Logger) http.HandlerFunc {
+func DeleteDatasourceHandler(s storage.Storage, l *logrus.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		id, err := uuid.Parse(chi.URLParam(r, "uuid"))
 		if err != nil || id == uuid.Nil {
-			l.WithError(err).Error(invalidUUIDMsg)
-			sendJSONError(w, invalidUUIDMsg, http.StatusBadRequest)
+			l.WithError(err).Error(types.InvalidUUIDMessage)
+			SendJSONError(w, types.InvalidUUIDMessage, http.StatusBadRequest)
 			return
 		}
 
@@ -319,18 +312,18 @@ func deleteDatasourceHandler(s storage.Storage, l *logrus.Logger) http.HandlerFu
 		if err != nil {
 			l.WithError(err).Error("Failed to deactivate datasource")
 			util.SendAPIErrorResponse(w, http.StatusInternalServerError, &util.APIError{
-				Message: failedToSetDatasourceActiveMsg,
+				Message: types.FailedToSetDatasourceActiveMsg,
 				Err:     err.Error(),
 			})
 			return
 		}
 
-		l.WithField("datasource_id", id).Info(datasourceDeletedSuccessfullyMsg)
+		l.WithField("datasource_id", id).Info(types.DatasourceDeletedSuccessfullyMsg)
 		util.SendSuccessResponse(w, http.StatusOK, map[string]string{"message": "Datasource has been deleted successfully"}, l, nil)
 	}
 }
 
-func validatePayload(payload types.DatasourcePayload) error {
+func ValidatePayload(payload types.DatasourcePayload) error {
 	if payload.Name == "" {
 		return errors.New(types.DatasourceValidationMsgNameIsRequired)
 	}
@@ -341,7 +334,7 @@ func validatePayload(payload types.DatasourcePayload) error {
 	return nil
 }
 
-func createEmptyPaginatedDatasources(page, perPage int) *types.PaginatedDatasources {
+func CreateEmptyPaginatedDatasources(page, perPage int) *types.PaginatedDatasources {
 	return &types.PaginatedDatasources{
 		Datasources: []types.DatasourceConfig{},
 		Total:       0,
@@ -351,7 +344,7 @@ func createEmptyPaginatedDatasources(page, perPage int) *types.PaginatedDatasour
 	}
 }
 
-func getPaginationParams(r *http.Request) (int, int) {
+func GetPaginationParams(r *http.Request) (int, int) {
 	page, err := strconv.Atoi(r.URL.Query().Get("page"))
 	if err != nil || page < 1 {
 		page = 1
@@ -365,16 +358,16 @@ func getPaginationParams(r *http.Request) (int, int) {
 	return page, perPage
 }
 
-func handleError(w http.ResponseWriter, message string, statusCode int, logging *logrus.Logger, span trace.Span) {
+func HandleError(w http.ResponseWriter, message string, statusCode int, logging *logrus.Logger, span trace.Span) {
 	logging.Error(message)
 	if span != nil {
 		span.RecordError(errors.New(message))
 		span.SetStatus(codes.Error, message)
 	}
-	sendJSONError(w, message, statusCode)
+	SendJSONError(w, message, statusCode)
 }
 
-func sendJSONError(w http.ResponseWriter, message string, statusCode int) {
+func SendJSONError(w http.ResponseWriter, message string, statusCode int) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(statusCode)
 	json.NewEncoder(w).Encode(map[string]string{"error": message})

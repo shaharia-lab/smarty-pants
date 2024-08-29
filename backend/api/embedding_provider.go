@@ -8,6 +8,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
+	"github.com/shaharia-lab/smarty-pants/backend/internal/datasource"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/storage"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/types"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/util"
@@ -21,9 +22,9 @@ func addEmbeddingProviderHandler(s storage.Storage, logging *logrus.Logger) http
 		if err != nil {
 			var validationError *types.ValidationError
 			if errors.As(err, &validationError) {
-				sendJSONError(w, validationError.Error(), http.StatusBadRequest)
+				datasource.SendJSONError(w, validationError.Error(), http.StatusBadRequest)
 			} else {
-				sendJSONError(w, "Invalid request body", http.StatusBadRequest)
+				datasource.SendJSONError(w, "Invalid request body", http.StatusBadRequest)
 			}
 			return
 		}
@@ -34,7 +35,7 @@ func addEmbeddingProviderHandler(s storage.Storage, logging *logrus.Logger) http
 
 		err = s.CreateEmbeddingProvider(r.Context(), provider)
 		if err != nil {
-			sendJSONError(w, "Failed to create embedding provider: "+err.Error(), http.StatusInternalServerError)
+			datasource.SendJSONError(w, "Failed to create embedding provider: "+err.Error(), http.StatusInternalServerError)
 			return
 		}
 
@@ -96,17 +97,17 @@ func getEmbeddingProviderHandler(s storage.Storage, l *logrus.Logger) http.Handl
 	return func(w http.ResponseWriter, r *http.Request) {
 		id, err := uuid.Parse(chi.URLParam(r, "uuid"))
 		if err != nil {
-			sendJSONError(w, invalidUUIDMsg, http.StatusBadRequest)
+			datasource.SendJSONError(w, invalidUUIDMsg, http.StatusBadRequest)
 			return
 		}
 
 		provider, err := s.GetEmbeddingProvider(r.Context(), id)
 		if err != nil {
 			if errors.Is(err, types.ErrEmbeddingProviderNotFound) {
-				sendJSONError(w, "Embedding provider not found", http.StatusNotFound)
+				datasource.SendJSONError(w, "Embedding provider not found", http.StatusNotFound)
 			} else {
 				l.WithError(err).Error("Failed to get embedding provider")
-				sendJSONError(w, "Failed to get embedding provider", http.StatusInternalServerError)
+				datasource.SendJSONError(w, "Failed to get embedding provider", http.StatusInternalServerError)
 			}
 			return
 		}
@@ -137,7 +138,7 @@ func getEmbeddingProvidersHandler(s storage.Storage, l *logrus.Logger) http.Hand
 		providers, err := s.GetAllEmbeddingProviders(r.Context(), filter, option)
 		if err != nil {
 			l.WithError(err).Error("Failed to get embedding providers")
-			sendJSONError(w, "Failed to get embedding providers: "+err.Error(), http.StatusInternalServerError)
+			datasource.SendJSONError(w, "Failed to get embedding providers: "+err.Error(), http.StatusInternalServerError)
 			return
 		}
 
@@ -154,7 +155,7 @@ func setActiveEmbeddingProviderHandler(s storage.Storage, l *logrus.Logger) http
 		id, err := uuid.Parse(chi.URLParam(r, "uuid"))
 		if err != nil {
 			l.WithError(err).Error(invalidUUIDMsg)
-			sendJSONError(w, invalidUUIDMsg, http.StatusBadRequest)
+			datasource.SendJSONError(w, invalidUUIDMsg, http.StatusBadRequest)
 			return
 		}
 
@@ -178,7 +179,7 @@ func setDisableEmbeddingProviderHandler(s storage.Storage, l *logrus.Logger) htt
 		id, err := uuid.Parse(chi.URLParam(r, "uuid"))
 		if err != nil {
 			l.WithError(err).Error(invalidUUIDMsg)
-			sendJSONError(w, invalidUUIDMsg, http.StatusBadRequest)
+			datasource.SendJSONError(w, invalidUUIDMsg, http.StatusBadRequest)
 			return
 		}
 

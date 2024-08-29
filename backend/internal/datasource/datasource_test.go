@@ -1,4 +1,4 @@
-package api
+package datasource
 
 import (
 	"bytes"
@@ -13,7 +13,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/auth"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/config"
-	"github.com/shaharia-lab/smarty-pants/backend/internal/datasource"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/observability"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/storage"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/types"
@@ -124,7 +123,7 @@ func TestAddDatasourceHandler(t *testing.T) {
 			mockStorage := new(storage.StorageMock)
 			tt.mockSetup(mockStorage)
 
-			handler := addDatasourceHandler(mockStorage, logger, auth.NewACLManager(logger, false))
+			handler := AddDatasourceHandler(mockStorage, logger, auth.NewACLManager(logger, false))
 
 			body, _ := json.Marshal(tt.payload)
 			req, _ := http.NewRequest("POST", "/api/v1/datasources", bytes.NewBuffer(body))
@@ -206,7 +205,7 @@ func TestGetDatasourceHandler(t *testing.T) {
 			mockStorage := new(storage.StorageMock)
 			tt.mockSetup(mockStorage)
 
-			handler := getDatasourceHandler(mockStorage, logrus.New())
+			handler := GetDatasourceHandler(mockStorage, logrus.New())
 
 			req := httptest.NewRequest("GET", "/api/v1/datasource/"+tt.uuid.String(), nil)
 			w := httptest.NewRecorder()
@@ -323,7 +322,7 @@ func TestGetDatasourcesHandler(t *testing.T) {
 
 			_, _ = observability.InitTracer(context.Background(), "test", &logrus.Logger{}, &config.Config{})
 
-			handler := getDatasourcesHandler(mockStorage, logrus.New())
+			handler := GetDatasourcesHandler(mockStorage, logrus.New())
 
 			req := httptest.NewRequest("GET", "/api/v1/datasources", nil)
 			q := req.URL.Query()
@@ -437,7 +436,7 @@ func TestUpdateDatasourceHandler(t *testing.T) {
 			mockStorage := new(storage.StorageMock)
 			tt.mockSetup(mockStorage)
 
-			handler := updateDatasourceHandler(mockStorage, logrus.New())
+			handler := UpdateDatasourceHandler(mockStorage, logrus.New())
 
 			var body []byte
 			var err error
@@ -504,7 +503,7 @@ func TestValidateDatasourceHandler(t *testing.T) {
 					UUID:       uuid.MustParse("123e4567-e89b-12d3-a456-426614174002"),
 					Name:       "Test Unsupported Datasource",
 					SourceType: "unsupported",
-					Settings:   &datasource.SlackDatasource{},
+					Settings:   &SlackDatasource{},
 				}, nil)
 			},
 			expectedStatus: http.StatusBadRequest,
@@ -517,7 +516,7 @@ func TestValidateDatasourceHandler(t *testing.T) {
 			mockStorage := new(storage.StorageMock)
 			tt.mockSetup(mockStorage)
 
-			handler := validateDatasourceHandler(mockStorage, logrus.New())
+			handler := ValidateDatasourceHandler(mockStorage, logrus.New())
 
 			req := httptest.NewRequest("POST", "/api/v1/datasource/"+tt.uuid.String()+"/validate", nil)
 			w := httptest.NewRecorder()
@@ -578,7 +577,7 @@ func TestSetDisableDatasourceHandler(t *testing.T) {
 			mockStorage := new(storage.StorageMock)
 			tt.mockSetup(mockStorage)
 
-			handler := setDisableDatasourceHandler(mockStorage, logrus.New())
+			handler := SetDisableDatasourceHandler(mockStorage, logrus.New())
 
 			req := httptest.NewRequest("POST", "/api/v1/datasource/"+tt.uuid.String()+"/disable", nil)
 			w := httptest.NewRecorder()
@@ -639,7 +638,7 @@ func TestSetActiveDatasourceHandler(t *testing.T) {
 			mockStorage := new(storage.StorageMock)
 			tt.mockSetup(mockStorage)
 
-			handler := setActiveDatasourceHandler(mockStorage, logrus.New())
+			handler := SetActiveDatasourceHandler(mockStorage, logrus.New())
 
 			req := httptest.NewRequest("POST", "/api/v1/datasource/"+tt.uuid.String()+"/activate", nil)
 			w := httptest.NewRecorder()
@@ -700,7 +699,7 @@ func TestDeleteDatasourceHandler(t *testing.T) {
 			mockStorage := new(storage.StorageMock)
 			tt.mockSetup(mockStorage)
 
-			handler := deleteDatasourceHandler(mockStorage, logrus.New())
+			handler := DeleteDatasourceHandler(mockStorage, logrus.New())
 
 			req := httptest.NewRequest("DELETE", "/api/v1/datasource/"+tt.uuid.String(), nil)
 			w := httptest.NewRecorder()

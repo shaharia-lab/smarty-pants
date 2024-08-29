@@ -8,6 +8,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
+	"github.com/shaharia-lab/smarty-pants/backend/internal/datasource"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/storage"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/types"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/util"
@@ -21,9 +22,9 @@ func addLLMProviderHandler(s storage.Storage, logging *logrus.Logger) http.Handl
 		if err != nil {
 			var validationError *types.ValidationError
 			if errors.As(err, &validationError) {
-				sendJSONError(w, validationError.Error(), http.StatusBadRequest)
+				datasource.SendJSONError(w, validationError.Error(), http.StatusBadRequest)
 			} else {
-				sendJSONError(w, "Invalid request body", http.StatusBadRequest)
+				datasource.SendJSONError(w, "Invalid request body", http.StatusBadRequest)
 			}
 			return
 		}
@@ -36,7 +37,7 @@ func addLLMProviderHandler(s storage.Storage, logging *logrus.Logger) http.Handl
 
 		err = s.CreateLLMProvider(r.Context(), provider)
 		if err != nil {
-			sendJSONError(w, "Failed to create embedding provider: "+err.Error(), http.StatusInternalServerError)
+			datasource.SendJSONError(w, "Failed to create embedding provider: "+err.Error(), http.StatusInternalServerError)
 			return
 		}
 
@@ -98,17 +99,17 @@ func getLLMProviderHandler(s storage.Storage, l *logrus.Logger) http.HandlerFunc
 	return func(w http.ResponseWriter, r *http.Request) {
 		id, err := uuid.Parse(chi.URLParam(r, "uuid"))
 		if err != nil {
-			sendJSONError(w, invalidUUIDMsg, http.StatusBadRequest)
+			datasource.SendJSONError(w, invalidUUIDMsg, http.StatusBadRequest)
 			return
 		}
 
 		provider, err := s.GetLLMProvider(r.Context(), id)
 		if err != nil {
 			if errors.Is(err, types.ErrLLMProviderNotFound) {
-				sendJSONError(w, "Embedding provider not found", http.StatusNotFound)
+				datasource.SendJSONError(w, "Embedding provider not found", http.StatusNotFound)
 			} else {
 				l.WithError(err).Error("Failed to get embedding provider")
-				sendJSONError(w, "Failed to get embedding provider", http.StatusInternalServerError)
+				datasource.SendJSONError(w, "Failed to get embedding provider", http.StatusInternalServerError)
 			}
 			return
 		}
@@ -139,7 +140,7 @@ func getLLMProvidersHandler(s storage.Storage, l *logrus.Logger) http.HandlerFun
 		providers, err := s.GetAllLLMProviders(r.Context(), filter, option)
 		if err != nil {
 			l.WithError(err).Error("Failed to get embedding providers")
-			sendJSONError(w, "Failed to get embedding providers: "+err.Error(), http.StatusInternalServerError)
+			datasource.SendJSONError(w, "Failed to get embedding providers: "+err.Error(), http.StatusInternalServerError)
 			return
 		}
 
@@ -156,14 +157,14 @@ func setActiveLLMProviderHandler(s storage.Storage, l *logrus.Logger) http.Handl
 		id, err := uuid.Parse(chi.URLParam(r, "uuid"))
 		if err != nil {
 			l.WithError(err).Error(invalidUUIDMsg)
-			sendJSONError(w, invalidUUIDMsg, http.StatusBadRequest)
+			datasource.SendJSONError(w, invalidUUIDMsg, http.StatusBadRequest)
 			return
 		}
 
 		err = s.SetActiveLLMProvider(r.Context(), id)
 		if err != nil {
 			l.WithError(err).Error("Failed to set active LLM provider")
-			sendJSONError(w, "Failed to set active LLM provider", http.StatusInternalServerError)
+			datasource.SendJSONError(w, "Failed to set active LLM provider", http.StatusInternalServerError)
 			return
 		}
 
@@ -178,14 +179,14 @@ func setDisableLLMProviderHandler(s storage.Storage, l *logrus.Logger) http.Hand
 		id, err := uuid.Parse(chi.URLParam(r, "uuid"))
 		if err != nil {
 			l.WithError(err).Error(invalidUUIDMsg)
-			sendJSONError(w, invalidUUIDMsg, http.StatusBadRequest)
+			datasource.SendJSONError(w, invalidUUIDMsg, http.StatusBadRequest)
 			return
 		}
 
 		err = s.SetDisableLLMProvider(r.Context(), id)
 		if err != nil {
 			l.WithError(err).Error("Failed to set deactivate LLM provider")
-			sendJSONError(w, "Failed to set deactivate LLM provider", http.StatusInternalServerError)
+			datasource.SendJSONError(w, "Failed to set deactivate LLM provider", http.StatusInternalServerError)
 			return
 		}
 
