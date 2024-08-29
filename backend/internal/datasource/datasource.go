@@ -20,6 +20,68 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
+type Manager struct {
+	storage    storage.Storage
+	logger     *logrus.Logger
+	aclManager auth.ACLManager
+}
+
+func NewDatasourceManager(storage storage.Storage, logger *logrus.Logger, aclManager auth.ACLManager) *Manager {
+	return &Manager{
+		storage:    storage,
+		logger:     logger,
+		aclManager: aclManager,
+	}
+}
+
+func (dm *Manager) RegisterRoutes(r chi.Router) {
+	r.Route("/api/v1/datasource", func(r chi.Router) {
+		r.Post("/", dm.handleAddDatasource)
+		r.Get("/", dm.handleGetDatasources)
+
+		r.Route("/{uuid}", func(r chi.Router) {
+			r.Delete("/", dm.handleDeleteDatasource)
+			r.Get("/", dm.handleGetDatasource)
+			r.Get("/validate", dm.handleValidateDatasource)
+			r.Put("/", dm.handleUpdateDatasource)
+			r.Put("/activate", dm.handleSetActiveDatasource)
+			r.Put("/deactivate", dm.handleSetDisableDatasource)
+		})
+	})
+}
+
+func (dm *Manager) handleAddDatasource(w http.ResponseWriter, r *http.Request) {
+	AddDatasourceHandler(dm.storage, dm.logger, dm.aclManager)(w, r)
+}
+
+func (dm *Manager) handleGetDatasources(w http.ResponseWriter, r *http.Request) {
+	GetDatasourcesHandler(dm.storage, dm.logger)(w, r)
+}
+
+func (dm *Manager) handleDeleteDatasource(w http.ResponseWriter, r *http.Request) {
+	DeleteDatasourceHandler(dm.storage, dm.logger)(w, r)
+}
+
+func (dm *Manager) handleGetDatasource(w http.ResponseWriter, r *http.Request) {
+	GetDatasourceHandler(dm.storage, dm.logger)(w, r)
+}
+
+func (dm *Manager) handleValidateDatasource(w http.ResponseWriter, r *http.Request) {
+	ValidateDatasourceHandler(dm.storage, dm.logger)(w, r)
+}
+
+func (dm *Manager) handleUpdateDatasource(w http.ResponseWriter, r *http.Request) {
+	UpdateDatasourceHandler(dm.storage, dm.logger)(w, r)
+}
+
+func (dm *Manager) handleSetActiveDatasource(w http.ResponseWriter, r *http.Request) {
+	SetActiveDatasourceHandler(dm.storage, dm.logger)(w, r)
+}
+
+func (dm *Manager) handleSetDisableDatasource(w http.ResponseWriter, r *http.Request) {
+	SetDisableDatasourceHandler(dm.storage, dm.logger)(w, r)
+}
+
 func AddDatasourceHandler(st storage.Storage, logging *logrus.Logger, aclManager auth.ACLManager) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()

@@ -17,6 +17,7 @@ import (
 	"github.com/shaharia-lab/smarty-pants/backend/internal/auth"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/collector"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/config"
+	"github.com/shaharia-lab/smarty-pants/backend/internal/datasource"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/logger"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/observability"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/processor"
@@ -110,6 +111,7 @@ func runStart(cmd *cobra.Command, _ []string) error {
 		aclManager,
 		cfg.EnableAuthentication,
 		analytics.NewAnalyticsManager(st, logging, aclManager),
+		datasource.NewDatasourceManager(st, logging, aclManager),
 	)
 
 	shutdownManager.RegisterShutdownFn(func(ctx context.Context) error {
@@ -273,6 +275,7 @@ func setupAPIServer(
 	aclManager auth.ACLManager,
 	authEnabled bool,
 	analyticsManager *analytics.Analytics,
+	datasourceManager *datasource.Manager,
 ) *api.API {
 	logging.Info("Creating API server")
 	return api.NewAPI(
@@ -290,6 +293,7 @@ func setupAPIServer(
 		aclManager,
 		authEnabled,
 		analyticsManager,
+		datasourceManager,
 	)
 }
 

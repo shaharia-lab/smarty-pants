@@ -33,18 +33,19 @@ const (
 )
 
 type API struct {
-	config           Config
-	router           *chi.Mux
-	port             int
-	logger           *logrus.Logger
-	storage          storage.Storage
-	searchSystem     search.System
-	server           *http.Server
-	userManager      *auth.UserManager
-	jwtManager       *auth.JWTManager
-	aclManager       auth.ACLManager
-	enableAuth       bool
-	analyticsManager *analytics.Analytics
+	config            Config
+	router            *chi.Mux
+	port              int
+	logger            *logrus.Logger
+	storage           storage.Storage
+	searchSystem      search.System
+	server            *http.Server
+	userManager       *auth.UserManager
+	jwtManager        *auth.JWTManager
+	aclManager        auth.ACLManager
+	enableAuth        bool
+	analyticsManager  *analytics.Analytics
+	datasourceManager *datasource.Manager
 }
 
 type Config struct {
@@ -64,19 +65,21 @@ func NewAPI(
 	aclManager auth.ACLManager,
 	enableAuth bool,
 	analyticsManager *analytics.Analytics,
+	datasourceManager *datasource.Manager,
 ) *API {
 	api := &API{
-		config:           config,
-		router:           chi.NewRouter(),
-		port:             config.Port,
-		logger:           logger,
-		storage:          storage,
-		searchSystem:     searchSystem,
-		userManager:      userManager,
-		jwtManager:       jwtManager,
-		aclManager:       aclManager,
-		enableAuth:       enableAuth,
-		analyticsManager: analyticsManager,
+		config:            config,
+		router:            chi.NewRouter(),
+		port:              config.Port,
+		logger:            logger,
+		storage:           storage,
+		searchSystem:      searchSystem,
+		userManager:       userManager,
+		jwtManager:        jwtManager,
+		aclManager:        aclManager,
+		enableAuth:        enableAuth,
+		analyticsManager:  analyticsManager,
+		datasourceManager: datasourceManager,
 	}
 	api.setupMiddleware()
 	api.setupRoutes()
@@ -145,7 +148,7 @@ func (a *API) setupRoutes() {
 		r.Route("/v1", func(r chi.Router) {
 			r.Use(a.jwtManager.AuthMiddleware(a.enableAuth))
 
-			r.Route("/datasource", func(r chi.Router) {
+			/*r.Route("/datasource", func(r chi.Router) {
 				r.Post("/", datasource.AddDatasourceHandler(a.storage, a.logger, a.aclManager))
 				r.Route(uuidPath, func(r chi.Router) {
 					r.Delete("/", datasource.DeleteDatasourceHandler(a.storage, a.logger))
@@ -156,7 +159,7 @@ func (a *API) setupRoutes() {
 					r.Put(deactivatePath, datasource.SetDisableDatasourceHandler(a.storage, a.logger))
 				})
 				r.Get("/", datasource.GetDatasourcesHandler(a.storage, a.logger))
-			})
+			})*/
 
 			r.Route("/document", func(r chi.Router) {
 				r.Get(uuidPath, getDocumentHandler(a.storage, a.logger))
@@ -209,6 +212,7 @@ func (a *API) setupRoutes() {
 
 	a.userManager.RegisterRoutes(a.router)
 	a.analyticsManager.RegisterRoutes(a.router)
+	a.datasourceManager.RegisterRoutes(a.router)
 }
 
 // Start starts the API server
