@@ -138,7 +138,20 @@ func (m *JWTManager) AuthMiddleware(authEnabled bool) func(http.Handler) http.Ha
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if !authEnabled {
-				r.WithContext(context.WithValue(r.Context(), types.AuthenticatedUserCtxKey, types.DefaultAnonymousUser()))
+				anonymousUser, err := m.userManager.GetAnonymousUser(r.Context())
+				if err != nil {
+					m.logger.WithError(err).Error("Failed to get anonymous user")
+					util.SendAPIErrorResponse(w, http.StatusInternalServerError, &util.APIError{Message: "Internal server error", Err: err.Error()})
+					return
+				}
+
+				if anonymousUser == nil {
+					m.logger.Error("Anonymous user is nil")
+					util.SendAPIErrorResponse(w, http.StatusInternalServerError, &util.APIError{Message: "Internal server error", Err: "Anonymous user doesn't exists in the system"})
+					return
+				}
+
+				r.WithContext(context.WithValue(r.Context(), types.AuthenticatedUserCtxKey, anonymousUser))
 				next.ServeHTTP(w, r)
 				return
 			}

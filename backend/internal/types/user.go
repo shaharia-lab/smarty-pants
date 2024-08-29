@@ -21,6 +21,8 @@ const (
 
 	AuthenticatedUserCtxKey            = "authenticated_user"
 	UserDetailsCtxKey       ContextKey = "user_details"
+
+	AnonymousUserUUID = "00000000-0000-0000-0000-000000000000"
 )
 
 type UserFilter struct {
@@ -54,7 +56,7 @@ type User struct {
 }
 
 var anonymousUserData = User{
-	UUID:      uuid.MustParse("00000000-0000-0000-0000-000000000000"),
+	UUID:      uuid.MustParse(AnonymousUserUUID),
 	Name:      "Anonymous User",
 	Email:     "user@example.com",
 	Status:    UserStatusActive,

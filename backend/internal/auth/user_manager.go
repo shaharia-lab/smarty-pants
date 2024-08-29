@@ -52,6 +52,11 @@ func (um *UserManager) GetUser(ctx context.Context, uuid uuid.UUID) (*types.User
 	return um.storage.GetUser(ctx, uuid)
 }
 
+// GetAnonymousUser fetches the anonymous user data
+func (um *UserManager) GetAnonymousUser(ctx context.Context) (*types.User, error) {
+	return um.storage.GetUser(ctx, uuid.MustParse(types.AnonymousUserUUID))
+}
+
 // UpdateUserStatus updates the status of the user with the given UUID.
 func (um *UserManager) UpdateUserStatus(ctx context.Context, uuid uuid.UUID, status types.UserStatus) error {
 	return um.storage.UpdateUserStatus(ctx, uuid, status)

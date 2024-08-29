@@ -7,6 +7,7 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -280,6 +281,16 @@ func TestAuthMiddleware(t *testing.T) {
 	}
 
 	mockStorage.On("GetUser", mock.Anything, validUser.UUID).Return(validUser, nil).Maybe()
+
+	mockStorage.On("GetUser", mock.Anything, mock.AnythingOfType("uuid.UUID")).
+		Return(func(_ context.Context, userUUID uuid.UUID) (*types.User, error) {
+			if userUUID == uuid.MustParse(types.AnonymousUserUUID) {
+				return types.DefaultAnonymousUser(), nil
+			} else if userUUID == validUser.UUID {
+				return validUser, nil
+			}
+			return nil, fmt.Errorf("user not found")
+		})
 
 	validToken, err := jwtManager.IssueToken(context.Background(), validUser.UUID, []string{"web"}, time.Hour)
 	assert.NoError(t, err)
