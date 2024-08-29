@@ -97,7 +97,7 @@ func runStart(cmd *cobra.Command, _ []string) error {
 	}
 
 	authSkipEndpoints := []string{
-		"/api/v1/analytics/overviews",
+		//"/api/v1/analytics/overview",
 	}
 	apiServer := setupAPIServer(
 		cfg,
