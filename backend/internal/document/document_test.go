@@ -613,7 +613,7 @@ func TestGetDocumentHandler(t *testing.T) {
 			tt.mockSetup(mockStorage)
 
 			dm := NewManager(mockStorage, logrus.New())
-			handler := dm.GetDocumentHandler()
+			handler := dm.getDocumentHandler()
 
 			req := httptest.NewRequest("GET", "/api/v1/document/"+tt.uuid, nil)
 			w := httptest.NewRecorder()

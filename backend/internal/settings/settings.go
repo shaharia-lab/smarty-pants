@@ -1,3 +1,4 @@
+// Package settings provides the settings API
 package settings
 
 import (
@@ -12,11 +13,13 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// Manager represents the settings API
 type Manager struct {
 	storage storage.Storage
 	logger  *logrus.Logger
 }
 
+// NewManager creates a new settings API with the given storage and logger
 func NewManager(storage storage.Storage, logger *logrus.Logger) *Manager {
 	return &Manager{
 		storage: storage,
@@ -24,6 +27,7 @@ func NewManager(storage storage.Storage, logger *logrus.Logger) *Manager {
 	}
 }
 
+// RegisterRoutes registers the API handlers with the given ServeMux
 func (m *Manager) RegisterRoutes(r chi.Router) {
 	r.Route("/api/v1/settings", func(r chi.Router) {
 		r.Put("/", UpdateSettingsHandler(m.storage, m.logger))
@@ -31,6 +35,7 @@ func (m *Manager) RegisterRoutes(r chi.Router) {
 	})
 }
 
+// UpdateSettingsHandler updates the settings
 func UpdateSettingsHandler(st storage.Storage, logging *logrus.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx, span := observability.StartSpan(r.Context(), "api.updateSettingsHandler")
@@ -53,6 +58,7 @@ func UpdateSettingsHandler(st storage.Storage, logging *logrus.Logger) http.Hand
 	}
 }
 
+// GetSettingsHandler returns the settings
 func GetSettingsHandler(st storage.Storage, logging *logrus.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx, span := observability.StartSpan(r.Context(), "api.getSettingsHandler")

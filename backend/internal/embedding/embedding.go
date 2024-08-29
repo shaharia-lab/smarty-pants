@@ -29,19 +29,19 @@ func NewEmbeddingManager(s storage.Storage, l *logrus.Logger) *EmbeddingManager 
 
 func (h *EmbeddingManager) RegisterRoutes(r chi.Router) {
 	r.Route("/embedding-provider", func(r chi.Router) {
-		r.Post("/", h.AddEmbeddingProvider)
+		r.Post("/", h.addProviderHandler)
 		r.Route("/{uuid}", func(r chi.Router) {
-			r.Delete("/", h.DeleteEmbeddingProvider)
-			r.Get("/", h.GetEmbeddingProvider)
-			r.Put("/", h.UpdateEmbeddingProvider)
-			r.Put("/activate", h.SetActiveEmbeddingProvider)
-			r.Put("/deactivate", h.SetDisableEmbeddingProvider)
+			r.Delete("/", h.deleteProviderHandler)
+			r.Get("/", h.getProviderHandler)
+			r.Put("/", h.updateProviderHandler)
+			r.Put("/activate", h.setActiveProviderHandler)
+			r.Put("/deactivate", h.setDeactivateProviderHandler)
 		})
 		r.Get("/", h.GetEmbeddingProviders)
 	})
 }
 
-func (h *EmbeddingManager) AddEmbeddingProvider(w http.ResponseWriter, r *http.Request) {
+func (h *EmbeddingManager) addProviderHandler(w http.ResponseWriter, r *http.Request) {
 	var provider types.EmbeddingProviderConfig
 	err := json.NewDecoder(r.Body).Decode(&provider)
 	if err != nil {
@@ -67,7 +67,7 @@ func (h *EmbeddingManager) AddEmbeddingProvider(w http.ResponseWriter, r *http.R
 	util.SendSuccessResponse(w, http.StatusCreated, provider, h.logger, nil)
 }
 
-func (h *EmbeddingManager) UpdateEmbeddingProvider(w http.ResponseWriter, r *http.Request) {
+func (h *EmbeddingManager) updateProviderHandler(w http.ResponseWriter, r *http.Request) {
 	id, err := uuid.Parse(chi.URLParam(r, "uuid"))
 	if err != nil {
 		h.logger.Error(types.InvalidUUIDMessage, "error", err)
@@ -95,7 +95,7 @@ func (h *EmbeddingManager) UpdateEmbeddingProvider(w http.ResponseWriter, r *htt
 	json.NewEncoder(w).Encode(provider)
 }
 
-func (h *EmbeddingManager) DeleteEmbeddingProvider(w http.ResponseWriter, r *http.Request) {
+func (h *EmbeddingManager) deleteProviderHandler(w http.ResponseWriter, r *http.Request) {
 	id, err := uuid.Parse(chi.URLParam(r, "uuid"))
 	if err != nil {
 		h.logger.Error(types.InvalidUUIDMessage, "error", err)
@@ -113,7 +113,7 @@ func (h *EmbeddingManager) DeleteEmbeddingProvider(w http.ResponseWriter, r *htt
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func (h *EmbeddingManager) GetEmbeddingProvider(w http.ResponseWriter, r *http.Request) {
+func (h *EmbeddingManager) getProviderHandler(w http.ResponseWriter, r *http.Request) {
 	id, err := uuid.Parse(chi.URLParam(r, "uuid"))
 	if err != nil {
 		datasource.SendJSONError(w, types.InvalidUUIDMessage, http.StatusBadRequest)
@@ -166,7 +166,7 @@ func (h *EmbeddingManager) GetEmbeddingProviders(w http.ResponseWriter, r *http.
 	util.SendSuccessResponse(w, http.StatusOK, providers, h.logger, nil)
 }
 
-func (h *EmbeddingManager) SetActiveEmbeddingProvider(w http.ResponseWriter, r *http.Request) {
+func (h *EmbeddingManager) setActiveProviderHandler(w http.ResponseWriter, r *http.Request) {
 	id, err := uuid.Parse(chi.URLParam(r, "uuid"))
 	if err != nil {
 		h.logger.WithError(err).Error(types.InvalidUUIDMessage)
@@ -188,7 +188,7 @@ func (h *EmbeddingManager) SetActiveEmbeddingProvider(w http.ResponseWriter, r *
 	util.SendSuccessResponse(w, http.StatusOK, map[string]string{"message": "Embedding provider activated successfully"}, h.logger, nil)
 }
 
-func (h *EmbeddingManager) SetDisableEmbeddingProvider(w http.ResponseWriter, r *http.Request) {
+func (h *EmbeddingManager) setDeactivateProviderHandler(w http.ResponseWriter, r *http.Request) {
 	id, err := uuid.Parse(chi.URLParam(r, "uuid"))
 	if err != nil {
 		h.logger.WithError(err).Error(types.InvalidUUIDMessage)

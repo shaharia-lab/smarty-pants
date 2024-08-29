@@ -32,18 +32,18 @@ func NewManager(storage storage.Storage, logger *logrus.Logger, aclManager auth.
 // RegisterRoutes registers the API handlers with the given ServeMux
 func (a *Analytics) RegisterRoutes(r chi.Router) {
 	r.Route("/api/v1/analytics", func(r chi.Router) {
-		r.Get("/overview", a.GetAnalyticsOverview)
+		r.Get("/overview", a.getAnalyticsOverview)
 	})
 }
 
-// GetAnalyticsOverview returns the analytics overview
-func (a *Analytics) GetAnalyticsOverview(w http.ResponseWriter, r *http.Request) {
+// getAnalyticsOverview returns the analytics overview
+func (a *Analytics) getAnalyticsOverview(w http.ResponseWriter, r *http.Request) {
 	routeCtx := r.Context()
 	if !a.aclManager.IsAllowed(w, r, types.UserRoleAdmin, "analytics") {
 		return
 	}
 
-	ctx, span := observability.StartSpan(routeCtx, "api.GetAnalyticsOverview")
+	ctx, span := observability.StartSpan(routeCtx, "api.getAnalyticsOverview")
 	defer span.End()
 
 	overview, err := a.storage.GetAnalyticsOverview(ctx)

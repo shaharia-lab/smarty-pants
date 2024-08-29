@@ -48,7 +48,7 @@ type API struct {
 	enableAuth         bool
 	analyticsManager   *analytics.Analytics
 	datasourceManager  *datasource.Manager
-	documentManager    *document.DocumentManager
+	documentManager    *document.Manager
 	embeddingManager   *embedding.EmbeddingManager
 	interactionManager *interaction.Manager
 	llmManager         *llm.Manager
@@ -63,7 +63,7 @@ type Config struct {
 	IdleTimeout       int
 }
 
-func NewAPI(logger *logrus.Logger, storage storage.Storage, searchSystem search.System, config Config, userManager *auth.UserManager, jwtManager *auth.JWTManager, aclManager auth.ACLManager, enableAuth bool, analyticsManager *analytics.Analytics, datasourceManager *datasource.Manager, documentManager *document.DocumentManager, embeddingManager *embedding.EmbeddingManager, interactionManager *interaction.Manager, llmManager *llm.Manager, searchManager *search.Manager, settingsManager *settings.Manager) *API {
+func NewAPI(logger *logrus.Logger, storage storage.Storage, searchSystem search.System, config Config, userManager *auth.UserManager, jwtManager *auth.JWTManager, aclManager auth.ACLManager, enableAuth bool, analyticsManager *analytics.Analytics, datasourceManager *datasource.Manager, documentManager *document.Manager, embeddingManager *embedding.EmbeddingManager, interactionManager *interaction.Manager, llmManager *llm.Manager, searchManager *search.Manager, settingsManager *settings.Manager) *API {
 	api := &API{
 		config:             config,
 		router:             chi.NewRouter(),

@@ -78,7 +78,7 @@ func TestAddEmbeddingProviderHandler(t *testing.T) {
 			rr := httptest.NewRecorder()
 
 			em := NewEmbeddingManager(mockStorage, logger)
-			handler := http.HandlerFunc(em.AddEmbeddingProvider)
+			handler := http.HandlerFunc(em.addProviderHandler)
 			handler.ServeHTTP(rr, req)
 
 			assert.Equal(t, tt.expectedStatus, rr.Code)
@@ -153,7 +153,7 @@ func TestUpdateEmbeddingProviderHandler(t *testing.T) {
 			req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, chiCtx))
 
 			em := NewEmbeddingManager(mockStorage, l)
-			handler := http.HandlerFunc(em.UpdateEmbeddingProvider)
+			handler := http.HandlerFunc(em.updateProviderHandler)
 			handler.ServeHTTP(rr, req)
 
 			assert.Equal(t, tt.expectedStatus, rr.Code)
@@ -202,7 +202,7 @@ func TestDeleteEmbeddingProviderHandler(t *testing.T) {
 
 			em := NewEmbeddingManager(mockStorage, l)
 
-			handler := http.HandlerFunc(em.DeleteEmbeddingProvider)
+			handler := http.HandlerFunc(em.deleteProviderHandler)
 			handler.ServeHTTP(rr, req)
 
 			assert.Equal(t, tt.expectedStatus, rr.Code)
@@ -265,7 +265,7 @@ func TestGetEmbeddingProviderHandler(t *testing.T) {
 			req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, chiCtx))
 
 			em := NewEmbeddingManager(mockStorage, l)
-			handler := http.HandlerFunc(em.GetEmbeddingProvider)
+			handler := http.HandlerFunc(em.getProviderHandler)
 			handler.ServeHTTP(rr, req)
 
 			assert.Equal(t, tt.expectedStatus, rr.Code)
@@ -340,7 +340,7 @@ func TestSetActiveEmbeddingProviderHandler(t *testing.T) {
 			req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, chiCtx))
 
 			em := NewEmbeddingManager(mockStorage, l)
-			handler := http.HandlerFunc(em.SetActiveEmbeddingProvider)
+			handler := http.HandlerFunc(em.setActiveProviderHandler)
 			handler.ServeHTTP(rr, req)
 
 			assert.Equal(t, tt.expectedStatus, rr.Code, "DocumentStatus code mismatch")
@@ -525,7 +525,7 @@ func TestSetDisableEmbeddingProviderHandler(t *testing.T) {
 			req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, chiCtx))
 
 			em := NewEmbeddingManager(mockStorage, l)
-			handler := http.HandlerFunc(em.SetDisableEmbeddingProvider)
+			handler := http.HandlerFunc(em.setDeactivateProviderHandler)
 			handler.ServeHTTP(rr, req)
 
 			assert.Equal(t, tt.expectedStatus, rr.Code, "Status code mismatch")

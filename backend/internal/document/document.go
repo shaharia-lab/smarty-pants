@@ -14,26 +14,26 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 )
 
-type DocumentManager struct {
+type Manager struct {
 	storage storage.Storage
 	logger  *logrus.Logger
 }
 
-func NewManager(storage storage.Storage, logger *logrus.Logger) *DocumentManager {
-	return &DocumentManager{
+func NewManager(storage storage.Storage, logger *logrus.Logger) *Manager {
+	return &Manager{
 		storage: storage,
 		logger:  logger,
 	}
 }
 
-func (dm *DocumentManager) RegisterRoutes(r chi.Router) {
+func (dm *Manager) RegisterRoutes(r chi.Router) {
 	r.Route("/api/v1/document", func(r chi.Router) {
 		r.Get("/", dm.GetDocumentsHandler())
-		r.Get("/{uuid}", dm.GetDocumentHandler())
+		r.Get("/{uuid}", dm.getDocumentHandler())
 	})
 }
 
-func (dm *DocumentManager) GetDocumentsHandler() http.HandlerFunc {
+func (dm *Manager) GetDocumentsHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx, span := observability.StartSpan(r.Context(), "/api/v1/documents")
 		defer span.End()
@@ -62,9 +62,9 @@ func (dm *DocumentManager) GetDocumentsHandler() http.HandlerFunc {
 	}
 }
 
-func (dm *DocumentManager) GetDocumentHandler() http.HandlerFunc {
+func (dm *Manager) getDocumentHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		ctx, span := otel.Tracer("api").Start(r.Context(), "GetDocumentHandler")
+		ctx, span := otel.Tracer("api").Start(r.Context(), "getDocumentHandler")
 		defer span.End()
 
 		uuid := chi.URLParam(r, "uuid")

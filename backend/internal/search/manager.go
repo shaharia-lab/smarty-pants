@@ -1,3 +1,4 @@
+// Package search provides a search system for the application.
 package search
 
 import (
@@ -10,11 +11,13 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// Manager represents the search manager
 type Manager struct {
 	searchSystem System
 	logger       *logrus.Logger
 }
 
+// NewManager creates a new search manager
 func NewManager(searchSystem System, logger *logrus.Logger) *Manager {
 	return &Manager{
 		searchSystem: searchSystem,
@@ -22,13 +25,14 @@ func NewManager(searchSystem System, logger *logrus.Logger) *Manager {
 	}
 }
 
+// RegisterRoutes registers the search routes
 func (m *Manager) RegisterRoutes(r chi.Router) {
 	r.Route("/api/v1/search", func(r chi.Router) {
-		r.Post("/", AddSearchHandler(m.searchSystem, m.logger))
+		r.Post("/", addSearchHandler(m.searchSystem, m.logger))
 	})
 }
 
-func AddSearchHandler(searchSystem System, logging *logrus.Logger) http.HandlerFunc {
+func addSearchHandler(searchSystem System, logging *logrus.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 
