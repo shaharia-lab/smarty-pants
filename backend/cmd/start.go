@@ -87,8 +87,6 @@ func runStart(cmd *cobra.Command, _ []string) error {
 		return err
 	}
 
-	userManager := auth.NewUserManager(st, logging)
-
 	metricsServer := observability.StartMetricsServer(cfg.OtelMetricsExposedPort, logging)
 
 	shutdownManager := initializeShutdownManager(cfg, logging)
@@ -109,6 +107,7 @@ func runStart(cmd *cobra.Command, _ []string) error {
 	}
 
 	searchSystem := search.NewSearchSystem(logging, st)
+	userManager := auth.NewUserManager(st, logging, aclManager)
 	apiServer := setupAPIServer(
 		cfg,
 		logging,

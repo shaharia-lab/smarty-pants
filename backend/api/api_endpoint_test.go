@@ -34,7 +34,7 @@ func TestAPIEndpoints(t *testing.T) {
 	mockStorage.On("GetKeyPair").Return(privateKeyBytes, publicKeyBytes, nil)
 	mockLogger := logger.NoOpsLogger()
 	mockACLManager := auth.NewACLManager(mockLogger, true)
-	userManager := auth.NewUserManager(mockStorage, mockLogger)
+	userManager := auth.NewUserManager(mockStorage, mockLogger, mockACLManager)
 	jwtManager := auth.NewJWTManager(auth.NewKeyManager(mockStorage, mockLogger), userManager, mockLogger, []string{})
 
 	// Create a new router

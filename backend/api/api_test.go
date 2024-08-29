@@ -199,7 +199,7 @@ func createTestAPIWithoutSetup() *API {
 	logger := logrus.New()
 	mockStorage := new(storage.StorageMock)
 	searchSystem := search.NewSearchSystem(logger, mockStorage)
-	userManager := auth.NewUserManager(mockStorage, logger)
+	userManager := auth.NewUserManager(mockStorage, logger, auth.NewACLManager(logger, false))
 
 	// Find an available port
 	listener, err := net.Listen("tcp", ":0")

@@ -26,7 +26,7 @@ import (
 func TestNewJWTManager(t *testing.T) {
 	mockStorage := new(storage.StorageMock)
 	l := logger.NoOpsLogger()
-	mockUserManager := NewUserManager(mockStorage, l)
+	mockUserManager := NewUserManager(mockStorage, l, NewACLManager(l, false))
 	keyManager := NewKeyManager(mockStorage, l)
 
 	jwtManager := NewJWTManager(keyManager, mockUserManager, l, []string{})
@@ -40,7 +40,7 @@ func TestNewJWTManager(t *testing.T) {
 func TestIssueTokenForUser(t *testing.T) {
 	mockStorage := new(storage.StorageMock)
 	l := logger.NoOpsLogger()
-	mockUserManager := NewUserManager(mockStorage, l)
+	mockUserManager := NewUserManager(mockStorage, l, NewACLManager(l, false))
 	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
 	assert.NoError(t, err)
 
@@ -136,7 +136,7 @@ func TestIssueTokenForUser(t *testing.T) {
 func TestValidateToken(t *testing.T) {
 	mockStorage := new(storage.StorageMock)
 	l := logger.NoOpsLogger()
-	mockUserManager := NewUserManager(mockStorage, l)
+	mockUserManager := NewUserManager(mockStorage, l, NewACLManager(l, false))
 	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
 	assert.NoError(t, err)
 
@@ -223,7 +223,7 @@ func TestValidateToken(t *testing.T) {
 func TestJWTManagerWithKeyManagerErrors(t *testing.T) {
 	mockStorage := new(storage.StorageMock)
 	l := logger.NoOpsLogger()
-	mockUserManager := NewUserManager(mockStorage, l)
+	mockUserManager := NewUserManager(mockStorage, l, NewACLManager(l, false))
 
 	mockStorage.On("GetKeyPair").Return([]byte(nil), []byte(nil), errors.New("key manager error"))
 	mockStorage.On("UpdateKeyPair", mock.Anything, mock.Anything).Return(errors.New("update key pair error"))
@@ -259,7 +259,7 @@ func TestJWTManagerWithKeyManagerErrors(t *testing.T) {
 func TestAuthMiddleware(t *testing.T) {
 	mockStorage := new(storage.StorageMock)
 	l := logger.NoOpsLogger()
-	mockUserManager := NewUserManager(mockStorage, l)
+	mockUserManager := NewUserManager(mockStorage, l, NewACLManager(l, false))
 	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
 	assert.NoError(t, err)
 
@@ -519,7 +519,7 @@ func TestAuthMiddlewareWithErrors(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			mockStorage := new(storage.StorageMock)
-			mockUserManager := NewUserManager(mockStorage, l)
+			mockUserManager := NewUserManager(mockStorage, l, NewACLManager(l, false))
 			keyManager := NewKeyManager(mockStorage, l)
 			jwtManager := NewJWTManager(keyManager, mockUserManager, l, []string{})
 

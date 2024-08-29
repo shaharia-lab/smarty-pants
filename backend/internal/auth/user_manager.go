@@ -17,15 +17,17 @@ import (
 
 // UserManager is a manager for user operations.
 type UserManager struct {
-	storage storage.Storage
-	logger  *logrus.Logger
+	storage    storage.Storage
+	logger     *logrus.Logger
+	aclManager ACLManager
 }
 
 // NewUserManager creates a new instance of UserManager with the given storage and logger.
-func NewUserManager(storage storage.Storage, logger *logrus.Logger) *UserManager {
+func NewUserManager(storage storage.Storage, logger *logrus.Logger, aclManager ACLManager) *UserManager {
 	return &UserManager{
-		storage: storage,
-		logger:  logger,
+		storage:    storage,
+		logger:     logger,
+		aclManager: aclManager,
 	}
 }
 
