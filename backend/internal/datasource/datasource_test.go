@@ -210,7 +210,7 @@ func TestGetDatasourceHandler(t *testing.T) {
 			l := logger.NoOpsLogger()
 
 			dm := NewDatasourceManager(mockStorage, l, auth.NewACLManager(l, false))
-			handler := dm.getDatasourceHandler(mockStorage, logrus.New())
+			handler := http.HandlerFunc(dm.getDatasourceHandler)
 
 			req := httptest.NewRequest("GET", "/api/v1/datasource/"+tt.uuid.String(), nil)
 			w := httptest.NewRecorder()
@@ -444,7 +444,7 @@ func TestUpdateDatasourceHandler(t *testing.T) {
 			tt.mockSetup(mockStorage)
 			l := logger.NoOpsLogger()
 			dm := NewDatasourceManager(mockStorage, l, auth.NewACLManager(l, false))
-			handler := dm.updateDatasourceHandler(mockStorage, logrus.New())
+			handler := http.HandlerFunc(dm.updateDatasourceHandler)
 
 			var body []byte
 			var err error
@@ -526,7 +526,7 @@ func TestValidateDatasourceHandler(t *testing.T) {
 
 			l := logger.NoOpsLogger()
 			dm := NewDatasourceManager(mockStorage, l, auth.NewACLManager(l, false))
-			handler := dm.validateDatasourceHandler(mockStorage, logrus.New())
+			handler := http.HandlerFunc(dm.validateDatasourceHandler)
 
 			req := httptest.NewRequest("POST", "/api/v1/datasource/"+tt.uuid.String()+"/validate", nil)
 			w := httptest.NewRecorder()
@@ -589,7 +589,7 @@ func TestSetDisableDatasourceHandler(t *testing.T) {
 
 			l := logger.NoOpsLogger()
 			dm := NewDatasourceManager(mockStorage, l, auth.NewACLManager(l, false))
-			handler := dm.setDisableDatasourceHandler(mockStorage, logrus.New())
+			handler := http.HandlerFunc(dm.setDisableDatasourceHandler)
 
 			req := httptest.NewRequest("POST", "/api/v1/datasource/"+tt.uuid.String()+"/disable", nil)
 			w := httptest.NewRecorder()
@@ -652,7 +652,7 @@ func TestSetActiveDatasourceHandler(t *testing.T) {
 
 			l := logger.NoOpsLogger()
 			dm := NewDatasourceManager(mockStorage, l, auth.NewACLManager(l, false))
-			handler := dm.setActiveDatasourceHandler(mockStorage, logrus.New())
+			handler := http.HandlerFunc(dm.setActiveDatasourceHandler)
 
 			req := httptest.NewRequest("POST", "/api/v1/datasource/"+tt.uuid.String()+"/activate", nil)
 			w := httptest.NewRecorder()
@@ -715,7 +715,7 @@ func TestDeleteDatasourceHandler(t *testing.T) {
 
 			l := logger.NoOpsLogger()
 			dm := NewDatasourceManager(mockStorage, l, auth.NewACLManager(l, false))
-			handler := dm.deleteDatasourceHandler(mockStorage, logrus.New())
+			handler := http.HandlerFunc(dm.deleteDatasourceHandler)
 
 			req := httptest.NewRequest("DELETE", "/api/v1/datasource/"+tt.uuid.String(), nil)
 			w := httptest.NewRecorder()
