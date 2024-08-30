@@ -216,7 +216,7 @@ func (h *Manager) setActiveProviderHandler(w http.ResponseWriter, r *http.Reques
 }
 
 func (h *Manager) setDeactivateProviderHandler(w http.ResponseWriter, r *http.Request) {
-	if !h.aclManager.IsAllowed(w, r, types.UserRoleAdmin, types.APIAccessOpsEmbeddingProviderActivate, nil) {
+	if !h.aclManager.IsAllowed(w, r, types.UserRoleAdmin, types.APIAccessOpsEmbeddingProviderDeactivate, nil) {
 		return
 	}
 
