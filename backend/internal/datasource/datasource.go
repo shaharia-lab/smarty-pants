@@ -50,6 +50,26 @@ func (dm *Manager) RegisterRoutes(r chi.Router) {
 	})
 }
 
+func (dm *Manager) getDatasourceFromRequest(w http.ResponseWriter, r *http.Request) (*types.DatasourceConfig, error) {
+	dsUUIDParsed, err := uuid.Parse(chi.URLParam(r, "uuid"))
+	if err != nil || dsUUIDParsed == uuid.Nil {
+		err = errors.New(types.InvalidUUIDMessage)
+	}
+
+	if err != nil {
+		util.SendAPIErrorResponse(w, http.StatusBadRequest, util.NewAPIError(types.InvalidUUIDMessage, err))
+		return nil, err
+	}
+
+	ds, err := dm.storage.GetDatasource(r.Context(), dsUUIDParsed)
+	if err != nil {
+		util.SendAPIErrorResponse(w, http.StatusNotFound, util.NewAPIError(types.DatasourceNotFoundMsg, err))
+		return nil, err
+	}
+
+	return &ds, nil
+}
+
 func (dm *Manager) addDatasourceHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -108,24 +128,11 @@ func (dm *Manager) addDatasourceHandler(w http.ResponseWriter, r *http.Request) 
 }
 
 func (dm *Manager) getDatasourceHandler(w http.ResponseWriter, r *http.Request) {
-	ctx, span := otel.Tracer("api").Start(r.Context(), "getDatasourceHandler")
+	_, span := otel.Tracer("api").Start(r.Context(), "getDatasourceHandler")
 	defer span.End()
 
-	dsUUID := chi.URLParam(r, "uuid")
-
-	dsUUIDParsed, err := uuid.Parse(dsUUID)
+	ds, err := dm.getDatasourceFromRequest(w, r)
 	if err != nil {
-		span.RecordError(err)
-		span.SetStatus(codes.Error, err.Error())
-		dm.handleError(w, types.InvalidUUIDMessage, http.StatusBadRequest, span)
-		return
-	}
-
-	ds, err := dm.storage.GetDatasource(ctx, dsUUIDParsed)
-	if err != nil {
-		span.RecordError(err)
-		span.SetStatus(codes.Error, err.Error())
-		dm.handleError(w, types.DatasourceNotFoundMsg, http.StatusNotFound, span)
 		return
 	}
 
@@ -133,19 +140,11 @@ func (dm *Manager) getDatasourceHandler(w http.ResponseWriter, r *http.Request) 
 }
 
 func (dm *Manager) validateDatasourceHandler(w http.ResponseWriter, r *http.Request) {
-	ctx, span := otel.Tracer("api").Start(r.Context(), "api.validateDatasourceHandler")
+	_, span := otel.Tracer("api").Start(r.Context(), "api.validateDatasourceHandler")
 	defer span.End()
 
-	dsUUID := chi.URLParam(r, "uuid")
-	dsUUIDParsed, err := uuid.Parse(dsUUID)
+	ds, err := dm.getDatasourceFromRequest(w, r)
 	if err != nil {
-		util.SendAPIErrorResponse(w, http.StatusBadRequest, util.NewAPIError(types.InvalidUUIDMessage, err))
-		return
-	}
-
-	ds, err := dm.storage.GetDatasource(ctx, dsUUIDParsed)
-	if err != nil {
-		util.SendAPIErrorResponse(w, http.StatusNotFound, util.NewAPIError(types.DatasourceNotFoundMsg, err))
 		return
 	}
 
@@ -156,7 +155,7 @@ func (dm *Manager) validateDatasourceHandler(w http.ResponseWriter, r *http.Requ
 			return
 		}
 
-		slackDs, _ := NewSlackDatasource(ds, NewConcreteSlackClient(slackSettings.Token), dm.logger)
+		slackDs, _ := NewSlackDatasource(*ds, NewConcreteSlackClient(slackSettings.Token), dm.logger)
 		if err := slackDs.Validate(); err != nil {
 			util.SendAPIErrorResponse(w, http.StatusBadRequest, util.NewAPIError("Datasource validation failed", err))
 			return
@@ -198,12 +197,15 @@ func (dm *Manager) getDatasourcesHandler(w http.ResponseWriter, r *http.Request)
 }
 
 func (dm *Manager) updateDatasourceHandler(w http.ResponseWriter, r *http.Request) {
+	if !dm.aclManager.IsAllowed(w, r, types.UserRoleAdmin, "datasource_update") {
+		return
+	}
+
 	ctx, span := observability.StartSpan(r.Context(), "api.updateDatasourceHandler")
 	defer span.End()
 
-	dsUUID := chi.URLParam(r, "uuid")
-	if dsUUID == "" {
-		util.SendAPIErrorResponse(w, http.StatusBadRequest, util.NewAPIError("Missing UUID", nil))
+	existingDS, err := dm.getDatasourceFromRequest(w, r)
+	if err != nil {
 		return
 	}
 
@@ -213,29 +215,17 @@ func (dm *Manager) updateDatasourceHandler(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	dsUUIDParsed, err := uuid.Parse(dsUUID)
-	if err != nil {
-		util.SendAPIErrorResponse(w, http.StatusBadRequest, util.NewAPIError(types.InvalidUUIDMessage, err))
-		return
-	}
-
-	existingDS, err := dm.storage.GetDatasource(ctx, dsUUIDParsed)
-	if err != nil {
-		util.SendAPIErrorResponse(w, http.StatusNotFound, util.NewAPIError(types.DatasourceNotFoundMsg, err))
-		return
-	}
-
 	dm.logger.WithField("source_type", existingDS.SourceType).Info("Updating datasource")
-	newSettings, err := dm.updateDatasourceSettings(existingDS, updatePayload)
+	newSettings, err := dm.updateDatasourceSettings(*existingDS, updatePayload)
 	if err != nil {
 		dm.logger.Error("Failed to update datasource settings: ", err)
 		util.SendAPIErrorResponse(w, http.StatusBadRequest, util.NewAPIError("Failed to update datasource settings", err))
 		return
 	}
 
-	if err := dm.storage.UpdateDatasource(ctx, dsUUIDParsed, newSettings, existingDS.State); err != nil {
+	if err := dm.storage.UpdateDatasource(ctx, existingDS.UUID, newSettings, existingDS.State); err != nil {
 		dm.logger.WithError(err).WithFields(logrus.Fields{
-			"datasource_id": dsUUID,
+			"datasource_id": existingDS.UUID,
 			"source_type":   existingDS.SourceType,
 		}).Error("Failed to update datasource")
 
@@ -272,21 +262,21 @@ func (dm *Manager) updateDatasourceSettings(existingDS types.DatasourceConfig, u
 }
 
 func (dm *Manager) setActiveDatasourceHandler(w http.ResponseWriter, r *http.Request) {
-	id, err := uuid.Parse(chi.URLParam(r, "uuid"))
-	if err == nil && id == uuid.Nil {
-		err = errors.New(types.InvalidUUIDMessage)
-	}
-
-	if err != nil || id == uuid.Nil {
-		dm.logger.WithError(err).Error(types.InvalidUUIDMessage)
-		util.SendAPIErrorResponse(w, http.StatusBadRequest, &util.APIError{
-			Message: types.InvalidUUIDMessage,
-			Err:     err.Error(),
-		})
+	if !dm.aclManager.IsAllowed(w, r, types.UserRoleAdmin, "datasource_activate") {
 		return
 	}
 
-	err = dm.storage.SetActiveDatasource(r.Context(), id)
+	ds, err := dm.getDatasourceFromRequest(w, r)
+	if err != nil {
+		return
+	}
+
+	if ds.Status == types.DatasourceStatusActive {
+		util.SendAPIErrorResponse(w, http.StatusBadRequest, util.NewAPIError("Datasource is already active", nil))
+		return
+	}
+
+	err = dm.storage.SetActiveDatasource(r.Context(), ds.UUID)
 	if err != nil {
 		dm.logger.WithError(err).Error(types.FailedToSetDatasourceActiveMsg)
 		util.SendAPIErrorResponse(w, http.StatusInternalServerError, &util.APIError{
@@ -296,26 +286,26 @@ func (dm *Manager) setActiveDatasourceHandler(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	dm.logger.WithField("embedding_provider_id", id).Info("Datasource has been activated successfully")
+	dm.logger.WithField("embedding_provider_id", ds.UUID).Info("Datasource has been activated successfully")
 	util.SendSuccessResponse(w, http.StatusOK, map[string]string{"message": "Datasource has been activated successfully"}, dm.logger, nil)
 }
 
 func (dm *Manager) setDisableDatasourceHandler(w http.ResponseWriter, r *http.Request) {
-	datasourceUUID, err := uuid.Parse(chi.URLParam(r, "uuid"))
-	if err == nil && datasourceUUID == uuid.Nil {
-		err = errors.New(types.InvalidUUIDMessage)
-	}
-
-	if err != nil || datasourceUUID == uuid.Nil {
-		dm.logger.WithError(err).Error(types.InvalidUUIDMessage)
-		util.SendAPIErrorResponse(w, http.StatusBadRequest, &util.APIError{
-			Message: types.InvalidUUIDMessage,
-			Err:     err.Error(),
-		})
+	if !dm.aclManager.IsAllowed(w, r, types.UserRoleAdmin, "datasource_deactivate") {
 		return
 	}
 
-	err = dm.storage.SetDisableDatasource(r.Context(), datasourceUUID)
+	ds, err := dm.getDatasourceFromRequest(w, r)
+	if err != nil {
+		return
+	}
+
+	if ds.Status == types.DatasourceStatusInactive {
+		util.SendAPIErrorResponse(w, http.StatusBadRequest, util.NewAPIError("Datasource is already inactive", nil))
+		return
+	}
+
+	err = dm.storage.SetDisableDatasource(r.Context(), ds.UUID)
 	if err != nil {
 		dm.logger.WithError(err).Error("Failed to deactivate datasource")
 		util.SendAPIErrorResponse(w, http.StatusInternalServerError, &util.APIError{
@@ -325,19 +315,24 @@ func (dm *Manager) setDisableDatasourceHandler(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	dm.logger.WithField("datasource_id", datasourceUUID).Info("Datasource has been deactivated successfully")
+	dm.logger.WithField("datasource_id", ds.UUID).Info("Datasource has been deactivated successfully")
 	util.SendSuccessResponse(w, http.StatusOK, map[string]string{"message": "Datasource has been deactivated successfully"}, dm.logger, nil)
 }
 
 func (dm *Manager) deleteDatasourceHandler(w http.ResponseWriter, r *http.Request) {
-	datasourceUUID, err := uuid.Parse(chi.URLParam(r, "uuid"))
-	if err != nil || datasourceUUID == uuid.Nil {
-		dm.logger.WithError(err).Error(types.InvalidUUIDMessage)
-		dm.sendJSONError(w, types.InvalidUUIDMessage, http.StatusBadRequest)
+	_, span := otel.Tracer("api").Start(r.Context(), "deleteDatasourceHandler")
+	defer span.End()
+
+	if !dm.aclManager.IsAllowed(w, r, types.UserRoleAdmin, "datasource_delete") {
 		return
 	}
 
-	err = dm.storage.DeleteDatasource(r.Context(), datasourceUUID)
+	ds, err := dm.getDatasourceFromRequest(w, r)
+	if err != nil {
+		return
+	}
+
+	err = dm.storage.DeleteDatasource(r.Context(), ds.UUID)
 	if err != nil {
 		dm.logger.WithError(err).Error("Failed to deactivate datasource")
 		util.SendAPIErrorResponse(w, http.StatusInternalServerError, &util.APIError{
@@ -347,7 +342,7 @@ func (dm *Manager) deleteDatasourceHandler(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	dm.logger.WithField("datasource_id", datasourceUUID).Info(types.DatasourceDeletedSuccessfullyMsg)
+	dm.logger.WithField("datasource_id", ds.UUID).Info(types.DatasourceDeletedSuccessfullyMsg)
 	util.SendSuccessResponse(w, http.StatusOK, map[string]string{"message": "Datasource has been deleted successfully"}, dm.logger, nil)
 }
 
@@ -386,6 +381,7 @@ func (dm *Manager) getPaginationParams(r *http.Request) (int, int) {
 	return page, perPage
 }
 
+// Deprecated: handleError is deprecated and should be replaced with util.SendAPIErrorResponse
 func (dm *Manager) handleError(w http.ResponseWriter, message string, statusCode int, span trace.Span) {
 	dm.logger.Error(message)
 	if span != nil {

@@ -189,7 +189,7 @@ func TestGetDatasourceHandler(t *testing.T) {
 				ms.On("GetDatasource", mock.Anything, uuid.MustParse("123e4567-e89b-12d3-a456-426614174000")).Return(types.DatasourceConfig{}, errors.New("not found"))
 			},
 			expectedStatus: http.StatusNotFound,
-			expectedBody:   `{"error":"Datasource not found"}` + "\n",
+			expectedBody:   `{"message":"Datasource not found","error":"not found"}` + "\n",
 		},
 		{
 			name: "Server Error",
@@ -198,7 +198,7 @@ func TestGetDatasourceHandler(t *testing.T) {
 				ms.On("GetDatasource", mock.Anything, uuid.MustParse("123e4567-e89b-12d3-a456-426614174000")).Return(types.DatasourceConfig{}, errors.New("internal server error"))
 			},
 			expectedStatus: http.StatusNotFound,
-			expectedBody:   `{"error":"Datasource not found"}` + "\n",
+			expectedBody:   `{"message":"Datasource not found","error":"internal server error"}` + "\n",
 		},
 	}
 
@@ -395,7 +395,13 @@ func TestUpdateDatasourceHandler(t *testing.T) {
 			uuid:    uuid.MustParse("123e4567-e89b-12d3-a456-426614174000"),
 			payload: `{"invalid": json`,
 			mockSetup: func(ms *storage.StorageMock) {
-
+				ms.On("GetDatasource", mock.Anything, uuid.MustParse("123e4567-e89b-12d3-a456-426614174000")).Return(types.DatasourceConfig{
+					UUID:       uuid.MustParse("123e4567-e89b-12d3-a456-426614174000"),
+					Name:       "Test Datasource",
+					SourceType: "slack",
+					Settings:   &types.SlackSettings{ChannelID: "123", Workspace: "workspace"},
+					State:      &types.SlackState{},
+				}, nil)
 			},
 			expectedStatus: http.StatusBadRequest,
 			expectedBody:   `{"message":"Invalid request body","error":"invalid character 'j' looking for beginning of value"}` + "\n",
@@ -558,6 +564,12 @@ func TestSetDisableDatasourceHandler(t *testing.T) {
 			uuid: uuid.MustParse("123e4567-e89b-12d3-a456-426614174000"),
 			mockSetup: func(ms *storage.StorageMock) {
 				ms.On("SetDisableDatasource", mock.Anything, uuid.MustParse("123e4567-e89b-12d3-a456-426614174000")).Return(nil)
+				ms.On("GetDatasource", mock.Anything, uuid.MustParse("123e4567-e89b-12d3-a456-426614174000")).Return(types.DatasourceConfig{
+					UUID:       uuid.MustParse("123e4567-e89b-12d3-a456-426614174000"),
+					Name:       "Example datasource",
+					SourceType: types.DatasourceTypeSlack,
+					Settings:   &SlackDatasource{},
+				}, nil)
 			},
 			expectedStatus: http.StatusOK,
 			expectedBody:   `{"message":"Datasource has been deactivated successfully"}`,
@@ -566,7 +578,6 @@ func TestSetDisableDatasourceHandler(t *testing.T) {
 			name: "Error - Invalid UUID",
 			uuid: uuid.Nil,
 			mockSetup: func(ms *storage.StorageMock) {
-				// No mock setup needed for invalid UUID
 			},
 			expectedStatus: http.StatusBadRequest,
 			expectedBody:   `{"error":"Invalid UUID", "message":"Invalid UUID"}`,
@@ -576,6 +587,12 @@ func TestSetDisableDatasourceHandler(t *testing.T) {
 			uuid: uuid.MustParse("123e4567-e89b-12d3-a456-426614174001"),
 			mockSetup: func(ms *storage.StorageMock) {
 				ms.On("SetDisableDatasource", mock.Anything, uuid.MustParse("123e4567-e89b-12d3-a456-426614174001")).Return(errors.New("deactivation failed"))
+				ms.On("GetDatasource", mock.Anything, uuid.MustParse("123e4567-e89b-12d3-a456-426614174001")).Return(types.DatasourceConfig{
+					UUID:       uuid.MustParse("123e4567-e89b-12d3-a456-426614174001"),
+					Name:       "Example datasource",
+					SourceType: types.DatasourceTypeSlack,
+					Settings:   &SlackDatasource{},
+				}, nil)
 			},
 			expectedStatus: http.StatusInternalServerError,
 			expectedBody:   `{"message":"Failed to set datasource active","error":"deactivation failed"}`,
@@ -621,6 +638,12 @@ func TestSetActiveDatasourceHandler(t *testing.T) {
 			uuid: uuid.MustParse("123e4567-e89b-12d3-a456-426614174000"),
 			mockSetup: func(ms *storage.StorageMock) {
 				ms.On("SetActiveDatasource", mock.Anything, uuid.MustParse("123e4567-e89b-12d3-a456-426614174000")).Return(nil)
+				ms.On("GetDatasource", mock.Anything, uuid.MustParse("123e4567-e89b-12d3-a456-426614174000")).Return(types.DatasourceConfig{
+					UUID:       uuid.MustParse("123e4567-e89b-12d3-a456-426614174000"),
+					Name:       "Example datasource",
+					SourceType: types.DatasourceTypeSlack,
+					Settings:   &SlackDatasource{},
+				}, nil)
 			},
 			expectedStatus: http.StatusOK,
 			expectedBody:   `{"message":"Datasource has been activated successfully"}`,
@@ -636,9 +659,15 @@ func TestSetActiveDatasourceHandler(t *testing.T) {
 		},
 		{
 			name: "Error - Failed to Activate",
-			uuid: uuid.MustParse("123e4567-e89b-12d3-a456-426614174001"),
+			uuid: uuid.MustParse("123e4567-e89b-12d3-a456-426614174000"),
 			mockSetup: func(ms *storage.StorageMock) {
-				ms.On("SetActiveDatasource", mock.Anything, uuid.MustParse("123e4567-e89b-12d3-a456-426614174001")).Return(errors.New("activation failed"))
+				ms.On("GetDatasource", mock.Anything, uuid.MustParse("123e4567-e89b-12d3-a456-426614174000")).Return(types.DatasourceConfig{
+					UUID:       uuid.MustParse("123e4567-e89b-12d3-a456-426614174000"),
+					Name:       "Example datasource",
+					SourceType: types.DatasourceTypeSlack,
+					Settings:   &SlackDatasource{},
+				}, nil)
+				ms.On("SetActiveDatasource", mock.Anything, uuid.MustParse("123e4567-e89b-12d3-a456-426614174000")).Return(errors.New("activation failed"))
 			},
 			expectedStatus: http.StatusInternalServerError,
 			expectedBody:   `{"message":"Failed to set datasource active","error":"activation failed"}`,
@@ -683,6 +712,10 @@ func TestDeleteDatasourceHandler(t *testing.T) {
 			name: "Success - Datasource Deleted",
 			uuid: uuid.MustParse("123e4567-e89b-12d3-a456-426614174000"),
 			mockSetup: func(ms *storage.StorageMock) {
+				ms.On("GetDatasource", mock.Anything, uuid.MustParse("123e4567-e89b-12d3-a456-426614174000")).Return(types.DatasourceConfig{
+					UUID: uuid.MustParse("123e4567-e89b-12d3-a456-426614174000"),
+					Name: "Example datasource",
+				}, nil)
 				ms.On("DeleteDatasource", mock.Anything, uuid.MustParse("123e4567-e89b-12d3-a456-426614174000")).Return(nil)
 			},
 			expectedStatus: http.StatusOK,
@@ -695,12 +728,15 @@ func TestDeleteDatasourceHandler(t *testing.T) {
 				// No mock setup needed for invalid UUID
 			},
 			expectedStatus: http.StatusBadRequest,
-			expectedBody:   `{"error":"Invalid UUID"}`,
+			expectedBody:   `{"error":"Invalid UUID", "message":"Invalid UUID"}`,
 		},
 		{
 			name: "Error - Failed to Delete",
 			uuid: uuid.MustParse("123e4567-e89b-12d3-a456-426614174001"),
 			mockSetup: func(ms *storage.StorageMock) {
+				ms.On("GetDatasource", mock.Anything, uuid.MustParse("123e4567-e89b-12d3-a456-426614174001")).Return(types.DatasourceConfig{
+					UUID: uuid.MustParse("123e4567-e89b-12d3-a456-426614174001"),
+				}, nil)
 				ms.On("DeleteDatasource", mock.Anything, uuid.MustParse("123e4567-e89b-12d3-a456-426614174001")).Return(errors.New("deletion failed"))
 			},
 			expectedStatus: http.StatusInternalServerError,
