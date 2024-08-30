@@ -7,4 +7,7 @@ const (
 	APiAccessOpsDatasourceActivate   = "datasource:activate"
 	APiAccessOpsDatasourceDeactivate = "datasource:deactivate"
 	APiAccessOpsDatasourceDelete     = "datasource:delete"
+
+	APiAccessOpsDocumentsGet = "documents:get"
+	APiAccessOpsDocumentGet  = "document:get"
 )

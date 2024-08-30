@@ -31,72 +31,76 @@ func NewManager(storage storage.Storage, logger *logrus.Logger, aclManager auth.
 
 func (dm *Manager) RegisterRoutes(r chi.Router) {
 	r.Route("/api/v1/document", func(r chi.Router) {
-		r.Get("/", dm.GetDocumentsHandler())
-		r.Get("/{uuid}", dm.getDocumentHandler())
+		r.Get("/", dm.getDocumentsHandler)
+		r.Get("/{uuid}", dm.getDocumentHandler)
 	})
 }
 
-func (dm *Manager) GetDocumentsHandler() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		ctx, span := observability.StartSpan(r.Context(), "/api/v1/documents")
-		defer span.End()
-
-		filter, option := parseDocumentQueryParams(r)
-
-		span.SetAttributes(
-			attribute.Int("query.limit", option.Limit),
-			attribute.Int("query.page", option.Page),
-		)
-
-		_, storageSpan := observability.StartSpan(ctx, "storage.get")
-		paginatedDocuments, err := dm.storage.Get(ctx, filter, option)
-		if err != nil {
-			dm.logger.WithError(err).Error("Failed to fetch documents")
-			util.SendErrorResponse(w, http.StatusInternalServerError, "Failed to fetch documents", dm.logger, span)
-			return
-		}
-		storageSpan.End()
-
-		if len(paginatedDocuments.Documents) == 0 {
-			paginatedDocuments = createEmptyPaginatedDocuments(option.Page, option.Limit)
-		}
-
-		util.SendSuccessResponse(w, http.StatusOK, paginatedDocuments, dm.logger, span)
+func (dm *Manager) getDocumentsHandler(w http.ResponseWriter, r *http.Request) {
+	if !dm.aclManager.IsAllowed(w, r, types.UserRoleAdmin, types.APiAccessOpsDocumentsGet, nil) {
+		return
 	}
+
+	ctx, span := observability.StartSpan(r.Context(), "/api/v1/documents")
+	defer span.End()
+
+	filter, option := parseDocumentQueryParams(r)
+
+	span.SetAttributes(
+		attribute.Int("query.limit", option.Limit),
+		attribute.Int("query.page", option.Page),
+	)
+
+	_, storageSpan := observability.StartSpan(ctx, "storage.get")
+	paginatedDocuments, err := dm.storage.Get(ctx, filter, option)
+	if err != nil {
+		dm.logger.WithError(err).Error("Failed to fetch documents")
+		util.SendErrorResponse(w, http.StatusInternalServerError, "Failed to fetch documents", dm.logger, span)
+		return
+	}
+	storageSpan.End()
+
+	if len(paginatedDocuments.Documents) == 0 {
+		paginatedDocuments = createEmptyPaginatedDocuments(option.Page, option.Limit)
+	}
+
+	util.SendSuccessResponse(w, http.StatusOK, paginatedDocuments, dm.logger, span)
 }
 
-func (dm *Manager) getDocumentHandler() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		ctx, span := otel.Tracer("api").Start(r.Context(), "getDocumentHandler")
-		defer span.End()
-
-		uuid := chi.URLParam(r, "uuid")
-		span.SetAttributes(attribute.String("document.uuid", uuid))
-
-		filter := types.DocumentFilter{UUID: uuid}
-		option := types.DocumentFilterOption{Limit: 1, Page: 1}
-
-		paginatedDocuments, err := dm.storage.Get(ctx, filter, option)
-		if err != nil {
-			dm.logger.WithError(err).Error("Failed to fetch document")
-			util.SendErrorResponse(w, http.StatusInternalServerError, "Failed to fetch document", dm.logger, span)
-			return
-		}
-
-		if len(paginatedDocuments.Documents) == 0 {
-			dm.logger.WithField("uuid", uuid).Warning("Document not found")
-			util.SendErrorResponse(w, http.StatusNotFound, "Document not found", dm.logger, span)
-			return
-		}
-
-		if len(paginatedDocuments.Documents) > 1 {
-			dm.logger.Error("Multiple documents found")
-			util.SendErrorResponse(w, http.StatusInternalServerError, "Unexpected error: multiple documents found", dm.logger, span)
-			return
-		}
-
-		util.SendSuccessResponse(w, http.StatusOK, &paginatedDocuments.Documents[0], dm.logger, span)
+func (dm *Manager) getDocumentHandler(w http.ResponseWriter, r *http.Request) {
+	if !dm.aclManager.IsAllowed(w, r, types.UserRoleAdmin, types.APiAccessOpsDocumentGet, nil) {
+		return
 	}
+
+	ctx, span := otel.Tracer("api").Start(r.Context(), "getDocumentHandler")
+	defer span.End()
+
+	uuid := chi.URLParam(r, "uuid")
+	span.SetAttributes(attribute.String("document.uuid", uuid))
+
+	filter := types.DocumentFilter{UUID: uuid}
+	option := types.DocumentFilterOption{Limit: 1, Page: 1}
+
+	paginatedDocuments, err := dm.storage.Get(ctx, filter, option)
+	if err != nil {
+		dm.logger.WithError(err).Error("Failed to fetch document")
+		util.SendErrorResponse(w, http.StatusInternalServerError, "Failed to fetch document", dm.logger, span)
+		return
+	}
+
+	if len(paginatedDocuments.Documents) == 0 {
+		dm.logger.WithField("uuid", uuid).Warning("Document not found")
+		util.SendErrorResponse(w, http.StatusNotFound, "Document not found", dm.logger, span)
+		return
+	}
+
+	if len(paginatedDocuments.Documents) > 1 {
+		dm.logger.Error("Multiple documents found")
+		util.SendErrorResponse(w, http.StatusInternalServerError, "Unexpected error: multiple documents found", dm.logger, span)
+		return
+	}
+
+	util.SendSuccessResponse(w, http.StatusOK, &paginatedDocuments.Documents[0], dm.logger, span)
 }
 
 func parseDocumentQueryParams(r *http.Request) (types.DocumentFilter, types.DocumentFilterOption) {

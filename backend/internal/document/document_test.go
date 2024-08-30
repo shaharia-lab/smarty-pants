@@ -388,7 +388,7 @@ func TestGetDocumentsHandler(t *testing.T) {
 			logger := logger2.NoOpsLogger()
 
 			dm := NewManager(mockStorage, logger, auth.NewACLManager(logger, false))
-			handler := dm.GetDocumentsHandler()
+			handler := http.HandlerFunc(dm.getDocumentsHandler)
 
 			req := httptest.NewRequest("GET", "/api/v1/documents", nil)
 			q := req.URL.Query()
@@ -619,7 +619,7 @@ func TestGetDocumentHandler(t *testing.T) {
 			logger := logger2.NoOpsLogger()
 
 			dm := NewManager(mockStorage, logger, auth.NewACLManager(logger, false))
-			handler := dm.getDocumentHandler()
+			handler := http.HandlerFunc(dm.getDocumentHandler)
 
 			req := httptest.NewRequest("GET", "/api/v1/document/"+tt.uuid, nil)
 			w := httptest.NewRecorder()
