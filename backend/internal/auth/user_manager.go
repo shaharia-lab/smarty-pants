@@ -149,6 +149,10 @@ func (um *UserManager) RegisterRoutes(r chi.Router) {
 }
 
 func (um *UserManager) handleListUsers(w http.ResponseWriter, r *http.Request) {
+	if !um.aclManager.IsAllowed(w, r, types.UserRoleAdmin, "list_users") {
+		return
+	}
+
 	_, span := observability.StartSpan(r.Context(), "auth.UserManager.handleListUsers")
 	defer span.End()
 
@@ -199,10 +203,30 @@ func parseRoles(roleStrings []string) []types.UserRole {
 }
 
 func (um *UserManager) handleGetUser(w http.ResponseWriter, r *http.Request) {
+	if !um.aclManager.IsAllowed(w, r, types.UserRoleUser, "get_user") {
+		return
+	}
+
 	_, span := observability.StartSpan(r.Context(), "auth.UserManager.handleGetUser")
 	defer span.End()
 
-	user := r.Context().Value(types.UserDetailsCtxKey).(*types.User)
+	userUUID, err := uuid.Parse(chi.URLParam(r, "uuid"))
+	if err != nil {
+		util.SendErrorResponse(w, http.StatusBadRequest, types.InvalidUUIDMessage, um.logger, nil)
+		return
+	}
+
+	user, err := um.storage.GetUser(r.Context(), userUUID)
+	if err != nil {
+		if errors.Is(err, types.UserNotFoundError) {
+			util.SendErrorResponse(w, http.StatusNotFound, "User not found", um.logger, nil)
+			return
+		}
+
+		util.SendErrorResponse(w, http.StatusInternalServerError, "Failed to get user", um.logger, nil)
+		return
+	}
+
 	util.SendSuccessResponse(w, http.StatusOK, user, um.logger, nil)
 }
 

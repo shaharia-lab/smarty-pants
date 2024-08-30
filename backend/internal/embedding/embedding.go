@@ -9,7 +9,6 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/auth"
-	"github.com/shaharia-lab/smarty-pants/backend/internal/datasource"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/storage"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/types"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/util"
@@ -50,9 +49,9 @@ func (h *EmbeddingManager) addProviderHandler(w http.ResponseWriter, r *http.Req
 	if err != nil {
 		var validationError *types.ValidationError
 		if errors.As(err, &validationError) {
-			datasource.SendJSONError(w, validationError.Error(), http.StatusBadRequest)
+			sendJSONError(w, validationError.Error(), http.StatusBadRequest)
 		} else {
-			datasource.SendJSONError(w, "Invalid request body", http.StatusBadRequest)
+			sendJSONError(w, "Invalid request body", http.StatusBadRequest)
 		}
 		return
 	}
@@ -63,7 +62,7 @@ func (h *EmbeddingManager) addProviderHandler(w http.ResponseWriter, r *http.Req
 
 	err = h.storage.CreateEmbeddingProvider(r.Context(), provider)
 	if err != nil {
-		datasource.SendJSONError(w, "Failed to create embedding provider: "+err.Error(), http.StatusInternalServerError)
+		sendJSONError(w, "Failed to create embedding provider: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -119,17 +118,17 @@ func (h *EmbeddingManager) deleteProviderHandler(w http.ResponseWriter, r *http.
 func (h *EmbeddingManager) getProviderHandler(w http.ResponseWriter, r *http.Request) {
 	id, err := uuid.Parse(chi.URLParam(r, "uuid"))
 	if err != nil {
-		datasource.SendJSONError(w, types.InvalidUUIDMessage, http.StatusBadRequest)
+		sendJSONError(w, types.InvalidUUIDMessage, http.StatusBadRequest)
 		return
 	}
 
 	provider, err := h.storage.GetEmbeddingProvider(r.Context(), id)
 	if err != nil {
 		if errors.Is(err, types.ErrEmbeddingProviderNotFound) {
-			datasource.SendJSONError(w, "Embedding provider not found", http.StatusNotFound)
+			sendJSONError(w, "Embedding provider not found", http.StatusNotFound)
 		} else {
 			h.logger.WithError(err).Error("Failed to get embedding provider")
-			datasource.SendJSONError(w, "Failed to get embedding provider", http.StatusInternalServerError)
+			sendJSONError(w, "Failed to get embedding provider", http.StatusInternalServerError)
 		}
 		return
 	}
@@ -158,7 +157,7 @@ func (h *EmbeddingManager) GetEmbeddingProviders(w http.ResponseWriter, r *http.
 	providers, err := h.storage.GetAllEmbeddingProviders(r.Context(), filter, option)
 	if err != nil {
 		h.logger.WithError(err).Error("Failed to get embedding providers")
-		datasource.SendJSONError(w, "Failed to get embedding providers: "+err.Error(), http.StatusInternalServerError)
+		sendJSONError(w, "Failed to get embedding providers: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -173,7 +172,7 @@ func (h *EmbeddingManager) setActiveProviderHandler(w http.ResponseWriter, r *ht
 	id, err := uuid.Parse(chi.URLParam(r, "uuid"))
 	if err != nil {
 		h.logger.WithError(err).Error(types.InvalidUUIDMessage)
-		datasource.SendJSONError(w, types.InvalidUUIDMessage, http.StatusBadRequest)
+		sendJSONError(w, types.InvalidUUIDMessage, http.StatusBadRequest)
 		return
 	}
 
@@ -195,7 +194,7 @@ func (h *EmbeddingManager) setDeactivateProviderHandler(w http.ResponseWriter, r
 	id, err := uuid.Parse(chi.URLParam(r, "uuid"))
 	if err != nil {
 		h.logger.WithError(err).Error(types.InvalidUUIDMessage)
-		datasource.SendJSONError(w, types.InvalidUUIDMessage, http.StatusBadRequest)
+		sendJSONError(w, types.InvalidUUIDMessage, http.StatusBadRequest)
 		return
 	}
 
@@ -211,4 +210,10 @@ func (h *EmbeddingManager) setDeactivateProviderHandler(w http.ResponseWriter, r
 
 	h.logger.WithField("datasource_id", id).Info("Embedding provider has been deactivated successfully")
 	util.SendSuccessResponse(w, http.StatusOK, map[string]string{"message": "Embedding provider has been deactivated successfully"}, h.logger, nil)
+}
+
+func sendJSONError(w http.ResponseWriter, message string, statusCode int) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(statusCode)
+	json.NewEncoder(w).Encode(map[string]string{"error": message})
 }

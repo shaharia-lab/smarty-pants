@@ -13,6 +13,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/auth"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/config"
+	"github.com/shaharia-lab/smarty-pants/backend/internal/logger"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/observability"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/storage"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/types"
@@ -123,7 +124,8 @@ func TestAddDatasourceHandler(t *testing.T) {
 			mockStorage := new(storage.StorageMock)
 			tt.mockSetup(mockStorage)
 
-			handler := AddDatasourceHandler(mockStorage, logger, auth.NewACLManager(logger, false))
+			dm := NewDatasourceManager(mockStorage, logger, auth.NewACLManager(logger, false))
+			handler := http.HandlerFunc(dm.addDatasourceHandler)
 
 			body, _ := json.Marshal(tt.payload)
 			req, _ := http.NewRequest("POST", "/api/v1/datasources", bytes.NewBuffer(body))
@@ -205,7 +207,10 @@ func TestGetDatasourceHandler(t *testing.T) {
 			mockStorage := new(storage.StorageMock)
 			tt.mockSetup(mockStorage)
 
-			handler := GetDatasourceHandler(mockStorage, logrus.New())
+			l := logger.NoOpsLogger()
+
+			dm := NewDatasourceManager(mockStorage, l, auth.NewACLManager(l, false))
+			handler := dm.getDatasourceHandler(mockStorage, logrus.New())
 
 			req := httptest.NewRequest("GET", "/api/v1/datasource/"+tt.uuid.String(), nil)
 			w := httptest.NewRecorder()
@@ -322,7 +327,9 @@ func TestGetDatasourcesHandler(t *testing.T) {
 
 			_, _ = observability.InitTracer(context.Background(), "test", &logrus.Logger{}, &config.Config{})
 
-			handler := GetDatasourcesHandler(mockStorage, logrus.New())
+			l := logger.NoOpsLogger()
+			dm := NewDatasourceManager(mockStorage, l, auth.NewACLManager(l, false))
+			handler := http.HandlerFunc(dm.getDatasourcesHandler)
 
 			req := httptest.NewRequest("GET", "/api/v1/datasources", nil)
 			q := req.URL.Query()
@@ -435,8 +442,9 @@ func TestUpdateDatasourceHandler(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			mockStorage := new(storage.StorageMock)
 			tt.mockSetup(mockStorage)
-
-			handler := UpdateDatasourceHandler(mockStorage, logrus.New())
+			l := logger.NoOpsLogger()
+			dm := NewDatasourceManager(mockStorage, l, auth.NewACLManager(l, false))
+			handler := dm.updateDatasourceHandler(mockStorage, logrus.New())
 
 			var body []byte
 			var err error
@@ -516,7 +524,9 @@ func TestValidateDatasourceHandler(t *testing.T) {
 			mockStorage := new(storage.StorageMock)
 			tt.mockSetup(mockStorage)
 
-			handler := ValidateDatasourceHandler(mockStorage, logrus.New())
+			l := logger.NoOpsLogger()
+			dm := NewDatasourceManager(mockStorage, l, auth.NewACLManager(l, false))
+			handler := dm.validateDatasourceHandler(mockStorage, logrus.New())
 
 			req := httptest.NewRequest("POST", "/api/v1/datasource/"+tt.uuid.String()+"/validate", nil)
 			w := httptest.NewRecorder()
@@ -577,7 +587,9 @@ func TestSetDisableDatasourceHandler(t *testing.T) {
 			mockStorage := new(storage.StorageMock)
 			tt.mockSetup(mockStorage)
 
-			handler := SetDisableDatasourceHandler(mockStorage, logrus.New())
+			l := logger.NoOpsLogger()
+			dm := NewDatasourceManager(mockStorage, l, auth.NewACLManager(l, false))
+			handler := dm.setDisableDatasourceHandler(mockStorage, logrus.New())
 
 			req := httptest.NewRequest("POST", "/api/v1/datasource/"+tt.uuid.String()+"/disable", nil)
 			w := httptest.NewRecorder()
@@ -638,7 +650,9 @@ func TestSetActiveDatasourceHandler(t *testing.T) {
 			mockStorage := new(storage.StorageMock)
 			tt.mockSetup(mockStorage)
 
-			handler := SetActiveDatasourceHandler(mockStorage, logrus.New())
+			l := logger.NoOpsLogger()
+			dm := NewDatasourceManager(mockStorage, l, auth.NewACLManager(l, false))
+			handler := dm.setActiveDatasourceHandler(mockStorage, logrus.New())
 
 			req := httptest.NewRequest("POST", "/api/v1/datasource/"+tt.uuid.String()+"/activate", nil)
 			w := httptest.NewRecorder()
@@ -699,7 +713,9 @@ func TestDeleteDatasourceHandler(t *testing.T) {
 			mockStorage := new(storage.StorageMock)
 			tt.mockSetup(mockStorage)
 
-			handler := DeleteDatasourceHandler(mockStorage, logrus.New())
+			l := logger.NoOpsLogger()
+			dm := NewDatasourceManager(mockStorage, l, auth.NewACLManager(l, false))
+			handler := dm.deleteDatasourceHandler(mockStorage, logrus.New())
 
 			req := httptest.NewRequest("DELETE", "/api/v1/datasource/"+tt.uuid.String(), nil)
 			w := httptest.NewRecorder()

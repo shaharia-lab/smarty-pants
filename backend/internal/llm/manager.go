@@ -9,7 +9,6 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/auth"
-	"github.com/shaharia-lab/smarty-pants/backend/internal/datasource"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/storage"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/types"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/util"
@@ -51,9 +50,9 @@ func AddLLMProviderHandler(s storage.Storage, logging *logrus.Logger) http.Handl
 		if err != nil {
 			var validationError *types.ValidationError
 			if errors.As(err, &validationError) {
-				datasource.SendJSONError(w, validationError.Error(), http.StatusBadRequest)
+				sendJSONError(w, validationError.Error(), http.StatusBadRequest)
 			} else {
-				datasource.SendJSONError(w, "Invalid request body", http.StatusBadRequest)
+				sendJSONError(w, "Invalid request body", http.StatusBadRequest)
 			}
 			return
 		}
@@ -66,7 +65,7 @@ func AddLLMProviderHandler(s storage.Storage, logging *logrus.Logger) http.Handl
 
 		err = s.CreateLLMProvider(r.Context(), provider)
 		if err != nil {
-			datasource.SendJSONError(w, "Failed to create embedding provider: "+err.Error(), http.StatusInternalServerError)
+			sendJSONError(w, "Failed to create embedding provider: "+err.Error(), http.StatusInternalServerError)
 			return
 		}
 
@@ -128,17 +127,17 @@ func GetLLMProviderHandler(s storage.Storage, l *logrus.Logger) http.HandlerFunc
 	return func(w http.ResponseWriter, r *http.Request) {
 		id, err := uuid.Parse(chi.URLParam(r, "uuid"))
 		if err != nil {
-			datasource.SendJSONError(w, types.InvalidUUIDMessage, http.StatusBadRequest)
+			sendJSONError(w, types.InvalidUUIDMessage, http.StatusBadRequest)
 			return
 		}
 
 		provider, err := s.GetLLMProvider(r.Context(), id)
 		if err != nil {
 			if errors.Is(err, types.ErrLLMProviderNotFound) {
-				datasource.SendJSONError(w, "Embedding provider not found", http.StatusNotFound)
+				sendJSONError(w, "Embedding provider not found", http.StatusNotFound)
 			} else {
 				l.WithError(err).Error("Failed to get embedding provider")
-				datasource.SendJSONError(w, "Failed to get embedding provider", http.StatusInternalServerError)
+				sendJSONError(w, "Failed to get embedding provider", http.StatusInternalServerError)
 			}
 			return
 		}
@@ -169,7 +168,7 @@ func GetLLMProvidersHandler(s storage.Storage, l *logrus.Logger) http.HandlerFun
 		providers, err := s.GetAllLLMProviders(r.Context(), filter, option)
 		if err != nil {
 			l.WithError(err).Error("Failed to get embedding providers")
-			datasource.SendJSONError(w, "Failed to get embedding providers: "+err.Error(), http.StatusInternalServerError)
+			sendJSONError(w, "Failed to get embedding providers: "+err.Error(), http.StatusInternalServerError)
 			return
 		}
 
@@ -186,14 +185,14 @@ func SetActiveLLMProviderHandler(s storage.Storage, l *logrus.Logger) http.Handl
 		id, err := uuid.Parse(chi.URLParam(r, "uuid"))
 		if err != nil {
 			l.WithError(err).Error(types.InvalidUUIDMessage)
-			datasource.SendJSONError(w, types.InvalidUUIDMessage, http.StatusBadRequest)
+			sendJSONError(w, types.InvalidUUIDMessage, http.StatusBadRequest)
 			return
 		}
 
 		err = s.SetActiveLLMProvider(r.Context(), id)
 		if err != nil {
 			l.WithError(err).Error("Failed to set active LLM provider")
-			datasource.SendJSONError(w, "Failed to set active LLM provider", http.StatusInternalServerError)
+			sendJSONError(w, "Failed to set active LLM provider", http.StatusInternalServerError)
 			return
 		}
 
@@ -208,14 +207,14 @@ func SetDisableLLMProviderHandler(s storage.Storage, l *logrus.Logger) http.Hand
 		id, err := uuid.Parse(chi.URLParam(r, "uuid"))
 		if err != nil {
 			l.WithError(err).Error(types.InvalidUUIDMessage)
-			datasource.SendJSONError(w, types.InvalidUUIDMessage, http.StatusBadRequest)
+			sendJSONError(w, types.InvalidUUIDMessage, http.StatusBadRequest)
 			return
 		}
 
 		err = s.SetDisableLLMProvider(r.Context(), id)
 		if err != nil {
 			l.WithError(err).Error("Failed to set deactivate LLM provider")
-			datasource.SendJSONError(w, "Failed to set deactivate LLM provider", http.StatusInternalServerError)
+			sendJSONError(w, "Failed to set deactivate LLM provider", http.StatusInternalServerError)
 			return
 		}
 
@@ -223,4 +222,10 @@ func SetDisableLLMProviderHandler(s storage.Storage, l *logrus.Logger) http.Hand
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(map[string]string{"message": "LLM provider has been deactivated successfully"})
 	}
+}
+
+func sendJSONError(w http.ResponseWriter, message string, statusCode int) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(statusCode)
+	json.NewEncoder(w).Encode(map[string]string{"error": message})
 }
