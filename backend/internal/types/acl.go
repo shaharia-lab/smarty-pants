@@ -16,4 +16,9 @@ const (
 	APIAccessOpsEmbeddingProviderUpdate     = "embedding_provider:update"
 	APIAccessOpsEmbeddingProviderActivate   = "embedding_provider:activate"
 	APIAccessOpsEmbeddingProviderDeactivate = "embedding_provider:deactivate"
+
+	APIAccessOpsInteractionCreate = "interaction:create"
+	APIAccessOpsInteractionsGet   = "interactions:get"
+	APIAccessOpsInteractionGet    = "interaction:get"
+	APIAccessOpsMessageSend       = "message:send"
 )

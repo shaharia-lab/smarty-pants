@@ -74,6 +74,10 @@ func (m *Manager) RegisterRoutes(r chi.Router) {
 }
 
 func (m *Manager) createInteractionHandler(w http.ResponseWriter, r *http.Request) {
+	if !m.aclManager.IsAllowed(w, r, types.UserRoleUser, types.APIAccessOpsInteractionCreate, nil) {
+		return
+	}
+
 	ctx, span := observability.StartSpan(r.Context(), "api.createInteractionHandler")
 	defer span.End()
 
@@ -100,7 +104,11 @@ func (m *Manager) createInteractionHandler(w http.ResponseWriter, r *http.Reques
 	util.SendSuccessResponse(w, http.StatusOK, interaction, m.logger, nil)
 }
 
-func (m *Manager) getInteractionsHandler(w http.ResponseWriter, _ *http.Request) {
+func (m *Manager) getInteractionsHandler(w http.ResponseWriter, r *http.Request) {
+	if !m.aclManager.IsAllowed(w, r, types.UserRoleUser, types.APIAccessOpsInteractionsGet, nil) {
+		return
+	}
+
 	response := InteractionsResponse{
 		Interactions: []InteractionSummary{
 			{UUID: uuid.New().String(), Title: "Sample query 1"},
@@ -114,6 +122,10 @@ func (m *Manager) getInteractionsHandler(w http.ResponseWriter, _ *http.Request)
 }
 
 func (m *Manager) getInteractionHandler(w http.ResponseWriter, r *http.Request) {
+	if !m.aclManager.IsAllowed(w, r, types.UserRoleUser, types.APIAccessOpsInteractionGet, nil) {
+		return
+	}
+
 	interactionUUID := chi.URLParam(r, "uuid")
 
 	interaction := types.Interaction{
@@ -130,6 +142,10 @@ func (m *Manager) getInteractionHandler(w http.ResponseWriter, r *http.Request) 
 }
 
 func (m *Manager) sendMessageHandler(w http.ResponseWriter, r *http.Request) {
+	if !m.aclManager.IsAllowed(w, r, types.UserRoleUser, types.APIAccessOpsMessageSend, nil) {
+		return
+	}
+
 	ctx, span := observability.StartSpan(r.Context(), "api.sendMessageHandler")
 	defer span.End()
 
