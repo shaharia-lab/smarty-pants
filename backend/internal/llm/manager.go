@@ -31,11 +31,11 @@ func NewManager(storage storage.Storage, logger *logrus.Logger, aclManager auth.
 
 func (m *Manager) RegisterRoutes(r chi.Router) {
 	r.Route("/llm-provider", func(r chi.Router) {
-		r.Post("/", AddLLMProviderHandler(m.storage, m.logger))
+		r.Post("/", m.addLLMProviderHandler)
 		r.Route("/{uuid}", func(r chi.Router) {
 			r.Delete("/", DeleteLLMProviderHandler(m.storage, m.logger))
 			r.Get("/", GetLLMProviderHandler(m.storage, m.logger))
-			r.Put("/", UpdateLLMProviderHandler(m.storage, m.logger))
+			r.Put("/", m.updateLLMProviderHandler)
 			r.Put("/activate", SetActiveLLMProviderHandler(m.storage, m.logger))
 			r.Put("/deactivate", SetDisableLLMProviderHandler(m.storage, m.logger))
 		})
@@ -43,64 +43,60 @@ func (m *Manager) RegisterRoutes(r chi.Router) {
 	})
 }
 
-func AddLLMProviderHandler(s storage.Storage, logging *logrus.Logger) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		var provider types.LLMProviderConfig
-		err := json.NewDecoder(r.Body).Decode(&provider)
-		if err != nil {
-			var validationError *types.ValidationError
-			if errors.As(err, &validationError) {
-				sendJSONError(w, validationError.Error(), http.StatusBadRequest)
-			} else {
-				sendJSONError(w, "Invalid request body", http.StatusBadRequest)
-			}
-			return
+func (m *Manager) addLLMProviderHandler(w http.ResponseWriter, r *http.Request) {
+	var provider types.LLMProviderConfig
+	err := json.NewDecoder(r.Body).Decode(&provider)
+	if err != nil {
+		var validationError *types.ValidationError
+		if errors.As(err, &validationError) {
+			sendJSONError(w, validationError.Error(), http.StatusBadRequest)
+		} else {
+			sendJSONError(w, "Invalid request body", http.StatusBadRequest)
 		}
-
-		if provider.UUID == uuid.Nil {
-			provider.UUID = uuid.New()
-		}
-
-		provider.Status = string(types.LLMProviderStatusInactive)
-
-		err = s.CreateLLMProvider(r.Context(), provider)
-		if err != nil {
-			sendJSONError(w, "Failed to create embedding provider: "+err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		util.SendSuccessResponse(w, http.StatusCreated, provider, logging, nil)
+		return
 	}
+
+	if provider.UUID == uuid.Nil {
+		provider.UUID = uuid.New()
+	}
+
+	provider.Status = string(types.LLMProviderStatusInactive)
+
+	err = m.storage.CreateLLMProvider(r.Context(), provider)
+	if err != nil {
+		sendJSONError(w, "Failed to create embedding provider: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	util.SendSuccessResponse(w, http.StatusCreated, provider, m.logger, nil)
 }
 
-func UpdateLLMProviderHandler(s storage.Storage, l *logrus.Logger) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		id, err := uuid.Parse(chi.URLParam(r, "uuid"))
-		if err != nil {
-			l.Error(types.InvalidUUIDMessage, "error", err)
-			http.Error(w, types.InvalidUUIDMessage, http.StatusBadRequest)
-			return
-		}
-
-		var provider types.LLMProviderConfig
-		err = json.NewDecoder(r.Body).Decode(&provider)
-		if err != nil {
-			l.Error("Failed to decode request body", "error", err)
-			http.Error(w, "Invalid request body", http.StatusBadRequest)
-			return
-		}
-		provider.UUID = id
-
-		err = s.UpdateLLMProvider(r.Context(), provider)
-		if err != nil {
-			l.Error("Failed to update embedding provider", "error", err)
-			http.Error(w, "Failed to update embedding provider", http.StatusInternalServerError)
-			return
-		}
-
-		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(provider)
+func (m *Manager) updateLLMProviderHandler(w http.ResponseWriter, r *http.Request) {
+	id, err := uuid.Parse(chi.URLParam(r, "uuid"))
+	if err != nil {
+		m.logger.Error(types.InvalidUUIDMessage, "error", err)
+		http.Error(w, types.InvalidUUIDMessage, http.StatusBadRequest)
+		return
 	}
+
+	var provider types.LLMProviderConfig
+	err = json.NewDecoder(r.Body).Decode(&provider)
+	if err != nil {
+		m.logger.Error("Failed to decode request body", "error", err)
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+	provider.UUID = id
+
+	err = m.storage.UpdateLLMProvider(r.Context(), provider)
+	if err != nil {
+		m.logger.Error("Failed to update embedding provider", "error", err)
+		http.Error(w, "Failed to update embedding provider", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(provider)
 }
 
 func DeleteLLMProviderHandler(s storage.Storage, l *logrus.Logger) http.HandlerFunc {

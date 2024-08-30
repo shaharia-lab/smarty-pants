@@ -12,6 +12,8 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
+	"github.com/shaharia-lab/smarty-pants/backend/internal/auth"
+	logger2 "github.com/shaharia-lab/smarty-pants/backend/internal/logger"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/storage"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/types"
 	"github.com/sirupsen/logrus"
@@ -21,8 +23,6 @@ import (
 
 func TestAddLLMProviderHandler(t *testing.T) {
 	mockStorage := new(storage.StorageMock)
-	logger := logrus.New()
-
 	tests := []struct {
 		name           string
 		requestBody    map[string]interface{}
@@ -78,7 +78,10 @@ func TestAddLLMProviderHandler(t *testing.T) {
 			req, _ := http.NewRequest("POST", "/api/v1/llm-provider", bytes.NewBuffer(body))
 			rr := httptest.NewRecorder()
 
-			handler := AddLLMProviderHandler(mockStorage, logger)
+			l := logger2.NoOpsLogger()
+			lm := NewManager(mockStorage, l, auth.NewACLManager(l, false))
+
+			handler := http.HandlerFunc(lm.addLLMProviderHandler)
 			handler.ServeHTTP(rr, req)
 
 			assert.Equal(t, tt.expectedStatus, rr.Code)
@@ -152,7 +155,8 @@ func TestUpdateLLMProviderHandler(t *testing.T) {
 			chiCtx.URLParams.Add("uuid", tt.uuid)
 			req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, chiCtx))
 
-			handler := UpdateLLMProviderHandler(mockStorage, logger)
+			lm := NewManager(mockStorage, logger, auth.NewACLManager(logger, false))
+			handler := http.HandlerFunc(lm.updateLLMProviderHandler)
 			handler.ServeHTTP(rr, req)
 
 			assert.Equal(t, tt.expectedStatus, rr.Code)
