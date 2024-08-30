@@ -62,132 +62,124 @@ func NewManager(storage storage.Storage, logger *logrus.Logger, searchSystem sea
 // RegisterRoutes registers the interaction routes
 func (m *Manager) RegisterRoutes(r chi.Router) {
 	r.Route("/api/v1/interactions", func(r chi.Router) {
-		r.Post("/", createInteractionHandler(m.storage, m.logger))
-		r.Get("/", getInteractionsHandler(m.logger))
+		r.Post("/", m.createInteractionHandler)
+		r.Get("/", m.getInteractionsHandler)
 		r.Route("/{uuid}", func(r chi.Router) {
-			r.Get("/", getInteractionHandler(m.logger))
-			r.Post("/message", sendMessageHandler(m.searchSystem, m.storage, m.logger))
+			r.Get("/", m.getInteractionHandler)
+			r.Post("/message", m.sendMessageHandler)
 		})
 	})
 
-	r.Post("/message", sendMessageHandler(m.searchSystem, m.storage, m.logger))
+	r.Post("/message", m.sendMessageHandler)
 }
 
-func createInteractionHandler(st storage.Storage, logger *logrus.Logger) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		ctx, span := observability.StartSpan(r.Context(), "api.createInteractionHandler")
-		defer span.End()
+func (m *Manager) createInteractionHandler(w http.ResponseWriter, r *http.Request) {
+	ctx, span := observability.StartSpan(r.Context(), "api.createInteractionHandler")
+	defer span.End()
 
-		var req MessageRequest
-		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
-
-		interaction, err := st.CreateInteraction(ctx, types.Interaction{
-			UUID:  uuid.New(),
-			Query: req.Query,
-			Conversations: []types.Conversation{
-				{Role: types.InteractionRoleUser, Text: req.Query},
-			},
-		})
-
-		if err != nil {
-			logger.WithError(err).Error("Failed to create interaction")
-			util.SendErrorResponse(w, http.StatusInternalServerError, "failed to create interaction", logger, nil)
-			return
-		}
-
-		util.SendSuccessResponse(w, http.StatusOK, interaction, logger, nil)
+	var req MessageRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
 	}
+
+	interaction, err := m.storage.CreateInteraction(ctx, types.Interaction{
+		UUID:  uuid.New(),
+		Query: req.Query,
+		Conversations: []types.Conversation{
+			{Role: types.InteractionRoleUser, Text: req.Query},
+		},
+	})
+
+	if err != nil {
+		m.logger.WithError(err).Error("Failed to create interaction")
+		util.SendErrorResponse(w, http.StatusInternalServerError, "failed to create interaction", m.logger, nil)
+		return
+	}
+
+	util.SendSuccessResponse(w, http.StatusOK, interaction, m.logger, nil)
 }
 
-func getInteractionsHandler(logger *logrus.Logger) http.HandlerFunc {
-	return func(w http.ResponseWriter, _ *http.Request) {
-		response := InteractionsResponse{
-			Interactions: []InteractionSummary{
-				{UUID: uuid.New().String(), Title: "Sample query 1"},
-				{UUID: uuid.New().String(), Title: "Sample query 2"},
-			},
-			Limit:   1,
-			PerPage: 10,
-		}
-
-		util.SendSuccessResponse(w, http.StatusOK, response, logger, nil)
+func (m *Manager) getInteractionsHandler(w http.ResponseWriter, _ *http.Request) {
+	response := InteractionsResponse{
+		Interactions: []InteractionSummary{
+			{UUID: uuid.New().String(), Title: "Sample query 1"},
+			{UUID: uuid.New().String(), Title: "Sample query 2"},
+		},
+		Limit:   1,
+		PerPage: 10,
 	}
+
+	util.SendSuccessResponse(w, http.StatusOK, response, m.logger, nil)
 }
 
-func getInteractionHandler(logger *logrus.Logger) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		interactionUUID := chi.URLParam(r, "uuid")
+func (m *Manager) getInteractionHandler(w http.ResponseWriter, r *http.Request) {
+	interactionUUID := chi.URLParam(r, "uuid")
 
-		interaction := types.Interaction{
-			UUID:  uuid.MustParse(interactionUUID),
-			Query: "Sample query",
-			Conversations: []types.Conversation{
-				{Role: "system", Text: "Hello, how may I help you today?"},
-				{Role: "user", Text: "Sample user message"},
-				{Role: "system", Text: "Sample system response"},
-			},
-		}
-
-		util.SendSuccessResponse(w, http.StatusOK, interaction, logger, nil)
+	interaction := types.Interaction{
+		UUID:  uuid.MustParse(interactionUUID),
+		Query: "Sample query",
+		Conversations: []types.Conversation{
+			{Role: "system", Text: "Hello, how may I help you today?"},
+			{Role: "user", Text: "Sample user message"},
+			{Role: "system", Text: "Sample system response"},
+		},
 	}
+
+	util.SendSuccessResponse(w, http.StatusOK, interaction, m.logger, nil)
 }
 
-func sendMessageHandler(searchSystem search.System, st storage.Storage, logger *logrus.Logger) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		ctx, span := observability.StartSpan(r.Context(), "api.sendMessageHandler")
-		defer span.End()
+func (m *Manager) sendMessageHandler(w http.ResponseWriter, r *http.Request) {
+	ctx, span := observability.StartSpan(r.Context(), "api.sendMessageHandler")
+	defer span.End()
 
-		var req MessageRequest
-		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			util.SendErrorResponse(w, http.StatusBadRequest, "invalid request", logger, nil)
-			return
-		}
-
-		llmProvider, err := llm.InitializeLLMProvider(ctx, st, logger)
-		if err != nil {
-			logger.WithError(err).Error("Failed to initialize LLM provider")
-			util.SendErrorResponse(w, http.StatusInternalServerError, "failed to initialize LLM provider", logger, nil)
-			return
-		}
-
-		llmContexts, err := searchSystem.GenerateLLMContext(ctx, search.Request{Query: req.Query})
-		if err != nil {
-			logger.WithError(err).Error("Failed to generate LLM contexts")
-			util.SendErrorResponse(w, http.StatusInternalServerError, "failed to generate LLM contexts", logger, nil)
-			return
-		}
-		span.SetAttributes(
-			attribute.Int("no_of_search_results_for_context", len(llmContexts)),
-		)
-
-		promptGenerator := llm.NewPromptGenerator(logger, llm.PromptTemplate{Template: llm.DefaultPromptTemplate})
-		prompt, err := promptGenerator.GeneratePrompt(llm.PromptTemplateData{
-			Query:                 req.Query,
-			Documents:             llmContexts,
-			ConversationHistories: []types.Conversation{},
-		})
-
-		if err != nil {
-			logger.WithError(err).Error("Failed to generate prompt")
-			util.SendErrorResponse(w, http.StatusInternalServerError, "failed to generate prompt", logger, nil)
-			return
-		}
-
-		llmResponse, err := llmProvider.GetResponse(prompt)
-		if err != nil {
-			logger.WithError(err).Error("Failed to get response from LLM provider")
-			util.SendErrorResponse(w, http.StatusInternalServerError, "failed to get response from LLM provider", logger, nil)
-			return
-		}
-
-		response := MessageResponse{
-			Response: llmResponse,
-		}
-
-		logger.Infof("LLM response: %s", llmResponse)
-		util.SendSuccessResponse(w, http.StatusOK, response, logger, nil)
+	var req MessageRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		util.SendErrorResponse(w, http.StatusBadRequest, "invalid request", m.logger, nil)
+		return
 	}
+
+	llmProvider, err := llm.InitializeLLMProvider(ctx, m.storage, m.logger)
+	if err != nil {
+		m.logger.WithError(err).Error("Failed to initialize LLM provider")
+		util.SendErrorResponse(w, http.StatusInternalServerError, "failed to initialize LLM provider", m.logger, nil)
+		return
+	}
+
+	llmContexts, err := m.searchSystem.GenerateLLMContext(ctx, search.Request{Query: req.Query})
+	if err != nil {
+		m.logger.WithError(err).Error("Failed to generate LLM contexts")
+		util.SendErrorResponse(w, http.StatusInternalServerError, "failed to generate LLM contexts", m.logger, nil)
+		return
+	}
+	span.SetAttributes(
+		attribute.Int("no_of_search_results_for_context", len(llmContexts)),
+	)
+
+	promptGenerator := llm.NewPromptGenerator(m.logger, llm.PromptTemplate{Template: llm.DefaultPromptTemplate})
+	prompt, err := promptGenerator.GeneratePrompt(llm.PromptTemplateData{
+		Query:                 req.Query,
+		Documents:             llmContexts,
+		ConversationHistories: []types.Conversation{},
+	})
+
+	if err != nil {
+		m.logger.WithError(err).Error("Failed to generate prompt")
+		util.SendErrorResponse(w, http.StatusInternalServerError, "failed to generate prompt", m.logger, nil)
+		return
+	}
+
+	llmResponse, err := llmProvider.GetResponse(prompt)
+	if err != nil {
+		m.logger.WithError(err).Error("Failed to get response from LLM provider")
+		util.SendErrorResponse(w, http.StatusInternalServerError, "failed to get response from LLM provider", m.logger, nil)
+		return
+	}
+
+	response := MessageResponse{
+		Response: llmResponse,
+	}
+
+	m.logger.Infof("LLM response: %s", llmResponse)
+	util.SendSuccessResponse(w, http.StatusOK, response, m.logger, nil)
 }

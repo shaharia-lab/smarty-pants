@@ -11,6 +11,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
+	"github.com/shaharia-lab/smarty-pants/backend/internal/auth"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/config"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/embedding"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/logger"
@@ -65,10 +66,14 @@ func TestCreateInteractionHandler(t *testing.T) {
 			observability.InitTracer(context.Background(), "smarty-pants-ai", logger.NoOpsLogger(), &config.Config{TracingEnabled: false})
 
 			st := new(storage.StorageMock)
+			l := logger.NoOpsLogger()
+			ss := search.NewSearchSystem(l, st)
+			aclManager := auth.NewACLManager(l, false)
 
 			tt.setupMock(st)
 
-			handler := createInteractionHandler(st, logger.NoOpsLogger())
+			m := NewManager(st, l, ss, aclManager)
+			handler := http.HandlerFunc(m.createInteractionHandler)
 
 			req, err := http.NewRequest("POST", "/interactions", bytes.NewBufferString(tt.inputBody))
 			assert.NoError(t, err)
@@ -95,7 +100,13 @@ func TestCreateInteractionHandler(t *testing.T) {
 }
 
 func TestGetInteractionsHandler(t *testing.T) {
-	handler := getInteractionsHandler(logger.NoOpsLogger())
+	st := new(storage.StorageMock)
+	l := logger.NoOpsLogger()
+	ss := search.NewSearchSystem(l, st)
+	aclManager := auth.NewACLManager(l, false)
+
+	m := NewManager(st, l, ss, aclManager)
+	handler := http.HandlerFunc(m.getInteractionsHandler)
 
 	req, err := http.NewRequest("GET", "/interactions", nil)
 	assert.NoError(t, err)
@@ -114,7 +125,13 @@ func TestGetInteractionsHandler(t *testing.T) {
 }
 
 func TestGetInteractionHandler(t *testing.T) {
-	handler := getInteractionHandler(logger.NoOpsLogger())
+	st := new(storage.StorageMock)
+	l := logger.NoOpsLogger()
+	ss := search.NewSearchSystem(l, st)
+	aclManager := auth.NewACLManager(l, false)
+
+	m := NewManager(st, l, ss, aclManager)
+	handler := http.HandlerFunc(m.getInteractionHandler)
 
 	router := chi.NewRouter()
 	router.Get("/interactions/{uuid}", handler)
@@ -249,7 +266,12 @@ func TestSendMessageHandler(t *testing.T) {
 			}, nil)
 
 			searchSystemMock := search.NewSearchSystem(logger.NoOpsLogger(), sm)
-			handler := sendMessageHandler(searchSystemMock, sm, logger.NoOpsLogger())
+
+			l := logger.NoOpsLogger()
+			aclManager := auth.NewACLManager(l, false)
+
+			m := NewManager(sm, l, searchSystemMock, aclManager)
+			handler := http.HandlerFunc(m.sendMessageHandler)
 
 			req, err := http.NewRequest("POST", "/interactions/123/message", bytes.NewBufferString(tt.inputBody))
 			assert.NoError(t, err)
