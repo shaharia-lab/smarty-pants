@@ -64,7 +64,8 @@ func TestAddEmbeddingProviderHandler(t *testing.T) {
 			},
 			expectedStatus: http.StatusBadRequest,
 			expectedBody: map[string]interface{}{
-				"error": "Invalid request body",
+				"error":   "unsupported embedding provider type: ",
+				"message": "Invalid request body",
 			},
 			expectError: true,
 		},
@@ -308,7 +309,8 @@ func TestSetActiveEmbeddingProviderHandler(t *testing.T) {
 			},
 			expectedStatus: http.StatusBadRequest,
 			expectedBody: map[string]string{
-				"error": types.InvalidUUIDMessage,
+				"error":   "invalid UUID length: 12",
+				"message": types.InvalidUUIDMessage,
 			},
 		},
 		{
@@ -494,7 +496,8 @@ func TestSetDisableEmbeddingProviderHandler(t *testing.T) {
 			},
 			expectedStatus: http.StatusBadRequest,
 			expectedBody: map[string]string{
-				"error": types.InvalidUUIDMessage,
+				"error":   "invalid UUID length: 12",
+				"message": types.InvalidUUIDMessage,
 			},
 		},
 		{

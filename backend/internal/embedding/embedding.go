@@ -49,10 +49,11 @@ func (h *EmbeddingManager) addProviderHandler(w http.ResponseWriter, r *http.Req
 	if err != nil {
 		var validationError *types.ValidationError
 		if errors.As(err, &validationError) {
-			sendJSONError(w, validationError.Error(), http.StatusBadRequest)
-		} else {
-			sendJSONError(w, "Invalid request body", http.StatusBadRequest)
+			util.SendAPIErrorResponse(w, http.StatusBadRequest, &util.APIError{Message: "Validation failed to add embedding provider", Err: err.Error()})
+			return
 		}
+
+		util.SendAPIErrorResponse(w, http.StatusBadRequest, &util.APIError{Message: "Invalid request body", Err: err.Error()})
 		return
 	}
 
@@ -62,7 +63,7 @@ func (h *EmbeddingManager) addProviderHandler(w http.ResponseWriter, r *http.Req
 
 	err = h.storage.CreateEmbeddingProvider(r.Context(), provider)
 	if err != nil {
-		sendJSONError(w, "Failed to create embedding provider: "+err.Error(), http.StatusInternalServerError)
+		util.SendAPIErrorResponse(w, http.StatusInternalServerError, &util.APIError{Message: "Failed to create embedding provider", Err: err.Error()})
 		return
 	}
 
@@ -73,7 +74,7 @@ func (h *EmbeddingManager) updateProviderHandler(w http.ResponseWriter, r *http.
 	id, err := uuid.Parse(chi.URLParam(r, "uuid"))
 	if err != nil {
 		h.logger.Error(types.InvalidUUIDMessage, "error", err)
-		http.Error(w, types.InvalidUUIDMessage, http.StatusBadRequest)
+		util.SendAPIErrorResponse(w, http.StatusBadRequest, &util.APIError{Message: types.InvalidUUIDMessage, Err: err.Error()})
 		return
 	}
 
@@ -81,7 +82,7 @@ func (h *EmbeddingManager) updateProviderHandler(w http.ResponseWriter, r *http.
 	err = json.NewDecoder(r.Body).Decode(&provider)
 	if err != nil {
 		h.logger.Error("Failed to decode request body", "error", err)
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		util.SendAPIErrorResponse(w, http.StatusBadRequest, &util.APIError{Message: "Failed to decode request body", Err: err.Error()})
 		return
 	}
 	provider.UUID = id
@@ -89,47 +90,48 @@ func (h *EmbeddingManager) updateProviderHandler(w http.ResponseWriter, r *http.
 	err = h.storage.UpdateEmbeddingProvider(r.Context(), provider)
 	if err != nil {
 		h.logger.Error("Failed to update embedding provider", "error", err)
-		http.Error(w, "Failed to update embedding provider", http.StatusInternalServerError)
+		util.SendAPIErrorResponse(w, http.StatusInternalServerError, &util.APIError{Message: "Failed to update embedding provider", Err: err.Error()})
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(provider)
+	util.SendSuccessResponse(w, http.StatusOK, provider, h.logger, nil)
 }
 
 func (h *EmbeddingManager) deleteProviderHandler(w http.ResponseWriter, r *http.Request) {
 	id, err := uuid.Parse(chi.URLParam(r, "uuid"))
 	if err != nil {
 		h.logger.Error(types.InvalidUUIDMessage, "error", err)
-		http.Error(w, types.InvalidUUIDMessage, http.StatusBadRequest)
+		util.SendAPIErrorResponse(w, http.StatusBadRequest, &util.APIError{Message: types.InvalidUUIDMessage, Err: err.Error()})
 		return
 	}
 
 	err = h.storage.DeleteEmbeddingProvider(r.Context(), id)
 	if err != nil {
 		h.logger.Error("Failed to delete embedding provider", "error", err)
-		http.Error(w, "Failed to delete embedding provider", http.StatusInternalServerError)
+		util.SendAPIErrorResponse(w, http.StatusInternalServerError, &util.APIError{Message: "Failed to delete embedding provider", Err: err.Error()})
 		return
 	}
 
-	w.WriteHeader(http.StatusNoContent)
+	util.SendSuccessResponse(w, http.StatusNoContent, nil, h.logger, nil)
 }
 
 func (h *EmbeddingManager) getProviderHandler(w http.ResponseWriter, r *http.Request) {
 	id, err := uuid.Parse(chi.URLParam(r, "uuid"))
 	if err != nil {
-		sendJSONError(w, types.InvalidUUIDMessage, http.StatusBadRequest)
+		h.logger.WithError(err).Error(types.InvalidUUIDMessage)
+		util.SendAPIErrorResponse(w, http.StatusBadRequest, &util.APIError{Message: types.InvalidUUIDMessage, Err: err.Error()})
 		return
 	}
 
 	provider, err := h.storage.GetEmbeddingProvider(r.Context(), id)
 	if err != nil {
 		if errors.Is(err, types.ErrEmbeddingProviderNotFound) {
-			sendJSONError(w, "Embedding provider not found", http.StatusNotFound)
-		} else {
-			h.logger.WithError(err).Error("Failed to get embedding provider")
-			sendJSONError(w, "Failed to get embedding provider", http.StatusInternalServerError)
+			util.SendAPIErrorResponse(w, http.StatusNotFound, &util.APIError{Message: "Embedding provider not found", Err: err.Error()})
+			return
 		}
+
+		h.logger.WithError(err).Error("Failed to get embedding provider")
+		util.SendAPIErrorResponse(w, http.StatusInternalServerError, &util.APIError{Message: "Failed to get embedding provider", Err: err.Error()})
 		return
 	}
 
@@ -157,7 +159,7 @@ func (h *EmbeddingManager) GetEmbeddingProviders(w http.ResponseWriter, r *http.
 	providers, err := h.storage.GetAllEmbeddingProviders(r.Context(), filter, option)
 	if err != nil {
 		h.logger.WithError(err).Error("Failed to get embedding providers")
-		sendJSONError(w, "Failed to get embedding providers: "+err.Error(), http.StatusInternalServerError)
+		util.SendAPIErrorResponse(w, http.StatusInternalServerError, &util.APIError{Message: "Failed to get embedding providers", Err: err.Error()})
 		return
 	}
 
@@ -172,7 +174,7 @@ func (h *EmbeddingManager) setActiveProviderHandler(w http.ResponseWriter, r *ht
 	id, err := uuid.Parse(chi.URLParam(r, "uuid"))
 	if err != nil {
 		h.logger.WithError(err).Error(types.InvalidUUIDMessage)
-		sendJSONError(w, types.InvalidUUIDMessage, http.StatusBadRequest)
+		util.SendAPIErrorResponse(w, http.StatusBadRequest, &util.APIError{Message: types.InvalidUUIDMessage, Err: err.Error()})
 		return
 	}
 
@@ -194,7 +196,7 @@ func (h *EmbeddingManager) setDeactivateProviderHandler(w http.ResponseWriter, r
 	id, err := uuid.Parse(chi.URLParam(r, "uuid"))
 	if err != nil {
 		h.logger.WithError(err).Error(types.InvalidUUIDMessage)
-		sendJSONError(w, types.InvalidUUIDMessage, http.StatusBadRequest)
+		util.SendAPIErrorResponse(w, http.StatusBadRequest, &util.APIError{Message: types.InvalidUUIDMessage, Err: err.Error()})
 		return
 	}
 
@@ -210,10 +212,4 @@ func (h *EmbeddingManager) setDeactivateProviderHandler(w http.ResponseWriter, r
 
 	h.logger.WithField("datasource_id", id).Info("Embedding provider has been deactivated successfully")
 	util.SendSuccessResponse(w, http.StatusOK, map[string]string{"message": "Embedding provider has been deactivated successfully"}, h.logger, nil)
-}
-
-func sendJSONError(w http.ResponseWriter, message string, statusCode int) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(statusCode)
-	json.NewEncoder(w).Encode(map[string]string{"error": message})
 }
