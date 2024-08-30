@@ -569,7 +569,7 @@ func TestSetDisableDatasourceHandler(t *testing.T) {
 				// No mock setup needed for invalid UUID
 			},
 			expectedStatus: http.StatusBadRequest,
-			expectedBody:   `{"error":"Invalid UUID"}`,
+			expectedBody:   `{"error":"Invalid UUID", "message":"Invalid UUID"}`,
 		},
 		{
 			name: "Error - Failed to Deactivate",
@@ -632,7 +632,7 @@ func TestSetActiveDatasourceHandler(t *testing.T) {
 				// No mock setup needed for invalid UUID
 			},
 			expectedStatus: http.StatusBadRequest,
-			expectedBody:   `{"error":"Invalid UUID"}`,
+			expectedBody:   `{"error":"Invalid UUID", "message":"Invalid UUID"}`,
 		},
 		{
 			name: "Error - Failed to Activate",

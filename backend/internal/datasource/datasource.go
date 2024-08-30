@@ -273,9 +273,16 @@ func (dm *Manager) updateDatasourceSettings(existingDS types.DatasourceConfig, u
 
 func (dm *Manager) setActiveDatasourceHandler(w http.ResponseWriter, r *http.Request) {
 	id, err := uuid.Parse(chi.URLParam(r, "uuid"))
+	if err == nil && id == uuid.Nil {
+		err = errors.New(types.InvalidUUIDMessage)
+	}
+
 	if err != nil || id == uuid.Nil {
 		dm.logger.WithError(err).Error(types.InvalidUUIDMessage)
-		dm.sendJSONError(w, types.InvalidUUIDMessage, http.StatusBadRequest)
+		util.SendAPIErrorResponse(w, http.StatusBadRequest, &util.APIError{
+			Message: types.InvalidUUIDMessage,
+			Err:     err.Error(),
+		})
 		return
 	}
 
@@ -294,14 +301,21 @@ func (dm *Manager) setActiveDatasourceHandler(w http.ResponseWriter, r *http.Req
 }
 
 func (dm *Manager) setDisableDatasourceHandler(w http.ResponseWriter, r *http.Request) {
-	id, err := uuid.Parse(chi.URLParam(r, "uuid"))
-	if err != nil || id == uuid.Nil {
+	datasourceUUID, err := uuid.Parse(chi.URLParam(r, "uuid"))
+	if err == nil && datasourceUUID == uuid.Nil {
+		err = errors.New(types.InvalidUUIDMessage)
+	}
+
+	if err != nil || datasourceUUID == uuid.Nil {
 		dm.logger.WithError(err).Error(types.InvalidUUIDMessage)
-		dm.sendJSONError(w, types.InvalidUUIDMessage, http.StatusBadRequest)
+		util.SendAPIErrorResponse(w, http.StatusBadRequest, &util.APIError{
+			Message: types.InvalidUUIDMessage,
+			Err:     err.Error(),
+		})
 		return
 	}
 
-	err = dm.storage.SetDisableDatasource(r.Context(), id)
+	err = dm.storage.SetDisableDatasource(r.Context(), datasourceUUID)
 	if err != nil {
 		dm.logger.WithError(err).Error("Failed to deactivate datasource")
 		util.SendAPIErrorResponse(w, http.StatusInternalServerError, &util.APIError{
@@ -311,19 +325,19 @@ func (dm *Manager) setDisableDatasourceHandler(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	dm.logger.WithField("datasource_id", id).Info("Datasource has been deactivated successfully")
+	dm.logger.WithField("datasource_id", datasourceUUID).Info("Datasource has been deactivated successfully")
 	util.SendSuccessResponse(w, http.StatusOK, map[string]string{"message": "Datasource has been deactivated successfully"}, dm.logger, nil)
 }
 
 func (dm *Manager) deleteDatasourceHandler(w http.ResponseWriter, r *http.Request) {
-	id, err := uuid.Parse(chi.URLParam(r, "uuid"))
-	if err != nil || id == uuid.Nil {
+	datasourceUUID, err := uuid.Parse(chi.URLParam(r, "uuid"))
+	if err != nil || datasourceUUID == uuid.Nil {
 		dm.logger.WithError(err).Error(types.InvalidUUIDMessage)
 		dm.sendJSONError(w, types.InvalidUUIDMessage, http.StatusBadRequest)
 		return
 	}
 
-	err = dm.storage.DeleteDatasource(r.Context(), id)
+	err = dm.storage.DeleteDatasource(r.Context(), datasourceUUID)
 	if err != nil {
 		dm.logger.WithError(err).Error("Failed to deactivate datasource")
 		util.SendAPIErrorResponse(w, http.StatusInternalServerError, &util.APIError{
@@ -333,7 +347,7 @@ func (dm *Manager) deleteDatasourceHandler(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	dm.logger.WithField("datasource_id", id).Info(types.DatasourceDeletedSuccessfullyMsg)
+	dm.logger.WithField("datasource_id", datasourceUUID).Info(types.DatasourceDeletedSuccessfullyMsg)
 	util.SendSuccessResponse(w, http.StatusOK, map[string]string{"message": "Datasource has been deleted successfully"}, dm.logger, nil)
 }
 
@@ -381,6 +395,7 @@ func (dm *Manager) handleError(w http.ResponseWriter, message string, statusCode
 	dm.sendJSONError(w, message, statusCode)
 }
 
+// Deprecated: sendJSONError is deprecated and should be replaced with util.SendAPIErrorResponse
 func (dm *Manager) sendJSONError(w http.ResponseWriter, message string, statusCode int) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(statusCode)
