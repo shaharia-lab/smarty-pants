@@ -17,7 +17,6 @@ import (
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/codes"
-	"go.opentelemetry.io/otel/trace"
 )
 
 type Manager struct {
@@ -87,7 +86,11 @@ func (dm *Manager) addDatasourceHandler(w http.ResponseWriter, r *http.Request) 
 	}
 
 	if err := dm.validatePayload(payload); err != nil {
-		dm.handleError(w, err.Error(), http.StatusBadRequest, span)
+		dm.logger.Error("Failed to validate datasource payload: ", err)
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+
+		util.SendAPIErrorResponse(w, http.StatusBadRequest, util.NewAPIError("Failed to validate datasource payload", err))
 		return
 	}
 
@@ -116,15 +119,14 @@ func (dm *Manager) addDatasourceHandler(w http.ResponseWriter, r *http.Request) 
 		dm.logger.Error("Failed to add datasource: ", err)
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
-		dm.handleError(w, "Failed to add datasource", http.StatusInternalServerError, span)
+		util.SendAPIErrorResponse(w, http.StatusInternalServerError, util.NewAPIError("Failed to add datasource", err))
 		return
 	}
 
-	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	util.SendSuccessResponse(w, http.StatusCreated, map[string]interface{}{
 		"message": "Datasource added successfully",
 		"uuid":    dsConfig.UUID,
-	})
+	}, dm.logger, span)
 }
 
 func (dm *Manager) getDatasourceHandler(w http.ResponseWriter, r *http.Request) {
@@ -233,7 +235,7 @@ func (dm *Manager) updateDatasourceHandler(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	w.WriteHeader(http.StatusNoContent)
+	util.SendSuccessResponse(w, http.StatusOK, map[string]string{"message": "Datasource has been updated successfully"}, dm.logger, span)
 }
 
 func (dm *Manager) updateDatasourceSettings(existingDS types.DatasourceConfig, updatePayload map[string]interface{}) (types.DatasourceSettings, error) {
@@ -379,21 +381,4 @@ func (dm *Manager) getPaginationParams(r *http.Request) (int, int) {
 	}
 
 	return page, perPage
-}
-
-// Deprecated: handleError is deprecated and should be replaced with util.SendAPIErrorResponse
-func (dm *Manager) handleError(w http.ResponseWriter, message string, statusCode int, span trace.Span) {
-	dm.logger.Error(message)
-	if span != nil {
-		span.RecordError(errors.New(message))
-		span.SetStatus(codes.Error, message)
-	}
-	dm.sendJSONError(w, message, statusCode)
-}
-
-// Deprecated: sendJSONError is deprecated and should be replaced with util.SendAPIErrorResponse
-func (dm *Manager) sendJSONError(w http.ResponseWriter, message string, statusCode int) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(statusCode)
-	json.NewEncoder(w).Encode(map[string]string{"error": message})
 }

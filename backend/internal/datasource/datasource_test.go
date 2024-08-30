@@ -55,7 +55,8 @@ func TestAddDatasourceHandler(t *testing.T) {
 			mockSetup:      func(ms *storage.StorageMock) {},
 			expectedStatus: http.StatusBadRequest,
 			expectedBody: map[string]interface{}{
-				"error": "name is required",
+				"error":   "name is required",
+				"message": "Failed to validate datasource payload",
 			},
 		},
 		{
@@ -67,7 +68,8 @@ func TestAddDatasourceHandler(t *testing.T) {
 			mockSetup:      func(ms *storage.StorageMock) {},
 			expectedStatus: http.StatusBadRequest,
 			expectedBody: map[string]interface{}{
-				"error": "source_type is required",
+				"error":   "source_type is required",
+				"message": "Failed to validate datasource payload",
 			},
 		},
 		{
@@ -387,8 +389,8 @@ func TestUpdateDatasourceHandler(t *testing.T) {
 					mock.AnythingOfType("*types.SlackSettings"),
 					&types.SlackState{}).Return(nil)
 			},
-			expectedStatus: http.StatusNoContent,
-			expectedBody:   "",
+			expectedStatus: http.StatusOK,
+			expectedBody:   `{"message":"Datasource has been updated successfully"}` + "\n",
 		},
 		{
 			name:    "Invalid JSON",
