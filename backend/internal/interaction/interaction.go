@@ -1,3 +1,4 @@
+// Package interaction provides the interaction management functionalities
 package interaction
 
 import (
@@ -40,6 +41,7 @@ type MessageResponse struct {
 	Response string `json:"response"`
 }
 
+// Manager is the interaction manager
 type Manager struct {
 	storage      storage.Storage
 	logger       *logrus.Logger
@@ -47,6 +49,7 @@ type Manager struct {
 	aclManager   auth.ACLManager
 }
 
+// NewManager creates a new interaction manager
 func NewManager(storage storage.Storage, logger *logrus.Logger, searchSystem search.System, aclManager auth.ACLManager) *Manager {
 	return &Manager{
 		storage:      storage,
@@ -56,6 +59,7 @@ func NewManager(storage storage.Storage, logger *logrus.Logger, searchSystem sea
 	}
 }
 
+// RegisterRoutes registers the interaction routes
 func (m *Manager) RegisterRoutes(r chi.Router) {
 	r.Route("/api/v1/interactions", func(r chi.Router) {
 		r.Post("/", createInteractionHandler(m.storage, m.logger))
