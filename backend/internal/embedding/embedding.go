@@ -160,6 +160,10 @@ func (h *Manager) getEmbeddingProviderFromRequest(w http.ResponseWriter, r *http
 }
 
 func (h *Manager) getEmbeddingProviders(w http.ResponseWriter, r *http.Request) {
+	if !h.aclManager.IsAllowed(w, r, types.UserRoleAdmin, types.APIAccessOpsEmbeddingProvidersGet, nil) {
+		return
+	}
+
 	var filter types.EmbeddingProviderFilter
 	var option types.EmbeddingProviderFilterOption
 

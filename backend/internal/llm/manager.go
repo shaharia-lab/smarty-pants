@@ -33,13 +33,13 @@ func (m *Manager) RegisterRoutes(r chi.Router) {
 	r.Route("/llm-provider", func(r chi.Router) {
 		r.Post("/", m.addLLMProviderHandler)
 		r.Route("/{uuid}", func(r chi.Router) {
-			r.Delete("/", DeleteLLMProviderHandler(m.storage, m.logger))
-			r.Get("/", GetLLMProviderHandler(m.storage, m.logger))
+			r.Delete("/", m.deleteLLMProviderHandler)
+			r.Get("/", m.getLLMProviderHandler)
 			r.Put("/", m.updateLLMProviderHandler)
-			r.Put("/activate", SetActiveLLMProviderHandler(m.storage, m.logger))
-			r.Put("/deactivate", SetDisableLLMProviderHandler(m.storage, m.logger))
+			r.Put("/activate", m.setActiveLLMProviderHandler)
+			r.Put("/deactivate", m.setDisableLLMProviderHandler)
 		})
-		r.Get("/", GetLLMProvidersHandler(m.storage, m.logger))
+		r.Get("/", m.getLLMProvidersHandler)
 	})
 }
 
@@ -49,10 +49,11 @@ func (m *Manager) addLLMProviderHandler(w http.ResponseWriter, r *http.Request) 
 	if err != nil {
 		var validationError *types.ValidationError
 		if errors.As(err, &validationError) {
-			sendJSONError(w, validationError.Error(), http.StatusBadRequest)
-		} else {
-			sendJSONError(w, "Invalid request body", http.StatusBadRequest)
+			util.SendAPIErrorResponse(w, http.StatusBadRequest, &util.APIError{Message: validationError.Error(), Err: validationError.Error()})
+			return
 		}
+
+		util.SendAPIErrorResponse(w, http.StatusBadRequest, &util.APIError{Message: "Invalid request body", Err: err.Error()})
 		return
 	}
 
@@ -64,7 +65,7 @@ func (m *Manager) addLLMProviderHandler(w http.ResponseWriter, r *http.Request) 
 
 	err = m.storage.CreateLLMProvider(r.Context(), provider)
 	if err != nil {
-		sendJSONError(w, "Failed to create embedding provider: "+err.Error(), http.StatusInternalServerError)
+		util.SendAPIErrorResponse(w, http.StatusInternalServerError, &util.APIError{Message: "Failed to create embedding provider", Err: err.Error()})
 		return
 	}
 
@@ -72,156 +73,168 @@ func (m *Manager) addLLMProviderHandler(w http.ResponseWriter, r *http.Request) 
 }
 
 func (m *Manager) updateLLMProviderHandler(w http.ResponseWriter, r *http.Request) {
-	id, err := uuid.Parse(chi.URLParam(r, "uuid"))
-	if err != nil {
-		m.logger.Error(types.InvalidUUIDMessage, "error", err)
-		http.Error(w, types.InvalidUUIDMessage, http.StatusBadRequest)
+	if !m.aclManager.IsAllowed(w, r, types.UserRoleAdmin, types.APIAccessOpsLLMProviderUpdate, nil) {
 		return
 	}
 
-	var provider types.LLMProviderConfig
+	provider, err := m.getLLMProviderFromRequest(w, r)
+	if err != nil {
+		return
+	}
+
+	var providerToUpdate types.LLMProviderConfig
 	err = json.NewDecoder(r.Body).Decode(&provider)
 	if err != nil {
 		m.logger.Error("Failed to decode request body", "error", err)
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
-	provider.UUID = id
+	providerToUpdate.UUID = provider.UUID
 
-	err = m.storage.UpdateLLMProvider(r.Context(), provider)
+	err = m.storage.UpdateLLMProvider(r.Context(), *provider)
 	if err != nil {
 		m.logger.Error("Failed to update embedding provider", "error", err)
-		http.Error(w, "Failed to update embedding provider", http.StatusInternalServerError)
+		util.SendAPIErrorResponse(w, http.StatusInternalServerError, &util.APIError{Message: "Failed to update embedding provider", Err: err.Error()})
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(provider)
+	util.SendSuccessResponse(w, http.StatusOK, provider, m.logger, nil)
 }
 
-func DeleteLLMProviderHandler(s storage.Storage, l *logrus.Logger) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		id, err := uuid.Parse(chi.URLParam(r, "uuid"))
-		if err != nil {
-			l.Error(types.InvalidUUIDMessage, "error", err)
-			http.Error(w, types.InvalidUUIDMessage, http.StatusBadRequest)
-			return
-		}
-
-		err = s.DeleteLLMProvider(r.Context(), id)
-		if err != nil {
-			l.Error("Failed to delete embedding provider", "error", err)
-			http.Error(w, "Failed to delete embedding provider", http.StatusInternalServerError)
-			return
-		}
-
-		w.WriteHeader(http.StatusNoContent)
+func (m *Manager) getLLMProviderFromRequest(w http.ResponseWriter, r *http.Request) (*types.LLMProviderConfig, error) {
+	providerUUID, err := uuid.Parse(chi.URLParam(r, "uuid"))
+	if err == nil && providerUUID == uuid.Nil {
+		err = errors.New(types.InvalidUUIDMessage)
 	}
-}
 
-func GetLLMProviderHandler(s storage.Storage, l *logrus.Logger) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		id, err := uuid.Parse(chi.URLParam(r, "uuid"))
-		if err != nil {
-			sendJSONError(w, types.InvalidUUIDMessage, http.StatusBadRequest)
-			return
-		}
-
-		provider, err := s.GetLLMProvider(r.Context(), id)
-		if err != nil {
-			if errors.Is(err, types.ErrLLMProviderNotFound) {
-				sendJSONError(w, "Embedding provider not found", http.StatusNotFound)
-			} else {
-				l.WithError(err).Error("Failed to get embedding provider")
-				sendJSONError(w, "Failed to get embedding provider", http.StatusInternalServerError)
-			}
-			return
-		}
-
-		util.SendSuccessResponse(w, http.StatusOK, provider, l, nil)
+	if err != nil {
+		m.logger.WithError(err).Error("failed to parse provider UUID")
+		util.SendAPIErrorResponse(w, http.StatusBadRequest, &util.APIError{Message: types.InvalidUUIDMessage, Err: err.Error()})
+		return nil, err
 	}
-}
 
-func GetLLMProvidersHandler(s storage.Storage, l *logrus.Logger) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		var filter types.LLMProviderFilter
-		var option types.LLMProviderFilterOption
-
-		filter.Status = r.URL.Query().Get("status")
-
-		page, err := strconv.Atoi(r.URL.Query().Get("page"))
-		if err != nil || page < 1 {
-			page = 1
-		}
-		option.Page = page
-
-		perPage, err := strconv.Atoi(r.URL.Query().Get("per_page"))
-		if err != nil || perPage < 1 {
-			perPage = 10
-		}
-		option.Limit = perPage
-
-		providers, err := s.GetAllLLMProviders(r.Context(), filter, option)
-		if err != nil {
-			l.WithError(err).Error("Failed to get embedding providers")
-			sendJSONError(w, "Failed to get embedding providers: "+err.Error(), http.StatusInternalServerError)
-			return
+	provider, err := m.storage.GetLLMProvider(r.Context(), providerUUID)
+	if err != nil {
+		if errors.Is(err, types.ErrLLMProviderNotFound) {
+			util.SendAPIErrorResponse(w, http.StatusNotFound, &util.APIError{Message: "Embedding provider not found", Err: err.Error()})
+			return nil, err
 		}
 
-		if len(providers.LLMProviders) == 0 {
-			providers.LLMProviders = []types.LLMProviderConfig{}
-		}
-
-		util.SendSuccessResponse(w, http.StatusOK, providers, l, nil)
+		m.logger.Error("Failed to get embedding provider", "error", err)
+		util.SendAPIErrorResponse(w, http.StatusInternalServerError, &util.APIError{Message: "Failed to get embedding provider", Err: err.Error()})
+		return nil, err
 	}
+
+	return provider, nil
 }
 
-func SetActiveLLMProviderHandler(s storage.Storage, l *logrus.Logger) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		id, err := uuid.Parse(chi.URLParam(r, "uuid"))
-		if err != nil {
-			l.WithError(err).Error(types.InvalidUUIDMessage)
-			sendJSONError(w, types.InvalidUUIDMessage, http.StatusBadRequest)
-			return
-		}
-
-		err = s.SetActiveLLMProvider(r.Context(), id)
-		if err != nil {
-			l.WithError(err).Error("Failed to set active LLM provider")
-			sendJSONError(w, "Failed to set active LLM provider", http.StatusInternalServerError)
-			return
-		}
-
-		l.WithField("llm_provider_id", id).Info("LLM provider activated successfully")
-		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(map[string]string{"message": "LLM provider activated successfully"})
+func (m *Manager) deleteLLMProviderHandler(w http.ResponseWriter, r *http.Request) {
+	if !m.aclManager.IsAllowed(w, r, types.UserRoleAdmin, types.APIAccessOpsLLMProviderDelete, nil) {
+		return
 	}
-}
 
-func SetDisableLLMProviderHandler(s storage.Storage, l *logrus.Logger) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		id, err := uuid.Parse(chi.URLParam(r, "uuid"))
-		if err != nil {
-			l.WithError(err).Error(types.InvalidUUIDMessage)
-			sendJSONError(w, types.InvalidUUIDMessage, http.StatusBadRequest)
-			return
-		}
-
-		err = s.SetDisableLLMProvider(r.Context(), id)
-		if err != nil {
-			l.WithError(err).Error("Failed to set deactivate LLM provider")
-			sendJSONError(w, "Failed to set deactivate LLM provider", http.StatusInternalServerError)
-			return
-		}
-
-		l.WithField("llm_provider_id", id).Info("LLM provider has been deactivated successfully")
-		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(map[string]string{"message": "LLM provider has been deactivated successfully"})
+	provider, err := m.getLLMProviderFromRequest(w, r)
+	if err != nil {
+		return
 	}
+
+	err = m.storage.DeleteLLMProvider(r.Context(), provider.UUID)
+	if err != nil {
+		m.logger.Error("Failed to delete embedding provider", "error", err)
+		util.SendAPIErrorResponse(w, http.StatusInternalServerError, &util.APIError{Message: "Failed to delete embedding provider", Err: err.Error()})
+		return
+	}
+
+	util.SendSuccessResponse(w, http.StatusNoContent, nil, m.logger, nil)
 }
 
-func sendJSONError(w http.ResponseWriter, message string, statusCode int) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(statusCode)
-	json.NewEncoder(w).Encode(map[string]string{"error": message})
+func (m *Manager) getLLMProviderHandler(w http.ResponseWriter, r *http.Request) {
+	if !m.aclManager.IsAllowed(w, r, types.UserRoleAdmin, types.APIAccessOpsLLMProviderGet, nil) {
+		return
+	}
+
+	provider, err := m.getLLMProviderFromRequest(w, r)
+	if err != nil {
+		return
+	}
+
+	util.SendSuccessResponse(w, http.StatusOK, provider, m.logger, nil)
+}
+
+func (m *Manager) getLLMProvidersHandler(w http.ResponseWriter, r *http.Request) {
+	if !m.aclManager.IsAllowed(w, r, types.UserRoleAdmin, types.APIAccessOpsLLMProvidersGet, nil) {
+		return
+	}
+
+	var filter types.LLMProviderFilter
+	var option types.LLMProviderFilterOption
+
+	filter.Status = r.URL.Query().Get("status")
+
+	page, err := strconv.Atoi(r.URL.Query().Get("page"))
+	if err != nil || page < 1 {
+		page = 1
+	}
+	option.Page = page
+
+	perPage, err := strconv.Atoi(r.URL.Query().Get("per_page"))
+	if err != nil || perPage < 1 {
+		perPage = 10
+	}
+	option.Limit = perPage
+
+	providers, err := m.storage.GetAllLLMProviders(r.Context(), filter, option)
+	if err != nil {
+		m.logger.WithError(err).Error("Failed to get embedding providers")
+		util.SendAPIErrorResponse(w, http.StatusInternalServerError, &util.APIError{Message: "Failed to get embedding providers", Err: err.Error()})
+		return
+	}
+
+	if len(providers.LLMProviders) == 0 {
+		providers.LLMProviders = []types.LLMProviderConfig{}
+	}
+
+	util.SendSuccessResponse(w, http.StatusOK, providers, m.logger, nil)
+}
+
+func (m *Manager) setActiveLLMProviderHandler(w http.ResponseWriter, r *http.Request) {
+	if !m.aclManager.IsAllowed(w, r, types.UserRoleAdmin, types.APIAccessOpsLLMProviderActivate, nil) {
+		return
+	}
+
+	provider, err := m.getLLMProviderFromRequest(w, r)
+	if err != nil {
+		return
+	}
+
+	err = m.storage.SetActiveLLMProvider(r.Context(), provider.UUID)
+	if err != nil {
+		m.logger.WithError(err).Error("Failed to set active LLM provider")
+		util.SendAPIErrorResponse(w, http.StatusInternalServerError, &util.APIError{Message: "Failed to set active LLM provider", Err: err.Error()})
+		return
+	}
+
+	m.logger.WithField("llm_provider_id", provider.UUID).Info("LLM provider activated successfully")
+	util.SendSuccessResponse(w, http.StatusOK, map[string]string{"message": "LLM provider activated successfully"}, m.logger, nil)
+}
+
+func (m *Manager) setDisableLLMProviderHandler(w http.ResponseWriter, r *http.Request) {
+	if !m.aclManager.IsAllowed(w, r, types.UserRoleAdmin, types.APIAccessOpsLLMProviderDeactivate, nil) {
+		return
+	}
+
+	provider, err := m.getLLMProviderFromRequest(w, r)
+	if err != nil {
+		return
+	}
+
+	err = m.storage.SetDisableLLMProvider(r.Context(), provider.UUID)
+	if err != nil {
+		m.logger.WithError(err).Error("Failed to set deactivate LLM provider")
+		util.SendAPIErrorResponse(w, http.StatusInternalServerError, &util.APIError{Message: "Failed to set deactivate LLM provider", Err: err.Error()})
+		return
+	}
+
+	m.logger.WithField("llm_provider_id", provider.UUID).Info("LLM provider has been deactivated successfully")
+	util.SendSuccessResponse(w, http.StatusOK, map[string]string{"message": "LLM provider has been deactivated successfully"}, m.logger, nil)
 }

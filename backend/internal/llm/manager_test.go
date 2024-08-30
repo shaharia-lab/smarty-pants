@@ -64,7 +64,8 @@ func TestAddLLMProviderHandler(t *testing.T) {
 			},
 			expectedStatus: http.StatusBadRequest,
 			expectedBody: map[string]interface{}{
-				"error": "Invalid request body",
+				"error":   "unsupported LLM provider type: ",
+				"message": "Invalid request body",
 			},
 			expectError: true,
 		},
@@ -127,6 +128,9 @@ func TestUpdateLLMProviderHandler(t *testing.T) {
 				},
 			},
 			mockBehavior: func(ms *storage.StorageMock) {
+				ms.On("GetLLMProvider", mock.Anything, mock.AnythingOfType("uuid.UUID")).Return(&types.LLMProviderConfig{
+					UUID: uuid.MustParse("123e4567-e89b-12d3-a456-426614174000"),
+				}, nil)
 				ms.On("UpdateLLMProvider", mock.Anything, mock.AnythingOfType("types.LLMProviderConfig")).Return(nil)
 			},
 			expectedStatus: http.StatusOK,
@@ -186,6 +190,9 @@ func TestDeleteLLMProviderHandler(t *testing.T) {
 			name: "Successful deletion",
 			uuid: "123e4567-e89b-12d3-a456-426614174000",
 			mockBehavior: func(ms *storage.StorageMock) {
+				ms.On("GetLLMProvider", mock.Anything, mock.AnythingOfType("uuid.UUID")).Return(&types.LLMProviderConfig{
+					UUID: uuid.MustParse("123e4567-e89b-12d3-a456-426614174000"),
+				}, nil)
 				ms.On("DeleteLLMProvider", mock.Anything, mock.AnythingOfType("uuid.UUID")).Return(nil)
 			},
 			expectedStatus: http.StatusNoContent,
@@ -203,7 +210,8 @@ func TestDeleteLLMProviderHandler(t *testing.T) {
 			chiCtx.URLParams.Add("uuid", tt.uuid)
 			req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, chiCtx))
 
-			handler := DeleteLLMProviderHandler(mockStorage, logger)
+			lm := NewManager(mockStorage, logger, auth.NewACLManager(logger, false))
+			handler := http.HandlerFunc(lm.deleteLLMProviderHandler)
 			handler.ServeHTTP(rr, req)
 
 			assert.Equal(t, tt.expectedStatus, rr.Code)
@@ -265,7 +273,8 @@ func TestGetLLMProviderHandler(t *testing.T) {
 			chiCtx.URLParams.Add("uuid", tt.uuid)
 			req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, chiCtx))
 
-			handler := GetLLMProviderHandler(mockStorage, logger)
+			lm := NewManager(mockStorage, logger, auth.NewACLManager(logger, false))
+			handler := http.HandlerFunc(lm.getLLMProviderHandler)
 			handler.ServeHTTP(rr, req)
 
 			assert.Equal(t, tt.expectedStatus, rr.Code)
@@ -348,7 +357,8 @@ func TestGetLLMProvidersHandler(t *testing.T) {
 			req, _ := http.NewRequest("GET", "/api/v1/llm-providers"+tt.queryParams, nil)
 			rr := httptest.NewRecorder()
 
-			handler := GetLLMProvidersHandler(mockStorage, logger)
+			lm := NewManager(mockStorage, logger, auth.NewACLManager(logger, false))
+			handler := http.HandlerFunc(lm.getLLMProvidersHandler)
 			handler.ServeHTTP(rr, req)
 
 			assert.Equal(t, tt.expectedStatus, rr.Code, "DocumentStatus code mismatch")
@@ -405,6 +415,9 @@ func TestSetActiveLLMProviderHandler(t *testing.T) {
 			name: "Successful activation",
 			uuid: "123e4567-e89b-12d3-a456-426614174000",
 			mockBehavior: func(ms *storage.StorageMock) {
+				ms.On("GetLLMProvider", mock.Anything, mock.AnythingOfType("uuid.UUID")).Return(&types.LLMProviderConfig{
+					UUID: uuid.MustParse("123e4567-e89b-12d3-a456-426614174000"),
+				}, nil)
 				ms.On("SetActiveLLMProvider", mock.Anything, uuid.MustParse("123e4567-e89b-12d3-a456-426614174000")).Return(nil)
 			},
 			expectedStatus: http.StatusOK,
@@ -414,24 +427,29 @@ func TestSetActiveLLMProviderHandler(t *testing.T) {
 		},
 		{
 			name: types.InvalidUUIDMessage,
-			uuid: "invalid-uuid",
+			uuid: uuid.Nil.String(),
 			mockBehavior: func(ms *storage.StorageMock) {
 
 			},
 			expectedStatus: http.StatusBadRequest,
 			expectedBody: map[string]string{
-				"error": types.InvalidUUIDMessage,
+				"error":   types.InvalidUUIDMessage,
+				"message": types.InvalidUUIDMessage,
 			},
 		},
 		{
 			name: "storage error",
 			uuid: "123e4567-e89b-12d3-a456-426614174000",
 			mockBehavior: func(ms *storage.StorageMock) {
+				ms.On("GetLLMProvider", mock.Anything, mock.AnythingOfType("uuid.UUID")).Return(&types.LLMProviderConfig{
+					UUID: uuid.MustParse("123e4567-e89b-12d3-a456-426614174000"),
+				}, nil)
 				ms.On("SetActiveLLMProvider", mock.Anything, uuid.MustParse("123e4567-e89b-12d3-a456-426614174000")).Return(errors.New("storage error"))
 			},
 			expectedStatus: http.StatusInternalServerError,
 			expectedBody: map[string]string{
-				"error": "Failed to set active LLM provider",
+				"error":   "storage error",
+				"message": "Failed to set active LLM provider",
 			},
 		},
 	}
@@ -452,7 +470,8 @@ func TestSetActiveLLMProviderHandler(t *testing.T) {
 			chiCtx.URLParams.Add("uuid", tt.uuid)
 			req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, chiCtx))
 
-			handler := SetActiveLLMProviderHandler(mockStorage, logger)
+			lm := NewManager(mockStorage, logger, auth.NewACLManager(logger, false))
+			handler := http.HandlerFunc(lm.setActiveLLMProviderHandler)
 			handler.ServeHTTP(rr, req)
 
 			assert.Equal(t, tt.expectedStatus, rr.Code, "DocumentStatus code mismatch")
