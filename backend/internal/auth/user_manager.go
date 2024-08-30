@@ -149,7 +149,7 @@ func (um *UserManager) RegisterRoutes(r chi.Router) {
 }
 
 func (um *UserManager) handleListUsers(w http.ResponseWriter, r *http.Request) {
-	if !um.aclManager.IsAllowed(w, r, types.UserRoleAdmin, "list_users") {
+	if !um.aclManager.IsAllowed(w, r, types.UserRoleAdmin, "", "list_users") {
 		return
 	}
 
@@ -203,7 +203,7 @@ func parseRoles(roleStrings []string) []types.UserRole {
 }
 
 func (um *UserManager) handleGetUser(w http.ResponseWriter, r *http.Request) {
-	if !um.aclManager.IsAllowed(w, r, types.UserRoleUser, "get_user") {
+	if !um.aclManager.IsAllowed(w, r, types.UserRoleUser, "", "get_user") {
 		return
 	}
 

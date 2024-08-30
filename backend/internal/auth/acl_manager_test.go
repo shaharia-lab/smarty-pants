@@ -52,7 +52,7 @@ func TestACLManager_IsAllowed(t *testing.T) {
 			w := httptest.NewRecorder()
 
 			// Call IsAllowed
-			result := aclManager.IsAllowed(w, req, tt.requiredRole, "test-resource")
+			result := aclManager.IsAllowed(w, req, tt.requiredRole, "", "test-resource")
 
 			// Assert the result
 			assert.Equal(t, tt.expected, result, "IsAllowed returned unexpected result")

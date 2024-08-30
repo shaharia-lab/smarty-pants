@@ -72,7 +72,7 @@ func (dm *Manager) getDatasourceFromRequest(w http.ResponseWriter, r *http.Reque
 func (dm *Manager) addDatasourceHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	if !dm.aclManager.IsAllowed(w, r, types.UserRoleAdmin, types.APiAccessOpsDatasourceAdd) {
+	if !dm.aclManager.IsAllowed(w, r, types.UserRoleAdmin, "", types.APiAccessOpsDatasourceAdd) {
 		return
 	}
 
@@ -178,7 +178,7 @@ func (dm *Manager) validateDatasourceHandler(w http.ResponseWriter, r *http.Requ
 }
 
 func (dm *Manager) getDatasourcesHandler(w http.ResponseWriter, r *http.Request) {
-	if !dm.aclManager.IsAllowed(w, r, types.UserRoleAdmin, types.APiAccessOpsDatasourceGet) {
+	if !dm.aclManager.IsAllowed(w, r, types.UserRoleAdmin, "", types.APiAccessOpsDatasourceGet) {
 		return
 	}
 
@@ -203,11 +203,11 @@ func (dm *Manager) getDatasourcesHandler(w http.ResponseWriter, r *http.Request)
 }
 
 func (dm *Manager) updateDatasourceHandler(w http.ResponseWriter, r *http.Request) {
-	if !dm.aclManager.IsAllowed(w, r, types.UserRoleAdmin, types.APiAccessOpsDatasourceUpdate) {
+	if !dm.aclManager.IsAllowed(w, r, types.UserRoleAdmin, "", types.APiAccessOpsDatasourceUpdate) {
 		return
 	}
 
-	if !dm.aclManager.IsAllowed(w, r, types.UserRoleAdmin, "datasource_update") {
+	if !dm.aclManager.IsAllowed(w, r, types.UserRoleAdmin, "", "datasource_update") {
 		return
 	}
 
@@ -272,7 +272,7 @@ func (dm *Manager) updateDatasourceSettings(existingDS types.DatasourceConfig, u
 }
 
 func (dm *Manager) setActiveDatasourceHandler(w http.ResponseWriter, r *http.Request) {
-	if !dm.aclManager.IsAllowed(w, r, types.UserRoleAdmin, types.APiAccessOpsDatasourceActivate) {
+	if !dm.aclManager.IsAllowed(w, r, types.UserRoleAdmin, "", types.APiAccessOpsDatasourceActivate) {
 		return
 	}
 
@@ -301,7 +301,7 @@ func (dm *Manager) setActiveDatasourceHandler(w http.ResponseWriter, r *http.Req
 }
 
 func (dm *Manager) setDisableDatasourceHandler(w http.ResponseWriter, r *http.Request) {
-	if !dm.aclManager.IsAllowed(w, r, types.UserRoleAdmin, types.APiAccessOpsDatasourceDeactivate) {
+	if !dm.aclManager.IsAllowed(w, r, types.UserRoleAdmin, "", types.APiAccessOpsDatasourceDeactivate) {
 		return
 	}
 
@@ -330,14 +330,14 @@ func (dm *Manager) setDisableDatasourceHandler(w http.ResponseWriter, r *http.Re
 }
 
 func (dm *Manager) deleteDatasourceHandler(w http.ResponseWriter, r *http.Request) {
-	if !dm.aclManager.IsAllowed(w, r, types.UserRoleAdmin, types.APiAccessOpsDatasourceDelete) {
+	if !dm.aclManager.IsAllowed(w, r, types.UserRoleAdmin, "", types.APiAccessOpsDatasourceDelete) {
 		return
 	}
 
 	_, span := otel.Tracer("api").Start(r.Context(), "deleteDatasourceHandler")
 	defer span.End()
 
-	if !dm.aclManager.IsAllowed(w, r, types.UserRoleAdmin, "datasource_delete") {
+	if !dm.aclManager.IsAllowed(w, r, types.UserRoleAdmin, "", "datasource_delete") {
 		return
 	}
 

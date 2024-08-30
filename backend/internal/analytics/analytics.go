@@ -39,7 +39,7 @@ func (a *Analytics) RegisterRoutes(r chi.Router) {
 // getAnalyticsOverview returns the analytics overview
 func (a *Analytics) getAnalyticsOverview(w http.ResponseWriter, r *http.Request) {
 	routeCtx := r.Context()
-	if !a.aclManager.IsAllowed(w, r, types.UserRoleAdmin, "analytics") {
+	if !a.aclManager.IsAllowed(w, r, types.UserRoleAdmin, "", "analytics") {
 		return
 	}
 
