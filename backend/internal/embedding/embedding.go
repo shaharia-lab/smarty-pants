@@ -1,3 +1,4 @@
+// Package embedding provides the embedding provider management functionalities
 package embedding
 
 import (
@@ -15,12 +16,14 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// Manager is the embedding provider manager
 type Manager struct {
 	storage    storage.Storage
 	logger     *logrus.Logger
 	aclManager auth.ACLManager
 }
 
+// NewEmbeddingManager creates a new embedding manager
 func NewEmbeddingManager(s storage.Storage, l *logrus.Logger, aclManager auth.ACLManager) *Manager {
 	return &Manager{
 		storage:    s,
@@ -29,6 +32,7 @@ func NewEmbeddingManager(s storage.Storage, l *logrus.Logger, aclManager auth.AC
 	}
 }
 
+// RegisterRoutes registers the embedding provider routes
 func (h *Manager) RegisterRoutes(r chi.Router) {
 	r.Route("/embedding-provider", func(r chi.Router) {
 		r.Post("/", h.addProviderHandler)
@@ -39,7 +43,7 @@ func (h *Manager) RegisterRoutes(r chi.Router) {
 			r.Put("/activate", h.setActiveProviderHandler)
 			r.Put("/deactivate", h.setDeactivateProviderHandler)
 		})
-		r.Get("/", h.GetEmbeddingProviders)
+		r.Get("/", h.getEmbeddingProviders)
 	})
 }
 
@@ -155,7 +159,7 @@ func (h *Manager) getEmbeddingProviderFromRequest(w http.ResponseWriter, r *http
 	return provider, nil
 }
 
-func (h *Manager) GetEmbeddingProviders(w http.ResponseWriter, r *http.Request) {
+func (h *Manager) getEmbeddingProviders(w http.ResponseWriter, r *http.Request) {
 	var filter types.EmbeddingProviderFilter
 	var option types.EmbeddingProviderFilterOption
 

@@ -437,7 +437,7 @@ func TestGetEmbeddingProvidersHandler(t *testing.T) {
 			rr := httptest.NewRecorder()
 
 			em := NewEmbeddingManager(mockStorage, l, auth.NewACLManager(l, false))
-			handler := http.HandlerFunc(em.GetEmbeddingProviders)
+			handler := http.HandlerFunc(em.getEmbeddingProviders)
 			handler.ServeHTTP(rr, req)
 
 			assert.Equal(t, tt.expectedStatus, rr.Code, "DocumentStatus code mismatch")
