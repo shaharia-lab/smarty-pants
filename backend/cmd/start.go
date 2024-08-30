@@ -289,7 +289,7 @@ func setupAPIServer(
 	analyticsManager *analytics.Analytics,
 	datasourceManager *datasource.Manager,
 	documentManager *document.Manager,
-	embeddingManager *embedding.EmbeddingManager,
+	embeddingManager *embedding.Manager,
 	interactionManager *interaction.Manager,
 	llmManager *llm.Manager,
 	searchManager *search.Manager,

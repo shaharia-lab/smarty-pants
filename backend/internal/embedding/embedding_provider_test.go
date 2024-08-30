@@ -126,6 +126,9 @@ func TestUpdateEmbeddingProviderHandler(t *testing.T) {
 				},
 			},
 			mockBehavior: func(ms *storage.StorageMock) {
+				ms.On("GetEmbeddingProvider", mock.Anything, uuid.MustParse("123e4567-e89b-12d3-a456-426614174000")).Return(&types.EmbeddingProviderConfig{
+					UUID: uuid.MustParse("123e4567-e89b-12d3-a456-426614174000"),
+				}, nil)
 				ms.On("UpdateEmbeddingProvider", mock.Anything, mock.AnythingOfType("types.EmbeddingProviderConfig")).Return(nil)
 			},
 			expectedStatus: http.StatusOK,
@@ -185,6 +188,9 @@ func TestDeleteEmbeddingProviderHandler(t *testing.T) {
 			name: "Successful deletion",
 			uuid: "123e4567-e89b-12d3-a456-426614174000",
 			mockBehavior: func(ms *storage.StorageMock) {
+				ms.On("GetEmbeddingProvider", mock.Anything, uuid.MustParse("123e4567-e89b-12d3-a456-426614174000")).Return(&types.EmbeddingProviderConfig{
+					UUID: uuid.MustParse("123e4567-e89b-12d3-a456-426614174000"),
+				}, nil)
 				ms.On("DeleteEmbeddingProvider", mock.Anything, mock.AnythingOfType("uuid.UUID")).Return(nil)
 			},
 			expectedStatus: http.StatusNoContent,
@@ -294,6 +300,9 @@ func TestSetActiveEmbeddingProviderHandler(t *testing.T) {
 			name: "Successful activation",
 			uuid: "123e4567-e89b-12d3-a456-426614174000",
 			mockBehavior: func(ms *storage.StorageMock) {
+				ms.On("GetEmbeddingProvider", mock.Anything, uuid.MustParse("123e4567-e89b-12d3-a456-426614174000")).Return(&types.EmbeddingProviderConfig{
+					UUID: uuid.MustParse("123e4567-e89b-12d3-a456-426614174000"),
+				}, nil)
 				ms.On("SetActiveEmbeddingProvider", mock.Anything, uuid.MustParse("123e4567-e89b-12d3-a456-426614174000")).Return(nil)
 			},
 			expectedStatus: http.StatusOK,
@@ -317,6 +326,9 @@ func TestSetActiveEmbeddingProviderHandler(t *testing.T) {
 			name: "storage error",
 			uuid: "123e4567-e89b-12d3-a456-426614174000",
 			mockBehavior: func(ms *storage.StorageMock) {
+				ms.On("GetEmbeddingProvider", mock.Anything, uuid.MustParse("123e4567-e89b-12d3-a456-426614174000")).Return(&types.EmbeddingProviderConfig{
+					UUID: uuid.MustParse("123e4567-e89b-12d3-a456-426614174000"),
+				}, nil)
 				ms.On("SetActiveEmbeddingProvider", mock.Anything, uuid.MustParse("123e4567-e89b-12d3-a456-426614174000")).Return(errors.New("storage error"))
 			},
 			expectedStatus: http.StatusInternalServerError,
@@ -482,6 +494,9 @@ func TestSetDisableEmbeddingProviderHandler(t *testing.T) {
 			name: "Successful deactivation",
 			uuid: "123e4567-e89b-12d3-a456-426614174000",
 			mockBehavior: func(ms *storage.StorageMock) {
+				ms.On("GetEmbeddingProvider", mock.Anything, uuid.MustParse("123e4567-e89b-12d3-a456-426614174000")).Return(&types.EmbeddingProviderConfig{
+					UUID: uuid.MustParse("123e4567-e89b-12d3-a456-426614174000"),
+				}, nil)
 				ms.On("SetDisableEmbeddingProvider", mock.Anything, uuid.MustParse("123e4567-e89b-12d3-a456-426614174000")).Return(nil)
 			},
 			expectedStatus: http.StatusOK,
@@ -504,6 +519,9 @@ func TestSetDisableEmbeddingProviderHandler(t *testing.T) {
 			name: "Storage error",
 			uuid: "123e4567-e89b-12d3-a456-426614174000",
 			mockBehavior: func(ms *storage.StorageMock) {
+				ms.On("GetEmbeddingProvider", mock.Anything, uuid.MustParse("123e4567-e89b-12d3-a456-426614174000")).Return(&types.EmbeddingProviderConfig{
+					UUID: uuid.MustParse("123e4567-e89b-12d3-a456-426614174000"),
+				}, nil)
 				ms.On("SetDisableEmbeddingProvider", mock.Anything, uuid.MustParse("123e4567-e89b-12d3-a456-426614174000")).Return(errors.New("storage error"))
 			},
 			expectedStatus: http.StatusInternalServerError,

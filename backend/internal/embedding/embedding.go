@@ -15,21 +15,21 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type EmbeddingManager struct {
+type Manager struct {
 	storage    storage.Storage
 	logger     *logrus.Logger
 	aclManager auth.ACLManager
 }
 
-func NewEmbeddingManager(s storage.Storage, l *logrus.Logger, aclManager auth.ACLManager) *EmbeddingManager {
-	return &EmbeddingManager{
+func NewEmbeddingManager(s storage.Storage, l *logrus.Logger, aclManager auth.ACLManager) *Manager {
+	return &Manager{
 		storage:    s,
 		logger:     l,
 		aclManager: aclManager,
 	}
 }
 
-func (h *EmbeddingManager) RegisterRoutes(r chi.Router) {
+func (h *Manager) RegisterRoutes(r chi.Router) {
 	r.Route("/embedding-provider", func(r chi.Router) {
 		r.Post("/", h.addProviderHandler)
 		r.Route("/{uuid}", func(r chi.Router) {
@@ -43,7 +43,7 @@ func (h *EmbeddingManager) RegisterRoutes(r chi.Router) {
 	})
 }
 
-func (h *EmbeddingManager) addProviderHandler(w http.ResponseWriter, r *http.Request) {
+func (h *Manager) addProviderHandler(w http.ResponseWriter, r *http.Request) {
 	var provider types.EmbeddingProviderConfig
 	err := json.NewDecoder(r.Body).Decode(&provider)
 	if err != nil {
@@ -70,11 +70,13 @@ func (h *EmbeddingManager) addProviderHandler(w http.ResponseWriter, r *http.Req
 	util.SendSuccessResponse(w, http.StatusCreated, provider, h.logger, nil)
 }
 
-func (h *EmbeddingManager) updateProviderHandler(w http.ResponseWriter, r *http.Request) {
-	id, err := uuid.Parse(chi.URLParam(r, "uuid"))
+func (h *Manager) updateProviderHandler(w http.ResponseWriter, r *http.Request) {
+	if !h.aclManager.IsAllowed(w, r, types.UserRoleAdmin, types.APIAccessOpsEmbeddingProviderUpdate, nil) {
+		return
+	}
+
+	resolvedProvider, err := h.getEmbeddingProviderFromRequest(w, r)
 	if err != nil {
-		h.logger.Error(types.InvalidUUIDMessage, "error", err)
-		util.SendAPIErrorResponse(w, http.StatusBadRequest, &util.APIError{Message: types.InvalidUUIDMessage, Err: err.Error()})
 		return
 	}
 
@@ -85,7 +87,8 @@ func (h *EmbeddingManager) updateProviderHandler(w http.ResponseWriter, r *http.
 		util.SendAPIErrorResponse(w, http.StatusBadRequest, &util.APIError{Message: "Failed to decode request body", Err: err.Error()})
 		return
 	}
-	provider.UUID = id
+
+	provider.UUID = resolvedProvider.UUID
 
 	err = h.storage.UpdateEmbeddingProvider(r.Context(), provider)
 	if err != nil {
@@ -97,15 +100,17 @@ func (h *EmbeddingManager) updateProviderHandler(w http.ResponseWriter, r *http.
 	util.SendSuccessResponse(w, http.StatusOK, provider, h.logger, nil)
 }
 
-func (h *EmbeddingManager) deleteProviderHandler(w http.ResponseWriter, r *http.Request) {
-	id, err := uuid.Parse(chi.URLParam(r, "uuid"))
-	if err != nil {
-		h.logger.Error(types.InvalidUUIDMessage, "error", err)
-		util.SendAPIErrorResponse(w, http.StatusBadRequest, &util.APIError{Message: types.InvalidUUIDMessage, Err: err.Error()})
+func (h *Manager) deleteProviderHandler(w http.ResponseWriter, r *http.Request) {
+	if !h.aclManager.IsAllowed(w, r, types.UserRoleAdmin, types.APIAccessOpsEmbeddingProviderDelete, nil) {
 		return
 	}
 
-	err = h.storage.DeleteEmbeddingProvider(r.Context(), id)
+	provider, err := h.getEmbeddingProviderFromRequest(w, r)
+	if err != nil {
+		return
+	}
+
+	err = h.storage.DeleteEmbeddingProvider(r.Context(), provider.UUID)
 	if err != nil {
 		h.logger.Error("Failed to delete embedding provider", "error", err)
 		util.SendAPIErrorResponse(w, http.StatusInternalServerError, &util.APIError{Message: "Failed to delete embedding provider", Err: err.Error()})
@@ -115,30 +120,42 @@ func (h *EmbeddingManager) deleteProviderHandler(w http.ResponseWriter, r *http.
 	util.SendSuccessResponse(w, http.StatusNoContent, nil, h.logger, nil)
 }
 
-func (h *EmbeddingManager) getProviderHandler(w http.ResponseWriter, r *http.Request) {
-	id, err := uuid.Parse(chi.URLParam(r, "uuid"))
-	if err != nil {
-		h.logger.WithError(err).Error(types.InvalidUUIDMessage)
-		util.SendAPIErrorResponse(w, http.StatusBadRequest, &util.APIError{Message: types.InvalidUUIDMessage, Err: err.Error()})
+func (h *Manager) getProviderHandler(w http.ResponseWriter, r *http.Request) {
+	if !h.aclManager.IsAllowed(w, r, types.UserRoleAdmin, types.APIAccessOpsEmbeddingProviderGet, nil) {
 		return
 	}
 
-	provider, err := h.storage.GetEmbeddingProvider(r.Context(), id)
+	provider, err := h.getEmbeddingProviderFromRequest(w, r)
 	if err != nil {
-		if errors.Is(err, types.ErrEmbeddingProviderNotFound) {
-			util.SendAPIErrorResponse(w, http.StatusNotFound, &util.APIError{Message: "Embedding provider not found", Err: err.Error()})
-			return
-		}
-
-		h.logger.WithError(err).Error("Failed to get embedding provider")
-		util.SendAPIErrorResponse(w, http.StatusInternalServerError, &util.APIError{Message: "Failed to get embedding provider", Err: err.Error()})
 		return
 	}
 
 	util.SendSuccessResponse(w, http.StatusOK, provider, h.logger, nil)
 }
 
-func (h *EmbeddingManager) GetEmbeddingProviders(w http.ResponseWriter, r *http.Request) {
+func (h *Manager) getEmbeddingProviderFromRequest(w http.ResponseWriter, r *http.Request) (*types.EmbeddingProviderConfig, error) {
+	id, err := uuid.Parse(chi.URLParam(r, "uuid"))
+	if err != nil {
+		h.logger.WithError(err).Error(types.InvalidUUIDMessage)
+		util.SendAPIErrorResponse(w, http.StatusBadRequest, &util.APIError{Message: types.InvalidUUIDMessage, Err: err.Error()})
+		return nil, err
+	}
+
+	provider, err := h.storage.GetEmbeddingProvider(r.Context(), id)
+	if err != nil {
+		if errors.Is(err, types.ErrEmbeddingProviderNotFound) {
+			util.SendAPIErrorResponse(w, http.StatusNotFound, &util.APIError{Message: "Embedding provider not found", Err: err.Error()})
+			return nil, err
+		}
+
+		h.logger.WithError(err).Error("Failed to get embedding provider")
+		util.SendAPIErrorResponse(w, http.StatusInternalServerError, &util.APIError{Message: "Failed to get embedding provider", Err: err.Error()})
+		return nil, err
+	}
+	return provider, nil
+}
+
+func (h *Manager) GetEmbeddingProviders(w http.ResponseWriter, r *http.Request) {
 	var filter types.EmbeddingProviderFilter
 	var option types.EmbeddingProviderFilterOption
 
@@ -170,15 +187,17 @@ func (h *EmbeddingManager) GetEmbeddingProviders(w http.ResponseWriter, r *http.
 	util.SendSuccessResponse(w, http.StatusOK, providers, h.logger, nil)
 }
 
-func (h *EmbeddingManager) setActiveProviderHandler(w http.ResponseWriter, r *http.Request) {
-	id, err := uuid.Parse(chi.URLParam(r, "uuid"))
-	if err != nil {
-		h.logger.WithError(err).Error(types.InvalidUUIDMessage)
-		util.SendAPIErrorResponse(w, http.StatusBadRequest, &util.APIError{Message: types.InvalidUUIDMessage, Err: err.Error()})
+func (h *Manager) setActiveProviderHandler(w http.ResponseWriter, r *http.Request) {
+	if !h.aclManager.IsAllowed(w, r, types.UserRoleAdmin, types.APIAccessOpsEmbeddingProviderActivate, nil) {
 		return
 	}
 
-	err = h.storage.SetActiveEmbeddingProvider(r.Context(), id)
+	provider, err := h.getEmbeddingProviderFromRequest(w, r)
+	if err != nil {
+		return
+	}
+
+	err = h.storage.SetActiveEmbeddingProvider(r.Context(), provider.UUID)
 	if err != nil {
 		h.logger.WithError(err).Error("Failed to set active embedding provider")
 		util.SendAPIErrorResponse(w, http.StatusInternalServerError, &util.APIError{
@@ -188,19 +207,21 @@ func (h *EmbeddingManager) setActiveProviderHandler(w http.ResponseWriter, r *ht
 		return
 	}
 
-	h.logger.WithField("embedding_provider_id", id).Info("Embedding provider activated successfully")
+	h.logger.WithField("embedding_provider_id", provider.UUID).Info("Embedding provider activated successfully")
 	util.SendSuccessResponse(w, http.StatusOK, map[string]string{"message": "Embedding provider activated successfully"}, h.logger, nil)
 }
 
-func (h *EmbeddingManager) setDeactivateProviderHandler(w http.ResponseWriter, r *http.Request) {
-	id, err := uuid.Parse(chi.URLParam(r, "uuid"))
-	if err != nil {
-		h.logger.WithError(err).Error(types.InvalidUUIDMessage)
-		util.SendAPIErrorResponse(w, http.StatusBadRequest, &util.APIError{Message: types.InvalidUUIDMessage, Err: err.Error()})
+func (h *Manager) setDeactivateProviderHandler(w http.ResponseWriter, r *http.Request) {
+	if !h.aclManager.IsAllowed(w, r, types.UserRoleAdmin, types.APIAccessOpsEmbeddingProviderActivate, nil) {
 		return
 	}
 
-	err = h.storage.SetDisableEmbeddingProvider(r.Context(), id)
+	provider, err := h.getEmbeddingProviderFromRequest(w, r)
+	if err != nil {
+		return
+	}
+
+	err = h.storage.SetDisableEmbeddingProvider(r.Context(), provider.UUID)
 	if err != nil {
 		h.logger.WithError(err).Error("Failed to deactivate embedding provider")
 		util.SendAPIErrorResponse(w, http.StatusInternalServerError, &util.APIError{
@@ -210,6 +231,6 @@ func (h *EmbeddingManager) setDeactivateProviderHandler(w http.ResponseWriter, r
 		return
 	}
 
-	h.logger.WithField("datasource_id", id).Info("Embedding provider has been deactivated successfully")
+	h.logger.WithField("datasource_id", provider.UUID).Info("Embedding provider has been deactivated successfully")
 	util.SendSuccessResponse(w, http.StatusOK, map[string]string{"message": "Embedding provider has been deactivated successfully"}, h.logger, nil)
 }
