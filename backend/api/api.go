@@ -18,7 +18,6 @@ import (
 	"github.com/shaharia-lab/smarty-pants/backend/internal/datasource"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/document"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/embedding"
-	"github.com/shaharia-lab/smarty-pants/backend/internal/oauth"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/interaction"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/llm"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/search"
@@ -55,7 +54,7 @@ type API struct {
 	llmManager         *llm.Manager
 	searchManager      *search.Manager
 	settingsManager    *settings.Manager
-	oauthManager *auth.OAuthManager
+	oauthManager       *auth.OAuthManager
 }
 
 type Config struct {
@@ -85,7 +84,7 @@ func NewAPI(logger *logrus.Logger, storage storage.Storage, searchSystem search.
 		llmManager:         llmManager,
 		searchManager:      searchManager,
 		settingsManager:    settingsManager,
-		oauthManager: oauthManager,
+		oauthManager:       oauthManager,
 	}
 	api.setupMiddleware()
 	api.setupRoutes()

@@ -87,8 +87,6 @@ func runStart(cmd *cobra.Command, _ []string) error {
 		return err
 	}
 
-	userManager := auth.NewUserManager(st, logging)
-
 	var oauthProviders = map[string]auth.OAuthProvider{}
 	if cfg.GoogleOAuthClientID != "" && cfg.GoogleOAuthClientSecret != "" && cfg.GoogleOAuthRedirectURL != "" {
 		oauthProviders["google"] = auth.NewGoogleProvider(
@@ -102,13 +100,6 @@ func runStart(cmd *cobra.Command, _ []string) error {
 		logging.Warn("No OAuth providers configured")
 		return errors.New("authentication is enabled but no OAuth providers configured")
 	}
-
-	oauthManager := auth.NewOAuthManager(
-		oauthProviders,
-		userManager,
-		auth.NewJWTManager(auth.NewKeyManager(st, logging), userManager, logging),
-		logging,
-	)
 
 	metricsServer := observability.StartMetricsServer(cfg.OtelMetricsExposedPort, logging)
 
@@ -131,12 +122,20 @@ func runStart(cmd *cobra.Command, _ []string) error {
 
 	searchSystem := search.NewSearchSystem(logging, st)
 	userManager := auth.NewUserManager(st, logging, aclManager)
+	jwtManager := auth.NewJWTManager(auth.NewKeyManager(st, logging), userManager, logging, authSkipEndpoints)
+	oauthManager := auth.NewOAuthManager(
+		oauthProviders,
+		userManager,
+		jwtManager,
+		logging,
+	)
+
 	apiServer := setupAPIServer(
 		cfg,
 		logging,
 		st,
 		userManager,
-		auth.NewJWTManager(auth.NewKeyManager(st, logging), userManager, logging, authSkipEndpoints),
+		jwtManager,
 		aclManager,
 		cfg.EnableAuthentication,
 		analytics.NewManager(st, logging, aclManager),
@@ -302,7 +301,24 @@ func setupAndStartProcessor(ctx context.Context, cfg *config.Config, st storage.
 	return processingEngine, nil
 }
 
-func setupAPIServer(cfg *config.Config, logging *logrus.Logger, st storage.Storage, userManager *auth.UserManager, jwtmanager *auth.JWTManager, aclManager auth.ACLManager, authEnabled bool, oauthManager *auth.OAuthManager) *api.API {
+func setupAPIServer(
+	cfg *config.Config,
+	logging *logrus.Logger,
+	st storage.Storage,
+	userManager *auth.UserManager,
+	jwtmanager *auth.JWTManager,
+	aclManager auth.ACLManager,
+	authEnabled bool,
+	analyticsManager *analytics.Analytics,
+	datasourceManager *datasource.Manager,
+	documentManager *document.Manager,
+	embeddingManager *embedding.Manager,
+	interactionManager *interaction.Manager,
+	llmManager *llm.Manager,
+	searchManager *search.Manager,
+	settingsManager *settings.Manager,
+	oauthManager *auth.OAuthManager,
+) *api.API {
 	logging.Info("Creating API server")
 	return api.NewAPI(
 		logging,

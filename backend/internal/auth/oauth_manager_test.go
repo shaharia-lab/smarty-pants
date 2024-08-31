@@ -46,8 +46,8 @@ func TestInitiateAuthFlow(t *testing.T) {
 	mockProvider := new(MockOAuthProvider)
 	storageMock := new(storage.StorageMock)
 	logger := logger2.NoOpsLogger()
-	mockUserManager := NewUserManager(storageMock, logger)
-	jwtManager := NewJWTManager(NewKeyManager(storageMock, logger), mockUserManager, logger)
+	mockUserManager := NewUserManager(storageMock, logger, NewACLManager(logger, false))
+	jwtManager := NewJWTManager(NewKeyManager(storageMock, logger), mockUserManager, logger, []string{})
 
 	providers := map[string]OAuthProvider{
 		"google": mockProvider,
@@ -115,9 +115,9 @@ func TestHandleAuthCode(t *testing.T) {
 		}, nil)
 
 	logger := logger2.NoOpsLogger()
-	mockUserManager := NewUserManager(storageMock, logger)
+	mockUserManager := NewUserManager(storageMock, logger, NewACLManager(logger, false))
 	keyManager := NewKeyManager(storageMock, logger)
-	jwtManager := NewJWTManager(keyManager, mockUserManager, logger)
+	jwtManager := NewJWTManager(keyManager, mockUserManager, logger, []string{})
 
 	providers := map[string]OAuthProvider{
 		"google": mockProvider,
@@ -173,8 +173,8 @@ func TestRegisterRoutes(t *testing.T) {
 	mockProvider := new(MockOAuthProvider)
 	storageMock := new(storage.StorageMock)
 	logger := logger2.NoOpsLogger()
-	mockUserManager := NewUserManager(storageMock, logger)
-	mockJWTManager := NewJWTManager(NewKeyManager(storageMock, logger), mockUserManager, logger)
+	mockUserManager := NewUserManager(storageMock, logger, NewACLManager(logger, false))
+	mockJWTManager := NewJWTManager(NewKeyManager(storageMock, logger), mockUserManager, logger, []string{})
 
 	providers := map[string]OAuthProvider{
 		"google": mockProvider,
