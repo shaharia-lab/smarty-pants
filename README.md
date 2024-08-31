@@ -134,6 +134,9 @@ Make sure to configure any necessary network settings to allow the frontend to c
 | `PROCESSOR_SHUTDOWN_TIMEOUT_IN_SECS` | No       | `10`              | Processor shutdown timeout in seconds             |
 | `PROCESSOR_REFRESH_INTERVAL_IN_SECS` | No       | `60`              | Processor refresh interval in seconds             |
 | `ENABLE_AUTH`                        | No       | `false`           | Enable authentication system for the application  |
+| `GOOGLE_OAUTH_CLIENT_ID`             | No       | `""`              | Google OAuth client ID                            |
+| `GOOGLE_OAUTH_CLIENT_SECRET`         | No       | `""`              | Google OAuth client secret                        |
+| `GOOGLE_OAUTH_REDIRECT_URL`          | No       | `""`              | Google OAuth redirect URL                         |
 
 ## 📋 Development
 
