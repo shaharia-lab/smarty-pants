@@ -29,4 +29,9 @@ const (
 	APIAccessOpsInteractionsGet   = "interactions:get"
 	APIAccessOpsInteractionGet    = "interaction:get"
 	APIAccessOpsMessageSend       = "message:send"
+
+	APiAccessOpsSearchSearch = "search:search"
+
+	APiAccessOpsSettingsGet    = "settings:get"
+	APiAccessOpsSettingsUpdate = "settings:update"
 )

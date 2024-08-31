@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/shaharia-lab/smarty-pants/backend/internal/auth"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/logger"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/storage"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/types"
@@ -55,7 +56,8 @@ func TestGetSettingsHandler(t *testing.T) {
 			l := logrus.New()
 			l.Out = &bytes.Buffer{}
 
-			handler := GetSettingsHandler(mockStorage, l)
+			sm := NewManager(mockStorage, l, auth.NewACLManager(l, false))
+			handler := http.HandlerFunc(sm.getSettingsHandler)
 
 			req, err := http.NewRequest("GET", "/settings", nil)
 			assert.NoError(t, err)
@@ -114,7 +116,8 @@ func TestUpdateSettingsHandler(t *testing.T) {
 			l := logrus.New()
 			l.Out = &bytes.Buffer{}
 
-			handler := UpdateSettingsHandler(mockStorage, l)
+			sm := NewManager(mockStorage, l, auth.NewACLManager(l, false))
+			handler := http.HandlerFunc(sm.updateSettingsHandler)
 
 			req, err := http.NewRequest("PUT", "/settings", bytes.NewBufferString(tt.inputBody))
 			assert.NoError(t, err)

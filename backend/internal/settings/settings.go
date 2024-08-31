@@ -33,46 +33,48 @@ func NewManager(storage storage.Storage, logger *logrus.Logger, aclManager auth.
 // RegisterRoutes registers the API handlers with the given ServeMux
 func (m *Manager) RegisterRoutes(r chi.Router) {
 	r.Route("/api/v1/settings", func(r chi.Router) {
-		r.Put("/", UpdateSettingsHandler(m.storage, m.logger))
-		r.Get("/", GetSettingsHandler(m.storage, m.logger))
+		r.Put("/", m.updateSettingsHandler)
+		r.Get("/", m.getSettingsHandler)
 	})
 }
 
-// UpdateSettingsHandler updates the settings
-func UpdateSettingsHandler(st storage.Storage, logging *logrus.Logger) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		ctx, span := observability.StartSpan(r.Context(), "api.updateSettingsHandler")
-		defer span.End()
+func (m *Manager) updateSettingsHandler(w http.ResponseWriter, r *http.Request) {
+	ctx, span := observability.StartSpan(r.Context(), "api.updateSettingsHandler")
+	defer span.End()
 
-		var settings types.Settings
-		if err := json.NewDecoder(r.Body).Decode(&settings); err != nil {
-			util.SendErrorResponse(w, http.StatusBadRequest, "Failed to decode request body", logging, nil)
-			return
-		}
-
-		err := st.UpdateSettings(ctx, settings)
-		if err != nil {
-			logging.WithError(err).Error("Failed to update settings")
-			util.SendErrorResponse(w, http.StatusInternalServerError, "Failed to update settings", logging, nil)
-			return
-		}
-
-		util.SendSuccessResponse(w, http.StatusOK, settings, logging, nil)
+	if !m.aclManager.IsAllowed(w, r, types.UserRoleAdmin, types.APiAccessOpsSettingsUpdate, nil) {
+		return
 	}
+
+	var settings types.Settings
+	if err := json.NewDecoder(r.Body).Decode(&settings); err != nil {
+		util.SendErrorResponse(w, http.StatusBadRequest, "Failed to decode request body", m.logger, nil)
+		return
+	}
+
+	err := m.storage.UpdateSettings(ctx, settings)
+	if err != nil {
+		m.logger.WithError(err).Error("Failed to update settings")
+		util.SendErrorResponse(w, http.StatusInternalServerError, "Failed to update settings", m.logger, nil)
+		return
+	}
+
+	util.SendSuccessResponse(w, http.StatusOK, settings, m.logger, nil)
 }
 
-// GetSettingsHandler returns the settings
-func GetSettingsHandler(st storage.Storage, logging *logrus.Logger) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		ctx, span := observability.StartSpan(r.Context(), "api.getSettingsHandler")
-		defer span.End()
+func (m *Manager) getSettingsHandler(w http.ResponseWriter, r *http.Request) {
+	ctx, span := observability.StartSpan(r.Context(), "api.getSettingsHandler")
+	defer span.End()
 
-		settingsDB, err := st.GetSettings(ctx)
-		if err != nil {
-			util.SendErrorResponse(w, http.StatusInternalServerError, "Failed to fetch settings", logging, nil)
-			return
-		}
-
-		util.SendSuccessResponse(w, http.StatusOK, settingsDB, logging, nil)
+	if !m.aclManager.IsAllowed(w, r, types.UserRoleAdmin, types.APiAccessOpsSettingsGet, nil) {
+		return
 	}
+
+	settingsDB, err := m.storage.GetSettings(ctx)
+	if err != nil {
+		util.SendErrorResponse(w, http.StatusInternalServerError, "Failed to fetch settings", m.logger, nil)
+		return
+	}
+
+	util.SendSuccessResponse(w, http.StatusOK, settingsDB, m.logger, nil)
 }

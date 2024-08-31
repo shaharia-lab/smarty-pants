@@ -147,44 +147,8 @@ func (a *API) setupRoutes() {
 		})
 	})
 
-	a.router.Route("/api", func(r chi.Router) {
-		r.Route("/v1", func(r chi.Router) {
-			r.Use(a.jwtManager.AuthMiddleware(a.enableAuth))
-
-			/*r.Route("/interactions", func(r chi.Router) {
-				r.Post("/", createInteractionHandler(a.storage, a.logger))
-				r.Get("/", getInteractionsHandler(a.logger))
-				r.Route(uuidPath, func(r chi.Router) {
-					r.Get("/", getInteractionHandler(a.logger))
-					r.Post("/message", sendMessageHandler(a.searchSystem, a.storage, a.logger))
-				})
-			})*/
-
-			/*r.Route("/llm-provider", func(r chi.Router) {
-				r.Post("/", llm.AddLLMProviderHandler(a.storage, a.logger))
-				r.Route(uuidPath, func(r chi.Router) {
-					r.Delete("/", llm.DeleteLLMProviderHandler(a.storage, a.logger))
-					r.Get("/", llm.GetLLMProviderHandler(a.storage, a.logger))
-					r.Put("/", llm.UpdateLLMProviderHandler(a.storage, a.logger))
-					r.Put(activatePath, llm.SetActiveLLMProviderHandler(a.storage, a.logger))
-					r.Put(deactivatePath, llm.SetDisableLLMProviderHandler(a.storage, a.logger))
-				})
-				r.Get("/", llm.GetLLMProvidersHandler(a.storage, a.logger))
-			})*/
-
-			/*r.Route("/search", func(r chi.Router) {
-				r.Post("/", search.AddSearchHandler(a.searchSystem, a.logger))
-			})*/
-
-			/*r.Route("/settings", func(r chi.Router) {
-				r.Get("/", settings.GetSettingsHandler(a.storage, a.logger))
-				r.Put("/", settings.UpdateSettingsHandler(a.storage, a.logger))
-			})*/
-		})
-	})
-
 	a.userManager.RegisterRoutes(a.router)
-	a.analyticsManager.RegisterRoutes(a.router)
+	a.analyticsManager.RegisterRoutes(a.router.With(a.jwtManager.AuthMiddleware(a.enableAuth)))
 	a.datasourceManager.RegisterRoutes(a.router)
 	a.documentManager.RegisterRoutes(a.router)
 	a.embeddingManager.RegisterRoutes(a.router)
