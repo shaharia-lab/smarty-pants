@@ -25,7 +25,7 @@ func TestUserManager_handleGetUser(t *testing.T) {
 	mockStorage := new(storage.StorageMock)
 	logger := logrus.New()
 	logger.SetLevel(logrus.DebugLevel)
-	um := NewUserManager(mockStorage, logger)
+	um := NewUserManager(mockStorage, logger, NewACLManager(logger, false))
 
 	userUUID := uuid.New()
 	user := &types.User{
@@ -81,7 +81,7 @@ func TestUserManager_handleGetUser(t *testing.T) {
 func TestUserManager_handleActivateUser(t *testing.T) {
 	mockStorage := new(storage.StorageMock)
 	logger := logrus.New()
-	um := NewUserManager(mockStorage, logger)
+	um := NewUserManager(mockStorage, logger, NewACLManager(logger, false))
 
 	userUUID := uuid.New()
 	user := &types.User{
@@ -94,7 +94,7 @@ func TestUserManager_handleActivateUser(t *testing.T) {
 	r := chi.NewRouter()
 	r.Use(func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			ctx := context.WithValue(r.Context(), userContextKey, user)
+			ctx := context.WithValue(r.Context(), types.UserDetailsCtxKey, user)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	})
@@ -113,7 +113,7 @@ func TestUserManager_handleActivateUser(t *testing.T) {
 func TestUserManager_handleDeactivateUser(t *testing.T) {
 	mockStorage := new(storage.StorageMock)
 	logger := logrus.New()
-	um := NewUserManager(mockStorage, logger)
+	um := NewUserManager(mockStorage, logger, NewACLManager(logger, false))
 
 	userUUID := uuid.New()
 	user := &types.User{
@@ -126,7 +126,7 @@ func TestUserManager_handleDeactivateUser(t *testing.T) {
 	r := chi.NewRouter()
 	r.Use(func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			ctx := context.WithValue(r.Context(), userContextKey, user)
+			ctx := context.WithValue(r.Context(), types.UserDetailsCtxKey, user)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	})
@@ -195,12 +195,12 @@ func TestUserManager_ResolveUserFromRequest(t *testing.T) {
 			mockStorage := new(storage.StorageMock)
 			logger := logrus.New()
 			logger.SetOutput(io.Discard) // Suppress log output during tests
-			um := NewUserManager(mockStorage, logger)
+			um := NewUserManager(mockStorage, logger, NewACLManager(logger, false))
 
 			tt.setupMock(mockStorage)
 
 			handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				resolvedUser, ok := r.Context().Value(userContextKey).(*types.User)
+				resolvedUser, ok := r.Context().Value(types.UserDetailsCtxKey).(*types.User)
 				if tt.expectedUser != nil {
 					assert.True(t, ok)
 					assert.Equal(t, tt.expectedUser, resolvedUser)
@@ -232,7 +232,7 @@ func TestUserManager_ResolveUserFromRequest(t *testing.T) {
 func TestUserManager_ResolveUserFromRequest_InvalidUUID(t *testing.T) {
 	mockStorage := new(storage.StorageMock)
 	logger := logrus.New()
-	um := NewUserManager(mockStorage, logger)
+	um := NewUserManager(mockStorage, logger, NewACLManager(logger, false))
 
 	r := chi.NewRouter()
 	r.Use(um.ResolveUserFromRequest)
@@ -252,7 +252,7 @@ func TestUserManager_handleListUsers(t *testing.T) {
 	mockStorage := new(storage.StorageMock)
 	logger := logrus.New()
 	logger.SetLevel(logrus.DebugLevel)
-	um := NewUserManager(mockStorage, logger)
+	um := NewUserManager(mockStorage, logger, NewACLManager(logger, false))
 
 	user1 := &types.User{
 		UUID:      uuid.New(),

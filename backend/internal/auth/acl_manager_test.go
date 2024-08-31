@@ -44,7 +44,7 @@ func TestACLManager_IsAllowed(t *testing.T) {
 			// Create a mock request with a context
 			req, _ := http.NewRequest("GET", "/test", nil)
 			if tt.userRoles != nil {
-				ctx := context.WithValue(req.Context(), AuthenticatedUserCtxKey, &types.User{Roles: tt.userRoles})
+				ctx := context.WithValue(req.Context(), types.AuthenticatedUserCtxKey, &types.User{Roles: tt.userRoles})
 				req = req.WithContext(ctx)
 			}
 
@@ -52,7 +52,7 @@ func TestACLManager_IsAllowed(t *testing.T) {
 			w := httptest.NewRecorder()
 
 			// Call IsAllowed
-			result := aclManager.IsAllowed(w, req, tt.requiredRole, "test-resource")
+			result := aclManager.IsAllowed(w, req, tt.requiredRole, "", "test-resource")
 
 			// Assert the result
 			assert.Equal(t, tt.expected, result, "IsAllowed returned unexpected result")
@@ -86,7 +86,7 @@ func TestACLManager_getUserFromContext(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := context.Background()
 			if tt.contextUser != nil {
-				ctx = context.WithValue(ctx, AuthenticatedUserCtxKey, tt.contextUser)
+				ctx = context.WithValue(ctx, types.AuthenticatedUserCtxKey, tt.contextUser)
 			}
 
 			user, err := aclManager.getUserFromContext(ctx)

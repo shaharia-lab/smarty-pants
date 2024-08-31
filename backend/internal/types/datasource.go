@@ -267,3 +267,7 @@ func ParseDatasourceStateFromRawJSON(sourceType DatasourceType, data json.RawMes
 type ErrorResponse struct {
 	Error string `json:"error"`
 }
+
+const (
+	DatasourceDeletedSuccessfullyMsg = "Datasource has been deleted successfully"
+)

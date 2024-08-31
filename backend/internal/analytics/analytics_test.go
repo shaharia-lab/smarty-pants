@@ -1,4 +1,4 @@
-package api
+package analytics
 
 import (
 	"context"
@@ -136,7 +136,8 @@ func TestGetAnalyticsOverview(t *testing.T) {
 
 			logger := logrus.New()
 
-			handler := getAnalyticsOverview(mockStorage, logger, auth.NewACLManager(logger, false))
+			a := NewManager(mockStorage, logger, auth.NewACLManager(logger, false))
+			handler := http.HandlerFunc(a.getAnalyticsOverview)
 			handler.ServeHTTP(rr, req)
 
 			assert.Equal(t, tc.expectedStatus, rr.Code)

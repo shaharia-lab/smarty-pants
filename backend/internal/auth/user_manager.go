@@ -15,21 +15,19 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type contextKey string
-
-const userContextKey contextKey = "user_details"
-
 // UserManager is a manager for user operations.
 type UserManager struct {
-	storage storage.Storage
-	logger  *logrus.Logger
+	storage    storage.Storage
+	logger     *logrus.Logger
+	aclManager ACLManager
 }
 
 // NewUserManager creates a new instance of UserManager with the given storage and logger.
-func NewUserManager(storage storage.Storage, logger *logrus.Logger) *UserManager {
+func NewUserManager(storage storage.Storage, logger *logrus.Logger, aclManager ACLManager) *UserManager {
 	return &UserManager{
-		storage: storage,
-		logger:  logger,
+		storage:    storage,
+		logger:     logger,
+		aclManager: aclManager,
 	}
 }
 
@@ -54,6 +52,11 @@ func (um *UserManager) CreateUser(ctx context.Context, name, email string, statu
 // GetUser fetches the user details from the storage.
 func (um *UserManager) GetUser(ctx context.Context, uuid uuid.UUID) (*types.User, error) {
 	return um.storage.GetUser(ctx, uuid)
+}
+
+// GetAnonymousUser fetches the anonymous user data
+func (um *UserManager) GetAnonymousUser(ctx context.Context) (*types.User, error) {
+	return um.storage.GetUser(ctx, uuid.MustParse(types.AnonymousUserUUID))
 }
 
 // UpdateUserStatus updates the status of the user with the given UUID.
@@ -127,7 +130,7 @@ func (um *UserManager) ResolveUserFromRequest(next http.Handler) http.Handler {
 			return
 		}
 
-		ctx := context.WithValue(r.Context(), userContextKey, user)
+		ctx := context.WithValue(r.Context(), types.UserDetailsCtxKey, user)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
@@ -146,6 +149,10 @@ func (um *UserManager) RegisterRoutes(r chi.Router) {
 }
 
 func (um *UserManager) handleListUsers(w http.ResponseWriter, r *http.Request) {
+	if !um.aclManager.IsAllowed(w, r, types.UserRoleAdmin, "", "list_users") {
+		return
+	}
+
 	_, span := observability.StartSpan(r.Context(), "auth.UserManager.handleListUsers")
 	defer span.End()
 
@@ -196,10 +203,30 @@ func parseRoles(roleStrings []string) []types.UserRole {
 }
 
 func (um *UserManager) handleGetUser(w http.ResponseWriter, r *http.Request) {
+	if !um.aclManager.IsAllowed(w, r, types.UserRoleUser, "", "get_user") {
+		return
+	}
+
 	_, span := observability.StartSpan(r.Context(), "auth.UserManager.handleGetUser")
 	defer span.End()
 
-	user := r.Context().Value(userContextKey).(*types.User)
+	userUUID, err := uuid.Parse(chi.URLParam(r, "uuid"))
+	if err != nil {
+		util.SendErrorResponse(w, http.StatusBadRequest, types.InvalidUUIDMessage, um.logger, nil)
+		return
+	}
+
+	user, err := um.storage.GetUser(r.Context(), userUUID)
+	if err != nil {
+		if errors.Is(err, types.UserNotFoundError) {
+			util.SendErrorResponse(w, http.StatusNotFound, "User not found", um.logger, nil)
+			return
+		}
+
+		util.SendErrorResponse(w, http.StatusInternalServerError, "Failed to get user", um.logger, nil)
+		return
+	}
+
 	util.SendSuccessResponse(w, http.StatusOK, user, um.logger, nil)
 }
 
@@ -207,7 +234,7 @@ func (um *UserManager) handleActivateUser(w http.ResponseWriter, r *http.Request
 	_, span := observability.StartSpan(r.Context(), "auth.UserManager.handleActivateUser")
 	defer span.End()
 
-	user := r.Context().Value(userContextKey).(*types.User)
+	user := r.Context().Value(types.UserDetailsCtxKey).(*types.User)
 	err := um.ActivateUser(r.Context(), user.UUID)
 	if err != nil {
 		util.SendErrorResponse(w, http.StatusInternalServerError, "Failed to activate user", um.logger, nil)
@@ -220,7 +247,7 @@ func (um *UserManager) handleDeactivateUser(w http.ResponseWriter, r *http.Reque
 	_, span := observability.StartSpan(r.Context(), "auth.UserManager.handleDeactivateUser")
 	defer span.End()
 
-	user := r.Context().Value(userContextKey).(*types.User)
+	user := r.Context().Value(types.UserDetailsCtxKey).(*types.User)
 	err := um.DeactivateUser(r.Context(), user.UUID)
 	if err != nil {
 		util.SendErrorResponse(w, http.StatusInternalServerError, "Failed to deactivate user", um.logger, nil)

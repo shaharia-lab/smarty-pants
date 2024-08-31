@@ -10,8 +10,12 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/shaharia-lab/smarty-pants/backend/internal/analytics"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/auth"
+	"github.com/shaharia-lab/smarty-pants/backend/internal/interaction"
+	"github.com/shaharia-lab/smarty-pants/backend/internal/llm"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/search"
+	"github.com/shaharia-lab/smarty-pants/backend/internal/settings"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/storage"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
@@ -195,7 +199,7 @@ func createTestAPIWithoutSetup() *API {
 	logger := logrus.New()
 	mockStorage := new(storage.StorageMock)
 	searchSystem := search.NewSearchSystem(logger, mockStorage)
-	userManager := auth.NewUserManager(mockStorage, logger)
+	userManager := auth.NewUserManager(mockStorage, logger, auth.NewACLManager(logger, false))
 
 	// Find an available port
 	listener, err := net.Listen("tcp", ":0")
@@ -212,14 +216,21 @@ func createTestAPIWithoutSetup() *API {
 		IdleTimeout:       60,
 	}
 
+	aclManager := auth.NewACLManager(logger, false)
+
 	return &API{
-		config:       config,
-		router:       chi.NewRouter(),
-		port:         port,
-		logger:       logger,
-		storage:      mockStorage,
-		searchSystem: searchSystem,
-		userManager:  userManager,
-		aclManager:   auth.NewACLManager(logger, false),
+		config:             config,
+		router:             chi.NewRouter(),
+		port:               port,
+		logger:             logger,
+		storage:            mockStorage,
+		searchSystem:       searchSystem,
+		userManager:        userManager,
+		aclManager:         aclManager,
+		analyticsManager:   analytics.NewManager(mockStorage, logger, auth.NewACLManager(logger, false)),
+		interactionManager: interaction.NewManager(mockStorage, logger, searchSystem, aclManager),
+		llmManager:         llm.NewManager(mockStorage, logger, aclManager),
+		searchManager:      search.NewManager(searchSystem, logger, aclManager),
+		settingsManager:    settings.NewManager(mockStorage, logger, aclManager),
 	}
 }

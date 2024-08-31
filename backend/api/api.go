@@ -13,9 +13,15 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
+	"github.com/shaharia-lab/smarty-pants/backend/internal/analytics"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/auth"
+	"github.com/shaharia-lab/smarty-pants/backend/internal/datasource"
+	"github.com/shaharia-lab/smarty-pants/backend/internal/document"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/embedding"
+	"github.com/shaharia-lab/smarty-pants/backend/internal/interaction"
+	"github.com/shaharia-lab/smarty-pants/backend/internal/llm"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/search"
+	"github.com/shaharia-lab/smarty-pants/backend/internal/settings"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/storage"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/util"
 	"github.com/sirupsen/logrus"
@@ -26,22 +32,28 @@ const (
 	uuidPath       = "/{uuid}"
 	activatePath   = "/activate"
 	deactivatePath = "/deactivate"
-
-	invalidUUIDMsg = "Invalid UUID"
 )
 
 type API struct {
-	config       Config
-	router       *chi.Mux
-	port         int
-	logger       *logrus.Logger
-	storage      storage.Storage
-	searchSystem search.System
-	server       *http.Server
-	userManager  *auth.UserManager
-	jwtManager   *auth.JWTManager
-	aclManager   auth.ACLManager
-	enableAuth   bool
+	config             Config
+	router             *chi.Mux
+	port               int
+	logger             *logrus.Logger
+	storage            storage.Storage
+	searchSystem       search.System
+	server             *http.Server
+	userManager        *auth.UserManager
+	jwtManager         *auth.JWTManager
+	aclManager         auth.ACLManager
+	enableAuth         bool
+	analyticsManager   *analytics.Analytics
+	datasourceManager  *datasource.Manager
+	documentManager    *document.Manager
+	embeddingManager   *embedding.Manager
+	interactionManager *interaction.Manager
+	llmManager         *llm.Manager
+	searchManager      *search.Manager
+	settingsManager    *settings.Manager
 }
 
 type Config struct {
@@ -51,18 +63,26 @@ type Config struct {
 	IdleTimeout       int
 }
 
-func NewAPI(logger *logrus.Logger, storage storage.Storage, searchSystem search.System, config Config, userManager *auth.UserManager, jwtManager *auth.JWTManager, aclManager auth.ACLManager, enableAuth bool) *API {
+func NewAPI(logger *logrus.Logger, storage storage.Storage, searchSystem search.System, config Config, userManager *auth.UserManager, jwtManager *auth.JWTManager, aclManager auth.ACLManager, enableAuth bool, analyticsManager *analytics.Analytics, datasourceManager *datasource.Manager, documentManager *document.Manager, embeddingManager *embedding.Manager, interactionManager *interaction.Manager, llmManager *llm.Manager, searchManager *search.Manager, settingsManager *settings.Manager) *API {
 	api := &API{
-		config:       config,
-		router:       chi.NewRouter(),
-		port:         config.Port,
-		logger:       logger,
-		storage:      storage,
-		searchSystem: searchSystem,
-		userManager:  userManager,
-		jwtManager:   jwtManager,
-		aclManager:   aclManager,
-		enableAuth:   enableAuth,
+		config:             config,
+		router:             chi.NewRouter(),
+		port:               config.Port,
+		logger:             logger,
+		storage:            storage,
+		searchSystem:       searchSystem,
+		userManager:        userManager,
+		jwtManager:         jwtManager,
+		aclManager:         aclManager,
+		enableAuth:         enableAuth,
+		analyticsManager:   analyticsManager,
+		datasourceManager:  datasourceManager,
+		documentManager:    documentManager,
+		embeddingManager:   embeddingManager,
+		interactionManager: interactionManager,
+		llmManager:         llmManager,
+		searchManager:      searchManager,
+		settingsManager:    settingsManager,
 	}
 	api.setupMiddleware()
 	api.setupRoutes()
@@ -127,77 +147,14 @@ func (a *API) setupRoutes() {
 		})
 	})
 
-	a.router.Route("/api", func(r chi.Router) {
-		r.Route("/v1", func(r chi.Router) {
-			r.Use(a.jwtManager.AuthMiddleware(a.enableAuth))
-
-			r.Route("/analytics", func(r chi.Router) {
-				r.Get("/overview", getAnalyticsOverview(a.storage, a.logger, a.aclManager))
-			})
-
-			r.Route("/datasource", func(r chi.Router) {
-				r.Post("/", addDatasourceHandler(a.storage, a.logger, a.aclManager))
-				r.Route(uuidPath, func(r chi.Router) {
-					r.Delete("/", deleteDatasourceHandler(a.storage, a.logger))
-					r.Get("/", getDatasourceHandler(a.storage, a.logger))
-					r.Get("/validate", validateDatasourceHandler(a.storage, a.logger))
-					r.Put("/", updateDatasourceHandler(a.storage, a.logger))
-					r.Put(activatePath, setActiveDatasourceHandler(a.storage, a.logger))
-					r.Put(deactivatePath, setDisableDatasourceHandler(a.storage, a.logger))
-				})
-				r.Get("/", getDatasourcesHandler(a.storage, a.logger))
-			})
-
-			r.Route("/document", func(r chi.Router) {
-				r.Get(uuidPath, getDocumentHandler(a.storage, a.logger))
-				r.Get("/", getDocumentsHandler(a.storage, a.logger))
-			})
-
-			r.Route("/embedding-provider", func(r chi.Router) {
-				r.Post("/", addEmbeddingProviderHandler(a.storage, a.logger))
-				r.Route(uuidPath, func(r chi.Router) {
-					r.Delete("/", deleteEmbeddingProviderHandler(a.storage, a.logger))
-					r.Get("/", getEmbeddingProviderHandler(a.storage, a.logger))
-					r.Put("/", updateEmbeddingProviderHandler(a.storage, a.logger))
-					r.Put(activatePath, setActiveEmbeddingProviderHandler(a.storage, a.logger))
-					r.Put(deactivatePath, setDisableEmbeddingProviderHandler(a.storage, a.logger))
-				})
-				r.Get("/", getEmbeddingProvidersHandler(a.storage, a.logger))
-			})
-
-			r.Route("/interactions", func(r chi.Router) {
-				r.Post("/", createInteractionHandler(a.storage, a.logger))
-				r.Get("/", getInteractionsHandler(a.logger))
-				r.Route(uuidPath, func(r chi.Router) {
-					r.Get("/", getInteractionHandler(a.logger))
-					r.Post("/message", sendMessageHandler(a.searchSystem, a.storage, a.logger))
-				})
-			})
-
-			r.Route("/llm-provider", func(r chi.Router) {
-				r.Post("/", addLLMProviderHandler(a.storage, a.logger))
-				r.Route(uuidPath, func(r chi.Router) {
-					r.Delete("/", deleteLLMProviderHandler(a.storage, a.logger))
-					r.Get("/", getLLMProviderHandler(a.storage, a.logger))
-					r.Put("/", updateLLMProviderHandler(a.storage, a.logger))
-					r.Put(activatePath, setActiveLLMProviderHandler(a.storage, a.logger))
-					r.Put(deactivatePath, setDisableLLMProviderHandler(a.storage, a.logger))
-				})
-				r.Get("/", getLLMProvidersHandler(a.storage, a.logger))
-			})
-
-			r.Route("/search", func(r chi.Router) {
-				r.Post("/", addSearchHandler(a.searchSystem, a.logger))
-			})
-
-			r.Route("/settings", func(r chi.Router) {
-				r.Get("/", getSettingsHandler(a.storage, a.logger))
-				r.Put("/", updateSettingsHandler(a.storage, a.logger))
-			})
-		})
-	})
-
 	a.userManager.RegisterRoutes(a.router)
+	a.analyticsManager.RegisterRoutes(a.router.With(a.jwtManager.AuthMiddleware(a.enableAuth)))
+	a.datasourceManager.RegisterRoutes(a.router)
+	a.documentManager.RegisterRoutes(a.router)
+	a.embeddingManager.RegisterRoutes(a.router)
+	a.interactionManager.RegisterRoutes(a.router)
+	a.searchManager.RegisterRoutes(a.router)
+	a.settingsManager.RegisterRoutes(a.router)
 }
 
 // Start starts the API server

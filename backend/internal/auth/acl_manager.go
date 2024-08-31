@@ -30,7 +30,7 @@ func NewACLManager(logger *logrus.Logger, enableAuth bool) ACLManager {
 }
 
 // IsAllowed checks if the user has the required role to access the resource.
-func (m *ACLManager) IsAllowed(w http.ResponseWriter, r *http.Request, requiredRole types.UserRole, resource interface{}) bool {
+func (m *ACLManager) IsAllowed(w http.ResponseWriter, r *http.Request, requiredRole types.UserRole, operationType string, _ interface{}) bool {
 	if !m.enableAuth {
 		return true
 	}
@@ -49,7 +49,7 @@ func (m *ACLManager) IsAllowed(w http.ResponseWriter, r *http.Request, requiredR
 	m.logger.WithFields(logrus.Fields{
 		"user_roles":    user.Roles,
 		"required_role": requiredRole,
-		"resource":      resource,
+		"resource":      operationType,
 	}).Warn("Access denied due to insufficient role")
 
 	util.SendAPIErrorResponse(
@@ -65,7 +65,7 @@ func (m *ACLManager) IsAllowed(w http.ResponseWriter, r *http.Request, requiredR
 
 // getUserFromContext retrieves the user from the context.
 func (m *ACLManager) getUserFromContext(ctx context.Context) (*types.User, error) {
-	user, ok := ctx.Value(AuthenticatedUserCtxKey).(*types.User)
+	user, ok := ctx.Value(types.AuthenticatedUserCtxKey).(*types.User)
 	if !ok {
 		return nil, errors.New("user not found in context")
 	}

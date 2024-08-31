@@ -36,6 +36,7 @@ func sendResponse(w http.ResponseWriter, statusCode int, data interface{}, err e
 }
 
 // SendErrorResponse sends an error response with a message
+// @deprecated
 func SendErrorResponse(w http.ResponseWriter, statusCode int, message string, logger *logrus.Logger, span trace.Span) {
 	response := Response{
 		Error: message,

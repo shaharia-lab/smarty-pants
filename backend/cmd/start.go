@@ -13,13 +13,20 @@ import (
 	"time"
 
 	"github.com/shaharia-lab/smarty-pants/backend/api"
+	"github.com/shaharia-lab/smarty-pants/backend/internal/analytics"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/auth"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/collector"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/config"
+	"github.com/shaharia-lab/smarty-pants/backend/internal/datasource"
+	"github.com/shaharia-lab/smarty-pants/backend/internal/document"
+	"github.com/shaharia-lab/smarty-pants/backend/internal/embedding"
+	"github.com/shaharia-lab/smarty-pants/backend/internal/interaction"
+	"github.com/shaharia-lab/smarty-pants/backend/internal/llm"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/logger"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/observability"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/processor"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/search"
+	"github.com/shaharia-lab/smarty-pants/backend/internal/settings"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/shutdown"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/storage"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/types"
@@ -80,8 +87,6 @@ func runStart(cmd *cobra.Command, _ []string) error {
 		return err
 	}
 
-	userManager := auth.NewUserManager(st, logging)
-
 	metricsServer := observability.StartMetricsServer(cfg.OtelMetricsExposedPort, logging)
 
 	shutdownManager := initializeShutdownManager(cfg, logging)
@@ -96,14 +101,29 @@ func runStart(cmd *cobra.Command, _ []string) error {
 		return err
 	}
 
+	aclManager := auth.NewACLManager(logging, cfg.EnableAuthentication)
+	authSkipEndpoints := []string{
+		//"/api/v1/analytics/overview",
+	}
+
+	searchSystem := search.NewSearchSystem(logging, st)
+	userManager := auth.NewUserManager(st, logging, aclManager)
 	apiServer := setupAPIServer(
 		cfg,
 		logging,
 		st,
 		userManager,
-		auth.NewJWTManager(auth.NewKeyManager(st, logging), userManager, logging),
-		auth.NewACLManager(logging, cfg.EnableAuthentication),
+		auth.NewJWTManager(auth.NewKeyManager(st, logging), userManager, logging, authSkipEndpoints),
+		aclManager,
 		cfg.EnableAuthentication,
+		analytics.NewManager(st, logging, aclManager),
+		datasource.NewDatasourceManager(st, logging, aclManager),
+		document.NewManager(st, logging, aclManager),
+		embedding.NewEmbeddingManager(st, logging, aclManager),
+		interaction.NewManager(st, logging, searchSystem, aclManager),
+		llm.NewManager(st, logging, aclManager),
+		search.NewManager(searchSystem, logging, aclManager),
+		settings.NewManager(st, logging, aclManager),
 	)
 
 	shutdownManager.RegisterShutdownFn(func(ctx context.Context) error {
@@ -258,7 +278,23 @@ func setupAndStartProcessor(ctx context.Context, cfg *config.Config, st storage.
 	return processingEngine, nil
 }
 
-func setupAPIServer(cfg *config.Config, logging *logrus.Logger, st storage.Storage, userManager *auth.UserManager, jwtmanager *auth.JWTManager, aclManager auth.ACLManager, authEnabled bool) *api.API {
+func setupAPIServer(
+	cfg *config.Config,
+	logging *logrus.Logger,
+	st storage.Storage,
+	userManager *auth.UserManager,
+	jwtmanager *auth.JWTManager,
+	aclManager auth.ACLManager,
+	authEnabled bool,
+	analyticsManager *analytics.Analytics,
+	datasourceManager *datasource.Manager,
+	documentManager *document.Manager,
+	embeddingManager *embedding.Manager,
+	interactionManager *interaction.Manager,
+	llmManager *llm.Manager,
+	searchManager *search.Manager,
+	settingsManager *settings.Manager,
+) *api.API {
 	logging.Info("Creating API server")
 	return api.NewAPI(
 		logging,
@@ -274,6 +310,14 @@ func setupAPIServer(cfg *config.Config, logging *logrus.Logger, st storage.Stora
 		jwtmanager,
 		aclManager,
 		authEnabled,
+		analyticsManager,
+		datasourceManager,
+		documentManager,
+		embeddingManager,
+		interactionManager,
+		llmManager,
+		searchManager,
+		settingsManager,
 	)
 }
 

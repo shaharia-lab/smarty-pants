@@ -12,6 +12,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
+	"github.com/shaharia-lab/smarty-pants/backend/internal/analytics"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/auth"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/logger"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/storage"
@@ -33,15 +34,15 @@ func TestAPIEndpoints(t *testing.T) {
 	mockStorage.On("GetKeyPair").Return(privateKeyBytes, publicKeyBytes, nil)
 	mockLogger := logger.NoOpsLogger()
 	mockACLManager := auth.NewACLManager(mockLogger, true)
-	userManager := auth.NewUserManager(mockStorage, mockLogger)
-	jwtManager := auth.NewJWTManager(auth.NewKeyManager(mockStorage, mockLogger), userManager, mockLogger)
+	userManager := auth.NewUserManager(mockStorage, mockLogger, mockACLManager)
+	jwtManager := auth.NewJWTManager(auth.NewKeyManager(mockStorage, mockLogger), userManager, mockLogger, []string{})
 
 	// Create a new router
 	r := chi.NewRouter()
 	r.Use(jwtManager.AuthMiddleware(true))
 
-	// Set up routes
-	r.Get("/api/v1/analytics/overview", getAnalyticsOverview(mockStorage, mockLogger, mockACLManager))
+	an := analytics.NewManager(mockStorage, mockLogger, mockACLManager)
+	an.RegisterRoutes(r)
 
 	// Add more routes here as needed
 
@@ -103,6 +104,86 @@ func TestAPIEndpoints(t *testing.T) {
 
 			// Add token to the request
 			req.Header.Set("Authorization", "Bearer "+accessToken)
+
+			// Send the request
+			client := &http.Client{}
+			resp, err := client.Do(req)
+			assert.NoError(t, err)
+			defer resp.Body.Close()
+
+			// Check the status code
+			assert.Equal(t, tt.expectedStatus, resp.StatusCode)
+		})
+	}
+}
+
+func TestAPIEndpointsWhenAuthDisabled(t *testing.T) {
+	mockStorage := new(storage.StorageMock)
+	mockLogger := logger.NoOpsLogger()
+	mockACLManager := auth.NewACLManager(mockLogger, false)
+	userManager := auth.NewUserManager(mockStorage, mockLogger, mockACLManager)
+	jwtManager := auth.NewJWTManager(auth.NewKeyManager(mockStorage, mockLogger), userManager, mockLogger, []string{})
+
+	// Create a new router
+	r := chi.NewRouter()
+	r.Use(jwtManager.AuthMiddleware(false))
+
+	an := analytics.NewManager(mockStorage, mockLogger, mockACLManager)
+	an.RegisterRoutes(r)
+
+	// Add more routes here as needed
+
+	// Create a test server
+	ts := httptest.NewServer(r)
+	defer ts.Close()
+
+	// Test cases
+	tests := []struct {
+		name           string
+		endpoint       string
+		method         string
+		user           *types.User
+		expectedStatus int
+	}{
+		{
+			name:     "Admin accessing analytics overview when auth is disabled",
+			endpoint: "/api/v1/analytics/overview",
+			method:   http.MethodGet,
+			user: &types.User{
+				UUID:   uuid.MustParse(types.AnonymousUserUUID),
+				Name:   "Admin User",
+				Email:  "admin@example.com",
+				Status: types.UserStatusActive,
+				Roles:  []types.UserRole{types.UserRoleAdmin},
+			},
+			expectedStatus: http.StatusOK,
+		},
+		{
+			name:     "Regular user accessing analytics overview when auth is disabled",
+			endpoint: "/api/v1/analytics/overview",
+			method:   http.MethodGet,
+			user: &types.User{
+				UUID:   uuid.MustParse(types.AnonymousUserUUID),
+				Name:   "Regular User",
+				Email:  "user@example.com",
+				Status: types.UserStatusActive,
+				Roles:  []types.UserRole{types.UserRoleAdmin},
+			},
+			expectedStatus: http.StatusOK,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.user != nil {
+				mockStorage.On("GetUser", mock.Anything, tt.user.UUID).Return(tt.user, nil)
+			}
+
+			mockStorage.On("GetAnalyticsOverview", mock.Anything).Return(types.AnalyticsOverview{}, nil)
+
+			// Create a new request
+			req, err := http.NewRequest(tt.method, ts.URL+tt.endpoint, nil)
+			assert.NoError(t, err)
 
 			// Send the request
 			client := &http.Client{}

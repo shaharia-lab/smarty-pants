@@ -16,8 +16,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-const AuthenticatedUserCtxKey contextKey = "authenticated_user"
-
 // JWTClaims represents the structure of your custom claims
 type JWTClaims struct {
 	jwt.RegisteredClaims
@@ -25,17 +23,19 @@ type JWTClaims struct {
 
 // JWTManager handles JWT operations
 type JWTManager struct {
-	keyManager  *KeyManager
-	userManager *UserManager
-	logger      *logrus.Logger
+	keyManager        *KeyManager
+	userManager       *UserManager
+	logger            *logrus.Logger
+	skipAuthEndpoints []string
 }
 
 // NewJWTManager creates a new JWTManager with the given KeyManager, UserManager and logger
-func NewJWTManager(keyManager *KeyManager, userManager *UserManager, logger *logrus.Logger) *JWTManager {
+func NewJWTManager(keyManager *KeyManager, userManager *UserManager, logger *logrus.Logger, skipAuthEndpoints []string) *JWTManager {
 	return &JWTManager{
-		keyManager:  keyManager,
-		userManager: userManager,
-		logger:      logger,
+		keyManager:        keyManager,
+		userManager:       userManager,
+		logger:            logger,
+		skipAuthEndpoints: skipAuthEndpoints,
 	}
 }
 
@@ -138,7 +138,28 @@ func (m *JWTManager) AuthMiddleware(authEnabled bool) func(http.Handler) http.Ha
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if !authEnabled {
-				r = m.processAnonymousUser(w, r, next)
+				anonymousUser, err := m.userManager.GetAnonymousUser(r.Context())
+				if err != nil {
+					m.logger.WithError(err).Error("Failed to get anonymous user")
+					util.SendAPIErrorResponse(w, http.StatusInternalServerError, &util.APIError{Message: "Internal server error", Err: err.Error()})
+					return
+				}
+
+				if anonymousUser == nil {
+					m.logger.Error("Anonymous user is nil")
+					util.SendAPIErrorResponse(w, http.StatusInternalServerError, &util.APIError{Message: "Internal server error", Err: "Anonymous user doesn't exists in the system"})
+					return
+				}
+
+				r.WithContext(context.WithValue(r.Context(), types.AuthenticatedUserCtxKey, anonymousUser))
+				next.ServeHTTP(w, r)
+				return
+			}
+
+			if m.isPathInSkipList(r.URL.Path) {
+				r.WithContext(context.WithValue(r.Context(), types.AuthenticatedUserCtxKey, types.DefaultAnonymousUser()))
+				next.ServeHTTP(w, r)
+				return
 			}
 
 			m.processAccessToken(w, r, next)
@@ -146,22 +167,14 @@ func (m *JWTManager) AuthMiddleware(authEnabled bool) func(http.Handler) http.Ha
 	}
 }
 
-func (m *JWTManager) processAnonymousUser(w http.ResponseWriter, r *http.Request, next http.Handler) *http.Request {
-	anonymousUser := &types.User{
-		UUID:      uuid.MustParse("00000000-0000-0000-0000-000000000000"),
-		Name:      "Anonymous User",
-		Email:     "anonymous@example.com",
-		Status:    types.UserStatusActive,
-		Roles:     []types.UserRole{types.UserRoleAdmin},
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
+func (m *JWTManager) isPathInSkipList(path string) bool {
+	for _, skipPath := range m.skipAuthEndpoints {
+		if path == skipPath {
+			return true
+		}
 	}
 
-	ctx := context.WithValue(r.Context(), AuthenticatedUserCtxKey, anonymousUser)
-	r = r.WithContext(ctx)
-
-	next.ServeHTTP(w, r)
-	return r
+	return false
 }
 
 func (m *JWTManager) processAccessToken(w http.ResponseWriter, r *http.Request, next http.Handler) {
@@ -200,7 +213,7 @@ func (m *JWTManager) processAccessToken(w http.ResponseWriter, r *http.Request, 
 	}
 
 	m.logger.WithField("userUUID", user.UUID).Debug("User authenticated successfully. Setting user in request context")
-	ctx := context.WithValue(r.Context(), AuthenticatedUserCtxKey, user)
+	ctx := context.WithValue(r.Context(), types.AuthenticatedUserCtxKey, user)
 	r = r.WithContext(ctx)
 
 	next.ServeHTTP(w, r)
