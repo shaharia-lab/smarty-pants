@@ -1,5 +1,3 @@
-// File: /app/embedding-providers/add/page.tsx
-
 'use client';
 
 import React, {useState} from 'react';

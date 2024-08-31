@@ -1,4 +1,3 @@
-// File: /types/embeddingProvider.ts
 
 export interface EmbeddingProviderConfig {
     uuid: string;

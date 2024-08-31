@@ -1,5 +1,3 @@
-// File: /components/OpenAIEmbeddingProviderForm.tsx
-
 'use client';
 
 import React, {useEffect, useState} from 'react';

@@ -1,5 +1,3 @@
-// File: /components/EmbeddingProviders.tsx
-
 import React, {useEffect, useState} from 'react';
 import {useRouter} from 'next/router';
 import Navbar from './Navbar';
