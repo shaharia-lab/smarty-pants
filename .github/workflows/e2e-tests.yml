@@ -50,9 +50,20 @@ jobs:
             -p 8080:8080 \
             backend-image
 
+      - name: Check Docker Container Status
+        run: |
+          docker ps -a
+          docker logs backend-container
+
       - name: Wait for Backend to be Ready
         run: |
           timeout 60s bash -c 'while [[ "$(curl -s -o /dev/null -w ''%{http_code}'' http://localhost:8080/system/ping)" != "200" ]]; do sleep 5; done' || false
+
+      - name: Check Backend Logs if Startup Failed
+        if: failure()
+        run: |
+          echo "Backend failed to start. Checking logs:"
+          docker logs backend-container
 
       - name: Install Frontend Dependencies
         run: |
@@ -63,6 +74,12 @@ jobs:
         run: |
           cd frontend
           npm run test:e2e
+
+      - name: Check Backend Logs After Tests
+        if: always()
+        run: |
+          echo "Backend logs after tests:"
+          docker logs backend-container
 
       - name: Upload Cypress Screenshots
         uses: actions/upload-artifact@v2
