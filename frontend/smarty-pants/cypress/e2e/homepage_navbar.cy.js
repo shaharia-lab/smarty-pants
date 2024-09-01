@@ -47,7 +47,17 @@ describe('Homepage Navbar', () => {
     })*/
 
     it('logs out successfully', () => {
-        cy.contains('Logout').click()
+        cy.logout()
+
+        // Additional check after logout
+        cy.contains('Sign in with Google').should('be.visible')
+        cy.contains('Logout').should('not.exist')
+    })
+
+    // New test to verify login state after logout
+    it('requires login after logout', () => {
+        cy.logout()
+        cy.visit('/')
         cy.url().should('include', '/login')
     })
 })

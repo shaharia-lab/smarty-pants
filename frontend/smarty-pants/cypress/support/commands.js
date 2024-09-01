@@ -20,3 +20,18 @@ Cypress.Commands.add('login', () => {
     // Additional check to ensure the page has loaded completely
     cy.get('body').should('not.have.class', 'loading')
 })
+
+Cypress.Commands.add('logout', () => {
+    // Click the logout button
+    cy.get('nav').contains('Logout').click()
+
+    // Wait for redirection to login page
+    cy.url().should('include', '/login')
+
+    // Verify that the login button is visible (indicating logged out state)
+    cy.contains('button', 'Sign in with Google').should('be.visible')
+
+    // Optional: Clear any local storage or cookies
+    cy.clearLocalStorage()
+    cy.clearCookies()
+})
