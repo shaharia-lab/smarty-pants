@@ -39,6 +39,13 @@ jobs:
           cd backend
           docker build -t backend-image .
 
+      - name: Wait for DB to be ready
+        run: |
+          until pg_isready -h localhost -p 5432 -U app; do
+            echo "Waiting for DB to be ready..."
+            sleep 2
+          done
+
       - name: Run Backend Docker Container
         run: |
           docker run -d --name backend-container \
