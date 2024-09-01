@@ -96,6 +96,15 @@ func runStart(cmd *cobra.Command, _ []string) error {
 		)
 	}
 
+	if cfg.MockOAuthBaseURL != "" && cfg.MockOAuthClientID != "" && cfg.MockOAuthClientSecret != "" && cfg.MockOAuthRedirectURL != "" {
+		oauthProviders["google"] = auth.NewMockOAuthProvider(
+			cfg.MockOAuthBaseURL,
+			cfg.MockOAuthClientID,
+			cfg.MockOAuthClientSecret,
+			cfg.MockOAuthRedirectURL,
+		)
+	}
+
 	if cfg.EnableAuthentication && len(oauthProviders) == 0 {
 		logging.Warn("No OAuth providers configured")
 		return errors.New("authentication is enabled but no OAuth providers configured")

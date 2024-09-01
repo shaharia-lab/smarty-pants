@@ -46,6 +46,11 @@ type Config struct {
 	GoogleOAuthClientID     string `envconfig:"GOOGLE_OAUTH_CLIENT_ID"`
 	GoogleOAuthClientSecret string `envconfig:"GOOGLE_OAUTH_CLIENT_SECRET"`
 	GoogleOAuthRedirectURL  string `envconfig:"GOOGLE_OAUTH_REDIRECT_URL"`
+
+	MockOAuthBaseURL      string `envconfig:"MOCK_OAUTH_BASE_URL" default:"http://localhost:9999"`
+	MockOAuthClientID     string `envconfig:"MOCK_OAUTH_CLIENT_ID" default:"test-client"`
+	MockOAuthClientSecret string `envconfig:"MOCK_OAUTH_CLIENT_SECRET" default:"test-secret"`
+	MockOAuthRedirectURL  string `envconfig:"MOCK_OAUTH_REDIRECT_URL" default:"http://localhost:3000/auth/mock/callback"`
 }
 
 // Load loads the configuration options from the environment

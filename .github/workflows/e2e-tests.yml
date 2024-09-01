@@ -26,6 +26,15 @@ jobs:
           --health-timeout=5s
           --health-retries=5
 
+      oauth-mock-server:
+        image: ghcr.io/shaharia-lab/oauth-mock-server:0.0.1
+        env:
+          PORT: 9999
+          CLIENT_ID: test-client
+          CLIENT_SECRET: test-secret
+        ports:
+          - 9999:9999
+
     steps:
       - uses: actions/checkout@v3
 
@@ -48,6 +57,10 @@ jobs:
             -e DB_NAME=app \
             -e DB_USER=app \
             -e DB_PASS=pass \
+            -e MOCK_OAUTH_BASE_URL=http://127.0.0.1:9999 \
+            -e MOCK_OAUTH_CLIENT_ID=test-client \
+            -e MOCK_OAUTH_CLIENT_SECRET=test-secret \
+            -e MOCK_OAUTH_REDIRECT_URL=http://localhost:3000/auth/google/callback \
             backend-image
 
       - name: Check Docker Container Status
@@ -98,14 +111,14 @@ jobs:
 
       - name: Upload Cypress Screenshots
         uses: actions/upload-artifact@v2
-        if: failure()
+        #if: failure()
         with:
           name: cypress-screenshots
           path: frontend/smarty-pantscypress/screenshots
 
       - name: Upload Cypress Videos
         uses: actions/upload-artifact@v2
-        if: always()
+        #if: always()
         with:
           name: cypress-videos
           path: frontend/smarty-pants/cypress/videos
