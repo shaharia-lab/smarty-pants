@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/url"
 
+	"github.com/shaharia-lab/smarty-pants/backend/internal/types"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 )
@@ -45,7 +46,7 @@ func (gp *GoogleProvider) ExchangeCodeForToken(ctx context.Context, code string)
 	return token.AccessToken, nil
 }
 
-func (gp *GoogleProvider) GetUserInfo(ctx context.Context, accessToken string) (*UserInfo, error) {
+func (gp *GoogleProvider) GetUserInfo(ctx context.Context, accessToken string) (*types.OAuthUserInfo, error) {
 	resp, err := http.Get("https://www.googleapis.com/oauth2/v2/userinfo?access_token=" + url.QueryEscape(accessToken))
 	if err != nil {
 		return nil, fmt.Errorf("failed getting user info: %w", err)
@@ -57,7 +58,7 @@ func (gp *GoogleProvider) GetUserInfo(ctx context.Context, accessToken string) (
 		return nil, fmt.Errorf("failed reading response body: %w", err)
 	}
 
-	var userInfo UserInfo
+	var userInfo types.OAuthUserInfo
 	if err := json.Unmarshal(body, &userInfo); err != nil {
 		return nil, fmt.Errorf("failed to parse user info: %w", err)
 	}

@@ -17,7 +17,7 @@ import (
 type OAuthProvider interface {
 	GetAuthURL(state string) string
 	ExchangeCodeForToken(ctx context.Context, code string) (string, error)
-	GetUserInfo(ctx context.Context, token string) (*UserInfo, error)
+	GetUserInfo(ctx context.Context, token string) (*types.OAuthUserInfo, error)
 }
 
 // OAuthManager handles OAuth operations
@@ -190,11 +190,4 @@ func (om *OAuthManager) HandleAuthCode(w http.ResponseWriter, r *http.Request) {
 func (om *OAuthManager) RegisterRoutes(r chi.Router) {
 	r.Post("/api/v1/auth/initiate", om.InitiateAuthFlow)
 	r.Post("/api/v1/auth/callback", om.HandleAuthCode)
-}
-
-// UserInfo represents the structure of user info from an OAuth provider
-type UserInfo struct {
-	ID    string `json:"id"`
-	Email string `json:"email"`
-	Name  string `json:"name"`
 }
