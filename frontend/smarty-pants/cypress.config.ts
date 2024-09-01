@@ -9,4 +9,6 @@ export default defineConfig({
     },
   },
   video: false,
+  defaultCommandTimeout: 10000,
+  viewportWidth: 1920,
 });
