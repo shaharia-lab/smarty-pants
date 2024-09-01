@@ -25,4 +25,18 @@ export class DocumentApi {
         );
         return response.data;
     }
+
+    async getDocumentByUuid(uuid: string, cancelToken?: CancelToken): Promise<Document> {
+        const response = await this.axiosInstance.get<Document>(
+            `/api/v1/document/${uuid}`,
+            { cancelToken }
+        );
+        return response.data;
+    }
+}
+
+export interface DocumentResponse {
+    documents: Document[];
+    total_pages: number;
+    total: number;
 }
