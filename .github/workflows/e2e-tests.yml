@@ -125,14 +125,14 @@ jobs:
 
       - name: Upload Cypress Screenshots
         uses: actions/upload-artifact@v2
-        #if: failure()
+        if: failure()
         with:
           name: cypress-screenshots
           path: frontend/smarty-pantscypress/screenshots
 
       - name: Upload Cypress Videos
         uses: actions/upload-artifact@v2
-        #if: always()
+        if: always()
         with:
           name: cypress-videos
           path: frontend/smarty-pants/cypress/videos
