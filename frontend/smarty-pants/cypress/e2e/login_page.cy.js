@@ -17,7 +17,7 @@ describe('Authentication Flow', () => {
         cy.intercept('POST', '/api/v1/auth/initiate').as('initiateAuth')
 
         // Intercept the OAuth2 redirect
-        cy.intercept('GET', 'http://localhost:9999/**').as('oauthRedirect')
+        cy.intercept('GET', '**/authorize**').as('oauthRedirect')
 
         // Intercept the final redirect back to your app
         cy.intercept('GET', '/login/callback**').as('loginCallback')
@@ -35,7 +35,7 @@ describe('Authentication Flow', () => {
 
         // Wait for the OAuth2 redirect
         cy.wait('@oauthRedirect').then((interception) => {
-            expect(interception.request.url).to.include('http://localhost:9999')
+            expect(interception.request.url).to.include('/authorize')
         })
 
         // Wait for 3 seconds (simulating automatic approval)
