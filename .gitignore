@@ -29,6 +29,9 @@ frontend/smarty-pants/.env.development.local
 frontend/smarty-pants/.env.test.local
 frontend/smarty-pants/.env.production.local
 
+frontend/cypress/videos
+frontend/cypress/screenshots
+
 
 ## ignore for backend
 /backend/vendor/*
