@@ -70,10 +70,25 @@ jobs:
           cd frontend/smarty-pants
           npm ci
 
+      - name: Build Frontend
+        run: |
+          cd frontend/smarty-pants
+          npm run build
+
+      - name: Start Frontend
+        run: |
+          cd frontend/smarty-pants
+          npm run start & # Run in background
+          echo $! > frontend.pid # Save process ID
+
+      - name: Wait for Frontend to be Ready
+        run: |
+          timeout 60s bash -c 'while [[ "$(curl -s -o /dev/null -w ''%{http_code}'' http://localhost:3000)" != "200" ]]; do sleep 5; done' || false
+
       - name: Run E2E Tests
         run: |
           cd frontend/smarty-pants
-          npm run test:e2e
+          npm run cypress:run -- --config baseUrl=http://localhost:3000
 
       - name: Check Backend Logs After Tests
         if: always()
