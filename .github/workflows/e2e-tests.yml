@@ -39,22 +39,15 @@ jobs:
           cd backend
           docker build -t backend-image .
 
-      - name: Create Docker network
-        run: docker network create app-network
-
-      - name: Connect PostgreSQL to network
-        run: docker network connect app-network $(docker ps -q --filter ancestor=ankane/pgvector)
-
       - name: Run Backend Docker Container
         run: |
           docker run -d --name backend-container \
-            --network app-network \
-            -e DB_HOST=db \
+            --network host \
+            -e DB_HOST=127.0.0.1 \
             -e DB_PORT=5432 \
             -e DB_NAME=app \
             -e DB_USER=app \
             -e DB_PASS=pass \
-            -p 8080:8080 \
             backend-image
 
       - name: Check Docker Container Status
