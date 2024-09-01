@@ -39,17 +39,17 @@ jobs:
           cd backend
           docker build -t backend-image .
 
-      - name: Wait for DB to be ready
-        run: |
-          until pg_isready -h localhost -p 5432 -U app; do
-            echo "Waiting for DB to be ready..."
-            sleep 2
-          done
+      - name: Create Docker network
+        run: docker network create app-network
+
+      - name: Connect PostgreSQL to network
+        run: docker network connect app-network $(docker ps -q --filter ancestor=ankane/pgvector)
 
       - name: Run Backend Docker Container
         run: |
           docker run -d --name backend-container \
-            -e DB_HOST=localhost \
+            --network app-network \
+            -e DB_HOST=db \
             -e DB_PORT=5432 \
             -e DB_NAME=app \
             -e DB_USER=app \
