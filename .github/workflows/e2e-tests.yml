@@ -48,6 +48,20 @@ jobs:
           cd backend
           docker build -t backend-image .
 
+      - name: Wait for OAuth Mock Server to be Ready
+        run: |
+          timeout 60s bash -c 'while [[ "$(curl -s -o /dev/null -w ''%{http_code}'' http://localhost:9999/authorize)" != "400" ]]; do sleep 5; done' || false
+
+      - name: Check OAuth Mock Server Status
+        run: |
+          response=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:9999/authorize)
+          if [ $response -eq 400 ]; then
+            echo "OAuth Mock Server is up and running"
+          else
+            echo "OAuth Mock Server is not responding as expected. Status code: $response"
+            exit 1
+          fi
+
       - name: Run Backend Docker Container
         run: |
           docker run -d --name backend-container \
