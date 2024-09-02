@@ -137,6 +137,7 @@ Make sure to configure any necessary network settings to allow the frontend to c
 | `GOOGLE_OAUTH_CLIENT_ID`             | No       | `""`              | Google OAuth client ID                            |
 | `GOOGLE_OAUTH_CLIENT_SECRET`         | No       | `""`              | Google OAuth client secret                        |
 | `GOOGLE_OAUTH_REDIRECT_URL`          | No       | `""`              | Google OAuth redirect URL                         |
+| `SUPER_ADMIN_EMAIL`                  | Yes      | `""`              | Email address of super admin                      |
 
 ## 📋 Development
 
