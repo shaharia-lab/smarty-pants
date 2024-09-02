@@ -1,39 +1,89 @@
-import React, {ComponentProps, useEffect, useRef, useState} from 'react';
+import React, { ComponentProps, useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import ReactMarkdown from 'react-markdown';
 import rehypeRaw from 'rehype-raw';
 import rehypeSanitize from 'rehype-sanitize';
 import rehypeHighlight from 'rehype-highlight';
 import 'highlight.js/styles/github.css';
-
-interface Message {
-    role: 'system' | 'user';
-    text: string;
-}
-
-interface Interaction {
-    uuid: string;
-    query: string;
-    conversations: Message[];
-}
+import { Interaction, Message } from '@/types/api';
+import { createApiService } from "@/services/apiService";
+import AuthService from "@/services/authService";
+import axios, { CancelToken } from "axios";
 
 interface ChatInterfaceProps {
     interactionId: string | null;
 }
 
-const ChatInterface: React.FC<ChatInterfaceProps> = ({interactionId}) => {
+const ChatInterface: React.FC<ChatInterfaceProps> = ({ interactionId }) => {
     const [interaction, setInteraction] = useState<Interaction | null>(null);
     const [inputMessage, setInputMessage] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-    useEffect(() => {
-        if (interactionId) {
-            fetchInteraction(interactionId);
-        } else {
-            startNewSession();
+    const chatHistoriesApi = useMemo(() => createApiService(AuthService).chatHisories, []);
+
+    const fetchInteraction = useCallback(async (id: string, cancelToken?: CancelToken) => {
+        setIsLoading(true);
+        try {
+            const response = await chatHistoriesApi.getInteraction(id, cancelToken);
+            setInteraction(response);
+        } catch (error) {
+            if (!axios.isCancel(error)) {
+                console.error('Error fetching interaction:', error);
+            }
+        } finally {
+            setIsLoading(false);
         }
-    }, [interactionId]);
+    }, [chatHistoriesApi]);
+
+    const startNewSession = useCallback(async (cancelToken?: CancelToken) => {
+        setIsLoading(true);
+        try {
+            const data = await chatHistoriesApi.startNewSession(cancelToken);
+            setInteraction({
+                ...data,
+                conversations: [
+                    { role: 'system', text: "I am your smart brain! How may I help you today?" }
+                ]
+            });
+        } catch (error) {
+            if (!axios.isCancel(error)) {
+                console.error('Error starting new session:', error);
+            }
+        } finally {
+            setIsLoading(false);
+        }
+    }, [chatHistoriesApi]);
+
+    useEffect(() => {
+        const source = axios.CancelToken.source();
+
+        if (interactionId) {
+            fetchInteraction(interactionId, source.token);
+        } else {
+            startNewSession(source.token);
+        }
+
+        return () => {
+            source.cancel('Operation canceled by the user.');
+        };
+    }, [interactionId, fetchInteraction, startNewSession]);
+
+    const handleStartNewSession = useCallback(() => {
+        startNewSession();
+    }, [startNewSession]);
+
+    useEffect(() => {
+        const source = axios.CancelToken.source();
+        if (interactionId) {
+            fetchInteraction(interactionId, source.token);
+        } else {
+            startNewSession(source.token);
+        }
+        return () => {
+            source.cancel('Operation canceled by the user.');
+        };
+    }, [interactionId, startNewSession]);
 
     useEffect(() => {
         scrollToBottom();
@@ -41,42 +91,6 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({interactionId}) => {
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({behavior: 'smooth'});
-    };
-
-    const fetchInteraction = async (id: string) => {
-        setIsLoading(true);
-        try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/interactions/${id}`);
-            const data: Interaction = await response.json();
-            setInteraction(data);
-        } catch (error) {
-            console.error('Error fetching interaction:', error);
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    const startNewSession = async () => {
-        setIsLoading(true);
-        try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/interactions`, {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({query: 'Start new session'}),
-            });
-            const data: Interaction = await response.json();
-
-            setInteraction({
-                ...data,
-                conversations: [
-                    {role: 'system', text: "I am your smart brain! How may I help you today?"}
-                ]
-            });
-        } catch (error) {
-            console.error('Error starting new session:', error);
-        } finally {
-            setIsLoading(false);
-        }
     };
 
     const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -172,7 +186,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({interactionId}) => {
             <div className="border-b border-gray-200 p-4 flex justify-between items-center">
                 <h2 className="text-xl font-semibold">Chat Session</h2>
                 <button
-                    onClick={startNewSession}
+                    onClick={handleStartNewSession}
                     className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                     Start New Session

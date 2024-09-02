@@ -1,15 +1,8 @@
 import React, {useEffect, useState} from 'react';
-
-interface InteractionSummary {
-    uuid: string;
-    title: string;
-}
-
-interface InteractionsResponse {
-    interactions: InteractionSummary[];
-    limit: number;
-    per_page: number;
-}
+import {createApiService} from "@/services/apiService";
+import AuthService from "@/services/authService";
+import axios from "axios";
+import {InteractionSummary} from "@/types/api";
 
 interface ChatHistoriesProps {
     onSelectInteraction: (uuid: string) => void;
@@ -19,22 +12,24 @@ const ChatHistories: React.FC<ChatHistoriesProps> = ({onSelectInteraction}) => {
     const [histories, setHistories] = useState<InteractionSummary[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
+    const apiService = createApiService(AuthService);
+
     useEffect(() => {
+        const source = axios.CancelToken.source();
+        const fetchHistories = async () => {
+            setIsLoading(true);
+            try {
+                const data = await apiService.chatHisories.getChatHistories(source.token);
+                setHistories(data.interactions);
+            } catch (error) {
+                console.error('Error fetching chat histories:', error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
         fetchHistories();
     }, []);
-
-    const fetchHistories = async () => {
-        setIsLoading(true);
-        try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/interactions`);
-            const data: InteractionsResponse = await response.json();
-            setHistories(data.interactions);
-        } catch (error) {
-            console.error('Error fetching chat histories:', error);
-        } finally {
-            setIsLoading(false);
-        }
-    };
 
     return (
         <div className="bg-white shadow-md rounded-lg overflow-hidden">

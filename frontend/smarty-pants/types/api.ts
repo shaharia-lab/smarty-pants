@@ -30,3 +30,25 @@ export interface AnalyticsOverview {
         total_documents_fetched_by_datasource_type: { [key: string]: number };
     };
 }
+
+export interface InteractionSummary {
+    uuid: string;
+    title: string;
+}
+
+export interface InteractionsResponse {
+    interactions: InteractionSummary[];
+    limit: number;
+    per_page: number;
+}
+
+export interface Message {
+    role: 'system' | 'user';
+    text: string;
+}
+
+export interface Interaction {
+    uuid: string;
+    query: string;
+    conversations: Message[];
+}

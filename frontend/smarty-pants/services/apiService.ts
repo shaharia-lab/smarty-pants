@@ -2,6 +2,7 @@ import { AxiosInstance, AxiosError, CancelToken } from 'axios';
 import { IAuthService } from './authService';
 import { AnalyticsApi } from './api/analytics';
 import {DocumentApi} from "@/services/api/document";
+import {ChatHistoriesApi} from "@/services/api/interactions";
 
 export class ApiError extends Error {
     constructor(public status: number, message: string) {
@@ -13,11 +14,13 @@ export class ApiService {
     private axiosInstance: AxiosInstance;
     public analytics: AnalyticsApi;
     public documents: DocumentApi;
+    public chatHisories: ChatHistoriesApi;
 
     constructor(private authService: IAuthService) {
         this.axiosInstance = this.authService.getAuthenticatedAxiosInstance();
         this.analytics = new AnalyticsApi(this.axiosInstance);
         this.documents = new DocumentApi(this.axiosInstance);
+        this.chatHisories = new ChatHistoriesApi(this.axiosInstance);
     }
 
     // Make this method protected so it can be used by subclasses if needed
