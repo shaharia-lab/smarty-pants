@@ -10,6 +10,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/types"
+	"github.com/shaharia-lab/smarty-pants/backend/internal/util"
 	"github.com/sirupsen/logrus"
 )
 
@@ -171,7 +172,18 @@ func (om *OAuthManager) HandleAuthCode(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	jwtToken, err := om.jwtManager.IssueToken(r.Context(), user.UUID, []string{"user"}, 24*time.Hour)
+	if user == nil {
+		om.logger.Error("User is nil")
+		util.SendErrorResponse(w, http.StatusInternalServerError, "user is nil", om.logger, nil)
+		return
+	}
+
+	ro := []string{}
+	for _, role := range user.Roles {
+		ro = append(ro, string(role))
+	}
+
+	jwtToken, err := om.jwtManager.IssueToken(r.Context(), user.UUID, ro, 24*time.Hour)
 	if err != nil {
 		om.logger.WithError(err).Error("Failed to issue JWT token")
 		http.Error(w, "Failed to issue token", http.StatusInternalServerError)

@@ -35,7 +35,7 @@ func (m *ACLManager) IsAllowed(w http.ResponseWriter, r *http.Request, requiredR
 		return true
 	}
 
-	user, err := m.getUserFromContext(r.Context())
+	user, err := m.GetAuthenticatedUserFromContext(r.Context())
 	if err != nil {
 		m.logger.WithError(err).Error("Failed to get user role from context")
 		util.SendAPIErrorResponse(w, http.StatusUnauthorized, &util.APIError{Message: "Un-Authorized", Err: "No authenticated user"})
@@ -63,8 +63,8 @@ func (m *ACLManager) IsAllowed(w http.ResponseWriter, r *http.Request, requiredR
 	return false
 }
 
-// getUserFromContext retrieves the user from the context.
-func (m *ACLManager) getUserFromContext(ctx context.Context) (*types.User, error) {
+// GetAuthenticatedUserFromContext retrieves the user from the context.
+func (m *ACLManager) GetAuthenticatedUserFromContext(ctx context.Context) (*types.User, error) {
 	user, ok := ctx.Value(types.AuthenticatedUserCtxKey).(*types.User)
 	if !ok {
 		return nil, errors.New("user not found in context")
