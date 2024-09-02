@@ -109,7 +109,6 @@ Make sure to configure any necessary network settings to allow the frontend to c
 | Variable                             | Required | Default value     | Description                                       |
 |--------------------------------------|----------|-------------------|---------------------------------------------------|
 | `APP_NAME`                           | No       | `smarty-pants-ai` | Name of the application                           |
-| `ADMIN_EMAIL`                        | No       | `""`              | Email address of the application super-admin      |
 | `DB_HOST`                            | Yes      | `"localhost"`     | Database host address                             |
 | `DB_PORT`                            | Yes      | `5432`            | Database port number                              |
 | `DB_USER`                            | Yes      | `"app"`           | Database user name                                |

@@ -9,8 +9,6 @@ import (
 type Config struct {
 	AppName string `envconfig:"APP_NAME" default:"smarty-pants"`
 
-	AdminEmail string `envconfig:"ADMIN_EMAIL" default:"your@emailaddress.com"`
-
 	DBHost string `envconfig:"DB_HOST" default:"localhost"`
 	DBPort int    `envconfig:"DB_PORT" default:"5432"`
 	DBUser string `envconfig:"DB_USER" default:"app"`
