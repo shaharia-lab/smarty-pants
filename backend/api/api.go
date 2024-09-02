@@ -151,7 +151,7 @@ func (a *API) setupRoutes() {
 
 	a.userManager.RegisterRoutes(a.router)
 	a.analyticsManager.RegisterRoutes(a.router.With(a.jwtManager.AuthMiddleware(a.enableAuth)))
-	a.datasourceManager.RegisterRoutes(a.router)
+	a.datasourceManager.RegisterRoutes(a.router.With(a.jwtManager.AuthMiddleware(a.enableAuth)))
 	a.documentManager.RegisterRoutes(a.router)
 	a.embeddingManager.RegisterRoutes(a.router)
 	a.interactionManager.RegisterRoutes(a.router.With(a.jwtManager.AuthMiddleware(a.enableAuth)))
