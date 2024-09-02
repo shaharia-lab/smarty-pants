@@ -23,30 +23,30 @@ import (
 )
 
 // Mock OAuthProvider
-type MockOAuthProvider struct {
+type OAuthProviderMock struct {
 	mock.Mock
 }
 
-func (m *MockOAuthProvider) GetAuthURL(state string) string {
+func (m *OAuthProviderMock) GetAuthURL(state string) string {
 	args := m.Called(state)
 	return args.String(0)
 }
 
-func (m *MockOAuthProvider) ExchangeCodeForToken(ctx context.Context, code string) (string, error) {
+func (m *OAuthProviderMock) ExchangeCodeForToken(ctx context.Context, code string) (string, error) {
 	args := m.Called(ctx, code)
 	return args.String(0), args.Error(1)
 }
 
-func (m *MockOAuthProvider) GetUserInfo(ctx context.Context, token string) (*UserInfo, error) {
+func (m *OAuthProviderMock) GetUserInfo(ctx context.Context, token string) (*types.OAuthUserInfo, error) {
 	args := m.Called(ctx, token)
-	return args.Get(0).(*UserInfo), args.Error(1)
+	return args.Get(0).(*types.OAuthUserInfo), args.Error(1)
 }
 
 func TestInitiateAuthFlow(t *testing.T) {
-	mockProvider := new(MockOAuthProvider)
+	mockProvider := new(OAuthProviderMock)
 	storageMock := new(storage.StorageMock)
 	logger := logger2.NoOpsLogger()
-	mockUserManager := NewUserManager(storageMock, logger, NewACLManager(logger, false))
+	mockUserManager := NewUserManager(storageMock, logger, NewACLManager(logger, false), "")
 	jwtManager := NewJWTManager(NewKeyManager(storageMock, logger), mockUserManager, logger, []string{})
 
 	providers := map[string]OAuthProvider{
@@ -86,7 +86,7 @@ func TestInitiateAuthFlow(t *testing.T) {
 }
 
 func TestHandleAuthCode(t *testing.T) {
-	mockProvider := new(MockOAuthProvider)
+	mockProvider := new(OAuthProviderMock)
 	storageMock := new(storage.StorageMock)
 	storageMock.On("GetUser", mock.Anything, mock.Anything).Return(&types.User{
 		UUID:   uuid.New(),
@@ -115,7 +115,7 @@ func TestHandleAuthCode(t *testing.T) {
 		}, nil)
 
 	logger := logger2.NoOpsLogger()
-	mockUserManager := NewUserManager(storageMock, logger, NewACLManager(logger, false))
+	mockUserManager := NewUserManager(storageMock, logger, NewACLManager(logger, false), "")
 	keyManager := NewKeyManager(storageMock, logger)
 	jwtManager := NewJWTManager(keyManager, mockUserManager, logger, []string{})
 
@@ -133,7 +133,7 @@ func TestHandleAuthCode(t *testing.T) {
 	}
 
 	mockProvider.On("ExchangeCodeForToken", mock.Anything, "test_code").Return("access_token", nil)
-	mockProvider.On("GetUserInfo", mock.Anything, "access_token").Return(&UserInfo{
+	mockProvider.On("GetUserInfo", mock.Anything, "access_token").Return(&types.OAuthUserInfo{
 		ID:    "123",
 		Email: "test@example.com",
 		Name:  "Test User",
@@ -170,10 +170,10 @@ func TestHandleAuthCode(t *testing.T) {
 }
 
 func TestRegisterRoutes(t *testing.T) {
-	mockProvider := new(MockOAuthProvider)
+	mockProvider := new(OAuthProviderMock)
 	storageMock := new(storage.StorageMock)
 	logger := logger2.NoOpsLogger()
-	mockUserManager := NewUserManager(storageMock, logger, NewACLManager(logger, false))
+	mockUserManager := NewUserManager(storageMock, logger, NewACLManager(logger, false), "")
 	mockJWTManager := NewJWTManager(NewKeyManager(storageMock, logger), mockUserManager, logger, []string{})
 
 	providers := map[string]OAuthProvider{

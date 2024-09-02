@@ -51,6 +51,8 @@ type Config struct {
 	MockOAuthClientID     string `envconfig:"MOCK_OAUTH_CLIENT_ID"`
 	MockOAuthClientSecret string `envconfig:"MOCK_OAUTH_CLIENT_SECRET"`
 	MockOAuthRedirectURL  string `envconfig:"MOCK_OAUTH_REDIRECT_URL"`
+
+	SuperAdminEmail string `envconfig:"SUPER_ADMIN_EMAIL" default:""`
 }
 
 // Load loads the configuration options from the environment

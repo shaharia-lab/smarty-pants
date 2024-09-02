@@ -17,17 +17,19 @@ import (
 
 // UserManager is a manager for user operations.
 type UserManager struct {
-	storage    storage.Storage
-	logger     *logrus.Logger
-	aclManager ACLManager
+	storage         storage.Storage
+	logger          *logrus.Logger
+	aclManager      ACLManager
+	superAdminEmail string
 }
 
 // NewUserManager creates a new instance of UserManager with the given storage and logger.
-func NewUserManager(storage storage.Storage, logger *logrus.Logger, aclManager ACLManager) *UserManager {
+func NewUserManager(storage storage.Storage, logger *logrus.Logger, aclManager ACLManager, superAdminEmail string) *UserManager {
 	return &UserManager{
-		storage:    storage,
-		logger:     logger,
-		aclManager: aclManager,
+		storage:         storage,
+		logger:          logger,
+		aclManager:      aclManager,
+		superAdminEmail: superAdminEmail,
 	}
 }
 
@@ -40,6 +42,9 @@ func (um *UserManager) CreateUser(ctx context.Context, name, email string, statu
 	}
 
 	user.Roles = um.ensureUserRole(user.Roles)
+	if email == um.superAdminEmail {
+		user.Roles = append(user.Roles, types.UserRoleAdmin)
+	}
 
 	err := um.storage.CreateUser(ctx, user)
 	if err != nil {

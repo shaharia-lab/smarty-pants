@@ -130,7 +130,7 @@ func runStart(cmd *cobra.Command, _ []string) error {
 	}
 
 	searchSystem := search.NewSearchSystem(logging, st)
-	userManager := auth.NewUserManager(st, logging, aclManager)
+	userManager := auth.NewUserManager(st, logging, aclManager, cfg.SuperAdminEmail)
 	jwtManager := auth.NewJWTManager(auth.NewKeyManager(st, logging), userManager, logging, authSkipEndpoints)
 	oauthManager := auth.NewOAuthManager(
 		oauthProviders,
