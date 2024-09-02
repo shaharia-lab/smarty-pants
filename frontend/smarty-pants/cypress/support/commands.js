@@ -1,37 +1,37 @@
-Cypress.Commands.add('login', () => {
-    cy.intercept('GET', '/login').as('loginRedirect')
-    cy.intercept('POST', '/api/v1/auth/initiate').as('initiateAuth')
-    cy.intercept('GET', '**/authorize**').as('oauthRedirect')
-
-    cy.visit('/')
-    cy.url().should('include', '/login')
-
-    cy.contains('button', 'Sign in with Google').click()
-
-    cy.wait('@initiateAuth').its('response.statusCode').should('eq', 200)
-    cy.wait('@oauthRedirect')
-
-    // Instead of waiting for a fixed time, let's wait for the URL to change
-    cy.url().should('eq', Cypress.config().baseUrl + '/')
-
-    // Check for logged-in state
-    cy.get('nav').should('contain', 'Logout')
-
-    // Additional check to ensure the page has loaded completely
-    cy.get('body').should('not.have.class', 'loading')
-})
-
-Cypress.Commands.add('logout', () => {
-    // Click the logout button
-    cy.get('nav').contains('Logout').click()
-
-    // Wait for redirection to login page
-    cy.url().should('include', '/login')
-
-    // Verify that the login button is visible (indicating logged out state)
-    cy.contains('button', 'Sign in with Google').should('be.visible')
-
-    // Optional: Clear any local storage or cookies
-    cy.clearLocalStorage()
-    cy.clearCookies()
-})
+/// <reference types="cypress" />
+// ***********************************************
+// This example commands.ts shows you how to
+// create various custom commands and overwrite
+// existing commands.
+//
+// For more comprehensive examples of custom
+// commands please read more here:
+// https://on.cypress.io/custom-commands
+// ***********************************************
+//
+//
+// -- This is a parent command --
+// Cypress.Commands.add('login', (email, password) => { ... })
+//
+//
+// -- This is a child command --
+// Cypress.Commands.add('drag', { prevSubject: 'element'}, (subject, options) => { ... })
+//
+//
+// -- This is a dual command --
+// Cypress.Commands.add('dismiss', { prevSubject: 'optional'}, (subject, options) => { ... })
+//
+//
+// -- This will overwrite an existing command --
+// Cypress.Commands.overwrite('visit', (originalFn, url, options) => { ... })
+//
+// declare global {
+//   namespace Cypress {
+//     interface Chainable {
+//       login(email: string, password: string): Chainable<void>
+//       drag(subject: string, options?: Partial<TypeOptions>): Chainable<Element>
+//       dismiss(subject: string, options?: Partial<TypeOptions>): Chainable<Element>
+//       visit(originalFn: CommandOriginalFn, url: string, options: Partial<VisitOptions>): Chainable<Element>
+//     }
+//   }
+// }
