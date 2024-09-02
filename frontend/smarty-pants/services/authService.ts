@@ -101,7 +101,10 @@ class AuthService {
     }
 
     private async refreshAccessToken(): Promise<void> {
-        try {
+        /**
+         * @TODO: Implement token refresh
+         */
+        /*try {
             const response = await axios.post(`${API_BASE_URL}/api/v1/auth/refresh`, {
                 refresh_token: this.refreshToken
             });
@@ -109,7 +112,7 @@ class AuthService {
         } catch (error) {
             console.error('Error refreshing token:', error);
             this.logout();
-        }
+        }*/
     }
 
     logout(): void {
