@@ -34,7 +34,7 @@ const OpenAIEmbeddingProviderForm: React.FC<OpenAIEmbeddingProviderFormProps> = 
     const fetchProviderData = async () => {
         setIsLoading(true);
         try {
-            const response = await fetch(`http://localhost:8080/api/v1/embedding-provider/${providerId}`);
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/embedding-provider/${providerId}`);
             if (!response.ok) {
                 throw new Error('Failed to fetch provider data');
             }
@@ -60,8 +60,8 @@ const OpenAIEmbeddingProviderForm: React.FC<OpenAIEmbeddingProviderFormProps> = 
         setError(null);
 
         const url = isEditMode
-            ? `http://localhost:8080/api/v1/embedding-provider/${providerId}`
-            : 'http://localhost:8080/api/v1/embedding-provider';
+            ? `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/embedding-provider/${providerId}`
+            : `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/embedding-provider`;
 
         const method = isEditMode ? 'PUT' : 'POST';
 
