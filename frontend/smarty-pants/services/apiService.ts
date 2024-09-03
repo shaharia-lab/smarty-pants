@@ -4,6 +4,7 @@ import { AnalyticsApi } from './api/analytics';
 import {DocumentApi} from "@/services/api/document";
 import {ChatHistoriesApi} from "@/services/api/interactions";
 import {DatasourcesApi} from "@/services/api/datasource";
+import {EmbeddingProviderApi} from "@/services/api/embedding_provider";
 
 export class ApiError extends Error {
     constructor(public status: number, message: string) {
@@ -17,6 +18,7 @@ export class ApiService {
     public documents: DocumentApi;
     public chatHisories: ChatHistoriesApi;
     public datasource: DatasourcesApi;
+    public embeddingProvider: EmbeddingProviderApi
 
     constructor(private authService: IAuthService) {
         this.axiosInstance = this.authService.getAuthenticatedAxiosInstance();
@@ -24,6 +26,7 @@ export class ApiService {
         this.documents = new DocumentApi(this.axiosInstance);
         this.chatHisories = new ChatHistoriesApi(this.axiosInstance);
         this.datasource = new DatasourcesApi(this.axiosInstance);
+        this.embeddingProvider = new EmbeddingProviderApi(this.axiosInstance)
     }
 
     // Make this method protected so it can be used by subclasses if needed

@@ -9,3 +9,11 @@ export interface EmbeddingProviderConfig {
         model_id: string;
     };
 }
+
+export interface EmbeddingProvidersApiResponse {
+    embedding_providers: EmbeddingProviderConfig[];
+    total: number;
+    page: number;
+    per_page: number;
+    total_pages: number;
+}
