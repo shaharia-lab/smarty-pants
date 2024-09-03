@@ -8,7 +8,8 @@ export default defineConfig({
       // You can set up any custom Node event listeners here
     },
   },
-  video: false,
+  video: true,
   defaultCommandTimeout: 10000,
   viewportWidth: 1920,
+  screenshotOnRunFailure: true,
 });
