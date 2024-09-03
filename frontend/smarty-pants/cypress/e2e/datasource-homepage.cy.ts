@@ -25,6 +25,8 @@ describe('Datasource Homepage', () => {
         });
 
         it('displays configured datasources with correct actions', () => {
+            cy.visit('/datasources');
+
             cy.wait('@getDatasources');
 
             cy.contains('Test Datasource 1').should('be.visible');
