@@ -1,25 +1,31 @@
 'use client';
 
-import React, {useEffect, useState} from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import Image from 'next/image';
-import {useRouter} from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import Navbar from './Navbar';
-import Header, {HeaderConfig} from './Header';
+import Header, { HeaderConfig } from './Header';
+import AuthService from "@/services/authService";
+import { createApiService } from "@/services/apiService";
+import { Alert, AlertDescription } from '@/components/Alert';
 
 interface OpenAIEmbeddingProviderFormProps {
     providerId?: string;
 }
 
-const OpenAIEmbeddingProviderForm: React.FC<OpenAIEmbeddingProviderFormProps> = ({providerId}) => {
+const OpenAIEmbeddingProviderForm: React.FC<OpenAIEmbeddingProviderFormProps> = ({ providerId }) => {
     const [name, setName] = useState('');
     const [apiKey, setApiKey] = useState('');
     const [modelId, setModelId] = useState('text-embedding-ada-002');
     const [error, setError] = useState<string | null>(null);
     const [isValidated, setIsValidated] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
+    const [flashMessage, setFlashMessage] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
     const router = useRouter();
 
     const isEditMode = !!providerId;
+
+    const embeddingProviderApi = useMemo(() => createApiService(AuthService).embeddingProvider, []);
 
     const headerConfig: HeaderConfig = {
         title: isEditMode ? "Edit OpenAI Embedding Provider" : "Add OpenAI Embedding Provider"
@@ -29,16 +35,12 @@ const OpenAIEmbeddingProviderForm: React.FC<OpenAIEmbeddingProviderFormProps> = 
         if (isEditMode) {
             fetchProviderData();
         }
-    }, [providerId]);
+    }, [providerId, isEditMode]);
 
     const fetchProviderData = async () => {
         setIsLoading(true);
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/embedding-provider/${providerId}`);
-            if (!response.ok) {
-                throw new Error('Failed to fetch provider data');
-            }
-            const data = await response.json();
+            const data = await embeddingProviderApi.getEmbeddingProvider(providerId!);
             setName(data.name);
             setApiKey(data.configuration.api_key);
             setModelId(data.configuration.model_id);
@@ -51,7 +53,8 @@ const OpenAIEmbeddingProviderForm: React.FC<OpenAIEmbeddingProviderFormProps> = 
     };
 
     const handleValidate = async () => {
-        // Implement validation logic here
+        // Implement validation logic here using the API service
+        // For now, we'll just set it to true
         setIsValidated(true);
     };
 
@@ -59,34 +62,26 @@ const OpenAIEmbeddingProviderForm: React.FC<OpenAIEmbeddingProviderFormProps> = 
         e.preventDefault();
         setError(null);
 
-        const url = isEditMode
-            ? `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/embedding-provider/${providerId}`
-            : `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/embedding-provider`;
-
-        const method = isEditMode ? 'PUT' : 'POST';
+        const providerData = {
+            name,
+            provider: 'openai',
+            configuration: {
+                api_key: apiKey,
+                model_id: modelId,
+                encoding_format: 'float',
+                dimensions: 1536,
+            },
+            status: 'active',
+        };
 
         try {
-            const response = await fetch(url, {
-                method: method,
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    name,
-                    provider: 'openai',
-                    configuration: {
-                        api_key: apiKey,
-                        model_id: modelId,
-                        encoding_format: 'float',
-                        dimensions: 1536,
-                    },
-                }),
-            });
-
-            if (!response.ok) {
-                throw new Error(`Failed to ${isEditMode ? 'update' : 'add'} embedding provider`);
+            if (isEditMode) {
+                await embeddingProviderApi.updateEmbeddingProvider(providerId!, providerData);
+                setFlashMessage({ type: 'success', message: 'Embedding provider updated successfully' });
+            } else {
+                await embeddingProviderApi.createEmbeddingProvider(providerData);
+                setFlashMessage({ type: 'success', message: 'Embedding provider added successfully' });
             }
-
             router.push('/embedding-providers');
         } catch (err) {
             setError(`Failed to ${isEditMode ? 'update' : 'add'} embedding provider. Please try again.`);
@@ -99,15 +94,18 @@ const OpenAIEmbeddingProviderForm: React.FC<OpenAIEmbeddingProviderFormProps> = 
 
     return (
         <div className="min-h-screen bg-gray-50">
-            <Navbar/>
-            <Header config={headerConfig}/>
+            <Navbar />
+            <Header config={headerConfig} />
             <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
                 <div className="px-4 py-6 sm:px-0">
+                    {flashMessage && (
+                        <Alert variant={flashMessage.type === 'success' ? 'default' : 'destructive'}>
+                            <AlertDescription>{flashMessage.message}</AlertDescription>
+                        </Alert>
+                    )}
                     <div className="flex items-center mb-6">
-                        <Image src="https://static-00.iconduck.com/assets.00/openai-icon-2021x2048-4rpe5x7n.png"
-                               alt="OpenAI Logo" width={48} height={48} className="mr-4"/>
-                        <h1 className="text-3xl font-bold text-gray-900">{isEditMode ? 'Edit' : 'Configure'} OpenAI
-                            Embedding Provider</h1>
+                        <Image src="https://static-00.iconduck.com/assets.00/openai-icon-2021x2048-4rpe5x7n.png" alt="OpenAI Logo" width={48} height={48} className="mr-4" />
+                        <h1 className="text-3xl font-bold text-gray-900">{isEditMode ? 'Edit' : 'Configure'} OpenAI Embedding Provider</h1>
                     </div>
 
                     <div className="flex flex-col md:flex-row gap-8">
@@ -115,8 +113,7 @@ const OpenAIEmbeddingProviderForm: React.FC<OpenAIEmbeddingProviderFormProps> = 
                         <div className="w-full md:w-1/2">
                             <div className="bg-white shadow sm:rounded-lg">
                                 <div className="px-4 py-5 sm:p-6">
-                                    <h2 className="text-lg leading-6 font-medium text-gray-900 mb-4">OpenAI
-                                        Configuration</h2>
+                                    <h2 className="text-lg leading-6 font-medium text-gray-900 mb-4">OpenAI Configuration</h2>
                                     <form onSubmit={handleSubmit}>
                                         <div className="mb-4">
                                             <label className="block text-sm font-medium text-gray-700" htmlFor="name">
@@ -145,8 +142,7 @@ const OpenAIEmbeddingProviderForm: React.FC<OpenAIEmbeddingProviderFormProps> = 
                                             />
                                         </div>
                                         <div className="mb-4">
-                                            <label className="block text-sm font-medium text-gray-700"
-                                                   htmlFor="modelId">
+                                            <label className="block text-sm font-medium text-gray-700" htmlFor="modelId">
                                                 Model ID
                                             </label>
                                             <select
@@ -162,8 +158,7 @@ const OpenAIEmbeddingProviderForm: React.FC<OpenAIEmbeddingProviderFormProps> = 
                                             </select>
                                         </div>
                                         <div className="mb-4">
-                                            <label className="block text-sm font-medium text-gray-700"
-                                                   htmlFor="encodingFormat">
+                                            <label className="block text-sm font-medium text-gray-700" htmlFor="encodingFormat">
                                                 Encoding Format
                                             </label>
                                             <input
@@ -175,8 +170,7 @@ const OpenAIEmbeddingProviderForm: React.FC<OpenAIEmbeddingProviderFormProps> = 
                                             />
                                         </div>
                                         <div className="mb-6">
-                                            <label className="block text-sm font-medium text-gray-700"
-                                                   htmlFor="dimensions">
+                                            <label className="block text-sm font-medium text-gray-700" htmlFor="dimensions">
                                                 Dimensions
                                             </label>
                                             <select
@@ -224,13 +218,9 @@ const OpenAIEmbeddingProviderForm: React.FC<OpenAIEmbeddingProviderFormProps> = 
                                             <li>Create an OpenAI account if you haven't already.</li>
                                             <li>Generate an API key from your OpenAI dashboard.</li>
                                             <li>Choose the appropriate embedding model for your needs.</li>
-                                            <li>Enter a name for this configuration, your API key, and select the model
-                                                in the form.
-                                            </li>
+                                            <li>Enter a name for this configuration, your API key, and select the model in the form.</li>
                                             {!isEditMode && <li>Click "Validate" to test your configuration.</li>}
-                                            <li>Click "{isEditMode ? 'Update' : 'Save'} Provider" to complete the
-                                                setup.
-                                            </li>
+                                            <li>Click "{isEditMode ? 'Update' : 'Save'} Provider" to complete the setup.</li>
                                         </ol>
                                     </div>
                                 </div>
@@ -238,31 +228,18 @@ const OpenAIEmbeddingProviderForm: React.FC<OpenAIEmbeddingProviderFormProps> = 
 
                             <div className="bg-white shadow sm:rounded-lg">
                                 <div className="px-4 py-5 sm:p-6">
-                                    <h2 className="text-lg leading-6 font-medium text-gray-900 mb-4">Important
-                                        Information</h2>
+                                    <h2 className="text-lg leading-6 font-medium text-gray-900 mb-4">Important Information</h2>
                                     <h3 className="text-md font-semibold mb-2">Embedding Pricing:</h3>
                                     <ul className="list-disc pl-5 mb-4 text-sm text-gray-600">
                                         <li>text-embedding-3-small: $0.02 / 1M tokens</li>
                                         <li>text-embedding-3-large: $0.13 / 1M tokens</li>
                                         <li>ada v2: $0.10 / 1M tokens</li>
                                     </ul>
-                                    <p className="mb-4 text-sm text-gray-600">For up-to-date pricing, please visit
-                                        the <a href="https://openai.com/api/v1/pricing/" target="_blank"
-                                               rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800">OpenAI
-                                            API Pricing page</a>.</p>
-                                    <p className="mb-4 text-sm text-gray-600">Read more about OpenAI embeddings in
-                                        the <a
-                                            href="https://platform.openai.com/docs/guides/embeddings/what-are-embeddings"
-                                            target="_blank" rel="noopener noreferrer"
-                                            className="text-blue-600 hover:text-blue-800">OpenAI Embeddings Guide</a>.
-                                    </p>
-                                    <div
-                                        className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 text-sm"
-                                        role="alert">
+                                    <p className="mb-4 text-sm text-gray-600">For up-to-date pricing, please visit the <a href="https://openai.com/api/v1/pricing/" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800">OpenAI API Pricing page</a>.</p>
+                                    <p className="mb-4 text-sm text-gray-600">Read more about OpenAI embeddings in the <a href="https://platform.openai.com/docs/guides/embeddings/what-are-embeddings" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800">OpenAI Embeddings Guide</a>.</p>
+                                    <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 text-sm" role="alert">
                                         <p className="font-bold">Warning: Dimensions</p>
-                                        <p>We shouldn't change the embedding dimensions because if we change the
-                                            dimensions, in the database backend the vector indexing may corrupt and
-                                            require running embedding on all documents all over again.</p>
+                                        <p>We shouldn't change the embedding dimensions because if we change the dimensions, in the database backend the vector indexing may corrupt and require running embedding on all documents all over again.</p>
                                     </div>
                                 </div>
                             </div>
