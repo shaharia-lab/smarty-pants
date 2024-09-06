@@ -1,53 +1,54 @@
 'use client';
 
-import React, {useEffect, useState} from 'react';
-import {useRouter} from 'next/navigation';
+import React, { useEffect, useState, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import Navbar from './Navbar';
-import Header, {HeaderConfig} from './Header';
+import Header, { HeaderConfig } from './Header';
+import { createApiService } from "@/services/apiService";
+import AuthService from "@/services/authService";
+import { Alert, AlertDescription } from '@/components/Alert';
+import {LLMProviderConfig} from "@/types/llmProvider";
 
 interface OpenAILLMProviderFormProps {
     providerId?: string;
 }
 
-const OpenAILLMProviderForm: React.FC<OpenAILLMProviderFormProps> = ({providerId}) => {
+const OpenAILLMProviderForm: React.FC<OpenAILLMProviderFormProps> = ({ providerId }) => {
     const [name, setName] = useState('');
     const [apiKey, setApiKey] = useState('');
-    const [modelId, setModelId] = useState('text-llm-ada-002');
+    const [modelId, setModelId] = useState('gpt-4-turbo-preview');
     const [error, setError] = useState<string | null>(null);
+    const [flashMessage, setFlashMessage] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
     const [isValidated, setIsValidated] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const router = useRouter();
 
     const isEditMode = !!providerId;
+    const apiService = createApiService(AuthService);
 
     const headerConfig: HeaderConfig = {
         title: isEditMode ? "Edit OpenAI LLM Provider" : "Add OpenAI LLM Provider",
     };
 
-    useEffect(() => {
-        if (isEditMode) {
-            fetchProviderData();
-        }
-    }, [providerId]);
-
-    const fetchProviderData = async () => {
+    const fetchProviderData = useCallback(async () => {
+        if (!isEditMode) return;
         setIsLoading(true);
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/llm-provider/${providerId}`);
-            if (!response.ok) {
-                throw new Error('Failed to fetch provider data');
-            }
-            const data = await response.json();
+            const data = await apiService.llmProvider.getLLMProvider(providerId);
             setName(data.name);
             setApiKey(data.configuration.api_key);
             setModelId(data.configuration.model_id);
             setIsValidated(true);
         } catch (err) {
-            setError('Failed to load provider data. Please try again.');
+            setFlashMessage({ type: 'error', message: 'Failed to load provider data. Please try again.' });
         } finally {
             setIsLoading(false);
         }
-    };
+    }, [isEditMode, providerId, apiService.llmProvider]);
+
+    useEffect(() => {
+        fetchProviderData();
+    }, [fetchProviderData]);
 
     const handleValidate = async () => {
         // Implement validation logic here
@@ -58,39 +59,32 @@ const OpenAILLMProviderForm: React.FC<OpenAILLMProviderFormProps> = ({providerId
         e.preventDefault();
         setError(null);
 
-        const url = isEditMode
-            ? `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/llm-provider/${providerId}`
-            : `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/llm-provider`;
-
-        const method = isEditMode ? 'PUT' : 'POST';
-
         try {
-            const response = await fetch(url, {
-                method: method,
-                headers: {
-                    'Content-Type': 'application/json',
+            const providerData: Omit<LLMProviderConfig, 'uuid'> = {
+                name,
+                provider: 'openai',
+                status: 'active', // You might want to adjust this based on your application logic
+                configuration: {
+                    api_key: apiKey,
+                    model_id: modelId,
                 },
-                body: JSON.stringify({
-                    name,
-                    provider: 'openai',
-                    configuration: {
-                        api_key: apiKey,
-                        model_id: modelId,
-                        encoding_format: 'float',
-                        dimensions: 1536,
-                    },
-                }),
-            });
+            };
 
-            if (!response.ok) {
-                throw new Error(`Failed to ${isEditMode ? 'update' : 'add'} llm provider`);
+            if (isEditMode) {
+                await apiService.llmProvider.updateLLMProvider(providerId!, providerData);
+            } else {
+                await apiService.llmProvider.createLLMProvider(providerData);
             }
 
             router.push('/llm-providers');
         } catch (err) {
-            setError(`Failed to ${isEditMode ? 'update' : 'add'} llm provider. Please try again.`);
+            setFlashMessage({
+                type: 'error',
+                message: `Failed to ${isEditMode ? 'update' : 'add'} LLM provider. Please try again.`
+            });
         }
     };
+
 
     if (isLoading) {
         return <div>Loading...</div>;
@@ -98,12 +92,16 @@ const OpenAILLMProviderForm: React.FC<OpenAILLMProviderFormProps> = ({providerId
 
     return (
         <div className="min-h-screen bg-gray-50">
-            <Navbar/>
-            <Header config={headerConfig}/>
+            <Navbar />
+            <Header config={headerConfig} />
             <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
                 <div className="px-4 py-6 sm:px-0">
+                    {flashMessage && (
+                        <Alert variant={flashMessage.type === 'success' ? 'default' : 'destructive'}>
+                            <AlertDescription>{flashMessage.message}</AlertDescription>
+                        </Alert>
+                    )}
                     <div className="flex flex-col md:flex-row gap-8">
-                        {/* Left column: Form */}
                         <div className="w-full md:w-1/2">
                             <div className="bg-white shadow sm:rounded-lg">
                                 <div className="px-4 py-5 sm:p-6">
