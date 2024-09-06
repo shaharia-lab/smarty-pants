@@ -30,7 +30,7 @@ func NewManager(storage storage.Storage, logger *logrus.Logger, aclManager auth.
 }
 
 func (m *Manager) RegisterRoutes(r chi.Router) {
-	r.Route("/llm-provider", func(r chi.Router) {
+	r.Route("/api/v1/llm-provider", func(r chi.Router) {
 		r.Post("/", m.addLLMProviderHandler)
 		r.Route("/{uuid}", func(r chi.Router) {
 			r.Delete("/", m.deleteLLMProviderHandler)

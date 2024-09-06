@@ -1,3 +1,5 @@
+import {LLMProviderConfig} from "@/types/llmProvider";
+
 export interface AnalyticsOverview {
     embedding_providers: {
         total_providers: number;
@@ -51,4 +53,12 @@ export interface Interaction {
     uuid: string;
     query: string;
     conversations: Message[];
+}
+
+export interface LLMProvidersApiResponse {
+    llm_providers: LLMProviderConfig[];
+    total: number;
+    page: number;
+    per_page: number;
+    total_pages: number;
 }
