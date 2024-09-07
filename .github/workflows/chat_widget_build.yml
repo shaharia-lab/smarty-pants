@@ -34,4 +34,4 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: chat-widget
-          path: frontend/chat_widget/dist/chat-widget.js
+          path: frontend/chat_widget/dist/chat-widget-bundle.js
