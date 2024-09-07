@@ -1,11 +1,14 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 import ChatWidget from './components/ChatWidget';
+import './styles.css';
 
 interface ChatWidgetConfig {
     position: 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left';
     title: string;
     primaryColor: string;
+    width?: string;
+    height?: string;
 }
 
 const initChatWidget = (config: ChatWidgetConfig) => {
@@ -21,5 +24,4 @@ const initChatWidget = (config: ChatWidgetConfig) => {
     );
 };
 
-// Expose the init function globally
 (window as any).initChatWidget = initChatWidget;
