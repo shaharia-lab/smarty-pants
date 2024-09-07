@@ -134,11 +134,24 @@ const ChatWidget: React.FC<ChatWidgetConfig> = ({
             ) : (
                 <button
                     onClick={handleToggle}
-                    className="bg-gray-800 text-white p-4 rounded-full shadow-lg hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-50"
+                    className="bg-gray-800 text-white p-2 rounded-full shadow-lg hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-50"
+                    style={{
+                        width: '48px',
+                        height: '48px',
+                        display: 'flex',
+                        justifyContent: 'center',
+                        alignItems: 'center'
+                    }}
                 >
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path>
-                    </svg>
+                    <SVGLogo
+                        width={32}
+                        height={32}
+                        leftBrainColor="#FFF"
+                        rightBrainColor="#FFF"
+                        centerSquareColor="#8CA6C9"
+                        centerSquareBlinkColor="#FFFFFF"
+                        onHoverRotationDegree={15}
+                    />
                 </button>
             )}
         </div>
