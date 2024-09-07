@@ -10,6 +10,8 @@ frontend/smarty-pants/.next/
 frontend/smarty-pants/out/
 frontend/smarty-pants/build
 
+frontend/chat_widget/node_modules
+
 .DS_Store
 *.pem
 
