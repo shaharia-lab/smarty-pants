@@ -1,23 +1,31 @@
-import React from 'react';
-import ReactDOM from 'react-dom';
-import ChatWidget from './components/ChatWidget';
+const path = require('path');
+const TerserPlugin = require('terser-webpack-plugin');
 
-interface ChatWidgetConfig {
-    position: 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left';
-    title: string;
-    primaryColor: string;
-}
-
-const initChatWidget = (config: ChatWidgetConfig) => {
-    const widgetContainer = document.createElement('div');
-    document.body.appendChild(widgetContainer);
-
-    ReactDOM.render(
-        <React.StrictMode>
-            <ChatWidget {...config} />
-        </React.StrictMode>,
-        widgetContainer
-    );
+module.exports = {
+    entry: './src/index.tsx',
+    mode: 'production',
+    module: {
+        rules: [
+            {
+                test: /\.tsx?$/,
+                use: 'ts-loader',
+                exclude: /node_modules/,
+            },
+        ],
+    },
+    resolve: {
+        extensions: ['.tsx', '.ts', '.js'],
+    },
+    output: {
+        filename: 'chat-widget-bundle.js',
+        path: path.resolve(__dirname, 'dist'),
+        library: 'ChatWidget',
+        libraryTarget: 'umd',
+        globalObject: 'this',
+    },
+    optimization: {
+        minimizer: [new TerserPlugin({
+            extractComments: false,
+        })],
+    },
 };
-
-(window as any).initChatWidget = initChatWidget;

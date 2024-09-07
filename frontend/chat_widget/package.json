@@ -2,9 +2,9 @@
   "name": "chat-widget",
   "version": "1.0.0",
   "description": "Standalone chat widget",
-  "main": "dist/chat-widget.js",
+  "main": "dist/chat-widget-bundle.js",
   "scripts": {
-    "build": "webpack"
+    "build": "webpack --config webpack.config.js"
   },
   "dependencies": {
     "react": "^17.0.2",

@@ -10,6 +10,7 @@ interface ChatWidgetConfig {
 
 const initChatWidget = (config: ChatWidgetConfig) => {
     const widgetContainer = document.createElement('div');
+    widgetContainer.id = 'chat-widget-container';
     document.body.appendChild(widgetContainer);
 
     ReactDOM.render(
@@ -20,4 +21,5 @@ const initChatWidget = (config: ChatWidgetConfig) => {
     );
 };
 
+// Expose the init function globally
 (window as any).initChatWidget = initChatWidget;

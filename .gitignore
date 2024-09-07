@@ -11,6 +11,7 @@ frontend/smarty-pants/out/
 frontend/smarty-pants/build
 
 frontend/chat_widget/node_modules
+frontend/chat_widget/dist
 
 .DS_Store
 *.pem
