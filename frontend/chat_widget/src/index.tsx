@@ -9,9 +9,24 @@ interface ChatWidgetConfig {
     primaryColor: string;
     width?: string;
     height?: string;
+    branding?: {
+        name: string;
+        logo?: string;
+    };
+    backend: {
+        endpoint: string;
+        api_key: string;
+        widget_id: string;
+    };
 }
 
 const initChatWidget = (config: ChatWidgetConfig) => {
+    // Validate required fields
+    if (!config.backend || !config.backend.endpoint || !config.backend.api_key || !config.backend.widget_id) {
+        console.error('ChatWidget Error: Backend configuration is incomplete. Please provide endpoint, api_key, and widget_id.');
+        return;
+    }
+
     const widgetContainer = document.createElement('div');
     widgetContainer.id = 'chat-widget-container';
     document.body.appendChild(widgetContainer);

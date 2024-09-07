@@ -1,11 +1,21 @@
-import React, {useEffect, useRef, useState} from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+import SVGLogo from './SVGLogo';
 
-interface ChatWidgetProps {
+interface ChatWidgetConfig {
     position: 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left';
     title: string;
     primaryColor: string;
     width?: string;
     height?: string;
+    branding?: {
+        name: string;
+        logo?: string;
+    };
+    backend: {
+        endpoint: string;
+        api_key: string;
+        widget_id: string;
+    };
 }
 
 interface Message {
@@ -13,40 +23,46 @@ interface Message {
     isUser: boolean;
 }
 
-const ChatWidget: React.FC<ChatWidgetProps> = (
-    {
-        position,
-        title,
-        primaryColor,
-        width = '320px',  // default width
-        height = '480px'  // default height
-    }) => {
+const ChatWidget: React.FC<ChatWidgetConfig> = ({
+                                                    position,
+                                                    title,
+                                                    primaryColor,
+                                                    width = '320px',
+                                                    height = '480px',
+                                                    branding = { name: 'Smarty Pants' },
+                                                    backend
+                                                }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [messages, setMessages] = useState<Message[]>([]);
     const [inputValue, setInputValue] = useState('');
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
+    useEffect(() => {
+        // Validate backend configuration
+        if (!backend.endpoint || !backend.api_key || !backend.widget_id) {
+            console.error('ChatWidget Error: Backend configuration is incomplete. Please provide endpoint, api_key, and widget_id.');
+        }
+    }, [backend]);
+
     const handleToggle = () => setIsOpen(!isOpen);
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (inputValue.trim()) {
-            const newMessage: Message = {text: inputValue, isUser: true};
-            setMessages([...messages, newMessage]);
+            const newMessage: Message = { text: inputValue, isUser: true };
+            setMessages(prev => [...prev, newMessage]);
             setInputValue('');
-            // Simulate bot response
+
+            // Simulate API call with dummy response
             setTimeout(() => {
-                const botMessage: Message = {
-                    text: "Thank you for your message. How can I assist you further?",
-                    isUser: false
-                };
-                setMessages(prev => [...prev, botMessage]);
+                const dummyResponse: Message = { text: "This is a dummy response. Your message was: " + inputValue, isUser: false };
+                setMessages(prev => [...prev, dummyResponse]);
             }, 1000);
         }
     };
 
     useEffect(() => {
-        messagesEndRef.current?.scrollIntoView({behavior: "smooth"});
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }, [messages]);
 
     const positionClass = {
@@ -64,11 +80,21 @@ const ChatWidget: React.FC<ChatWidgetProps> = (
                     style={{ width, height }}
                 >
                     <div
-                        className="flex justify-between items-center p-4 bg-gradient-to-r from-blue-500 to-blue-600 text-white"
-                        style={{ backgroundColor: primaryColor }}
+                        className="flex justify-between items-center p-4 bg-gray-800 text-white"
                     >
-                        <h3 className="font-semibold">{title}</h3>
-                        <button onClick={handleToggle} className="text-white hover:text-gray-200">
+                        <div className="flex items-center">
+                            {branding.logo ? (
+                                <img src={branding.logo} alt={branding.name} className="w-8 h-8 mr-2" />
+                            ) : (
+                                <SVGLogo width={32} height={32} leftBrainColor="#FFF"
+                                         rightBrainColor="#FFF"
+                                         centerSquareColor="#8CA6C9"
+                                         centerSquareBlinkColor="#FFFFFF"
+                                         onHoverRotationDegree={15} />
+                            )}
+                            <h3 className="font-semibold ml-2">{title}</h3>
+                        </div>
+                        <button onClick={handleToggle} className="text-white hover:text-gray-300">
                             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
                             </svg>
@@ -108,8 +134,7 @@ const ChatWidget: React.FC<ChatWidgetProps> = (
             ) : (
                 <button
                     onClick={handleToggle}
-                    className="bg-blue-500 text-white p-4 rounded-full shadow-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
-                    style={{ backgroundColor: primaryColor }}
+                    className="bg-gray-800 text-white p-4 rounded-full shadow-lg hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-50"
                 >
                     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path>
