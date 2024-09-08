@@ -1,14 +1,11 @@
 "use client";
 
 import React from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import authService from "@/services/authService";
 import SVGLogo from "@/components/SVGLogo";
 
 const LoginPage: React.FC = () => {
-    const router = useRouter();
-
     const handleLogin = async (provider: string) => {
         try {
             const response = await authService.initiateAuth(provider);
