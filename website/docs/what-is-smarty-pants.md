@@ -8,3 +8,5 @@ SmartyPants is a package of tools to work with Generative AI. To democratize the
 to explore, build and use pre-built generative AI tools to solve your use-cases.
 
 ## Why SmartyPants?
+
+TBD
