@@ -4,10 +4,10 @@ import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react'
 import axios, { CancelTokenSource } from 'axios';
 import Navbar from '../../components/Navbar';
 import Header, { HeaderConfig } from '../../components/Header';
-import { Settings } from '@/services/api/settings';
 import AuthService from "@/services/authService";
 import { createApiService } from "@/services/apiService";
 import { Alert, AlertDescription } from '@/components/Alert';
+import {Settings} from "@/types/api";
 
 interface FlashMessage {
     type: 'success' | 'error';

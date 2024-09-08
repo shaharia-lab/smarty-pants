@@ -62,3 +62,17 @@ export interface LLMProvidersApiResponse {
     per_page: number;
     total_pages: number;
 }
+
+export interface Settings {
+    general: {
+        application_name: string;
+    };
+    debugging: {
+        log_level: 'debug' | 'info' | 'warn' | 'error';
+        log_format: 'json' | 'text';
+        log_output: 'stdout' | 'stderr' | 'file';
+    };
+    search: {
+        per_page: number;
+    };
+}

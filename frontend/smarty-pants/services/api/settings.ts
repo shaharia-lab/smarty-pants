@@ -1,18 +1,6 @@
 import { AxiosInstance, CancelToken } from 'axios';
 
-export interface Settings {
-    general: {
-        application_name: string;
-    };
-    debugging: {
-        log_level: 'debug' | 'info' | 'warn' | 'error';
-        log_format: 'json' | 'text';
-        log_output: 'stdout' | 'stderr' | 'file';
-    };
-    search: {
-        per_page: number;
-    };
-}
+import { Settings } from '@/types/api';
 
 export class SettingsApi {
     constructor(private axiosInstance: AxiosInstance) {}
