@@ -22,7 +22,7 @@ const AvailableProviders: React.FC<AvailableProvidersComponentProps> = ({title, 
             <h2 className="text-2xl font-semibold text-gray-900 mb-4">{title}</h2>
             <div className="bg-white shadow overflow-hidden sm:rounded-lg h-[calc(100vh-240px)] overflow-y-auto">
                 {providers.map((provider) => (
-                    <div key={provider.id} className="border-b border-gray-200 last:border-b-0">
+                    <div key={provider.id} className="border-b border-gray-200 last:border-b-0" data-provider-name={provider.name} data-provider-id={provider.id}>
                         <div
                             className="px-6 py-5 sm:px-6 flex items-center justify-between hover:bg-gray-50 transition-colors duration-200">
                             <div className="flex items-center">

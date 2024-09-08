@@ -1,41 +1,65 @@
-import React, {act} from 'react';
-import {fireEvent, render, screen, waitFor} from '@testing-library/react';
+import React from 'react';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import DatasourcesPage from "@/app/datasources/page";
+import { useRouter } from 'next/navigation';
+import AuthService from '@/services/authService';
+import { createApiService } from "@/services/apiService";
 
-// Mock the fetch function
-global.fetch = jest.fn();
+// Mock Next.js modules
+jest.mock('next/navigation', () => ({
+    useRouter: jest.fn(),
+    usePathname: jest.fn(),
+}));
 
-// Mock the environment variable
-process.env.NEXT_PUBLIC_API_BASE_URL = 'http://test-api.com';
+// Mock auth service
+jest.mock('@/services/authService', () => ({
+    isAuthenticated: jest.fn(),
+    getAuthenticatedAxiosInstance: jest.fn(),
+}));
+
+// Mock createApiService
+jest.mock("@/services/apiService", () => ({
+    createApiService: jest.fn(),
+}));
 
 describe('DatasourcesPage', () => {
+    const mockRouter = { push: jest.fn() };
+    const mockApiService = {
+        datasource: {
+            getDatasources: jest.fn(),
+            deleteDatasource: jest.fn(),
+            activateDatasource: jest.fn(),
+            deactivateDatasource: jest.fn(),
+        },
+    };
+
     beforeEach(() => {
         jest.clearAllMocks();
+        (useRouter as jest.Mock).mockReturnValue(mockRouter);
+        (AuthService.isAuthenticated as jest.Mock).mockReturnValue(true);
+        (createApiService as jest.Mock).mockReturnValue(mockApiService);
     });
 
     it('renders loading state initially', async () => {
-        (global.fetch as jest.Mock).mockImplementationOnce(() => new Promise(() => {
-        }));
+        mockApiService.datasource.getDatasources.mockReturnValue(new Promise(() => {}));
 
         await act(async () => {
-            render(<DatasourcesPage/>);
+            render(<DatasourcesPage />);
         });
+
         expect(screen.getByText('Loading...')).toBeInTheDocument();
     });
 
     it('fetches and displays datasources', async () => {
         const mockDatasources = [
-            {uuid: '1', name: 'Test Datasource', source_type: 'test', status: 'active'}
+            { uuid: '1', name: 'Test Datasource', source_type: 'test', status: 'active' }
         ];
 
-        (global.fetch as jest.Mock).mockResolvedValueOnce({
-            ok: true,
-            json: async () => ({datasources: mockDatasources, total: 1, page: 1, per_page: 10, total_pages: 1}),
-        });
+        mockApiService.datasource.getDatasources.mockResolvedValue({ datasources: mockDatasources });
 
         await act(async () => {
-            render(<DatasourcesPage/>);
+            render(<DatasourcesPage />);
         });
 
         await waitFor(() => {
@@ -44,10 +68,10 @@ describe('DatasourcesPage', () => {
     });
 
     it('handles fetch error', async () => {
-        (global.fetch as jest.Mock).mockRejectedValueOnce(new Error('API error'));
+        mockApiService.datasource.getDatasources.mockRejectedValue(new Error('API error'));
 
         await act(async () => {
-            render(<DatasourcesPage/>);
+            render(<DatasourcesPage />);
         });
 
         await waitFor(() => {
@@ -57,26 +81,19 @@ describe('DatasourcesPage', () => {
 
     it('handles delete datasource', async () => {
         const mockDatasources = [
-            {uuid: '1', name: 'Test Datasource', source_type: 'test', status: 'active'}
+            { uuid: '1', name: 'Test Datasource', source_type: 'test', status: 'active' }
         ];
 
-        (global.fetch as jest.Mock)
-            .mockResolvedValueOnce({
-                ok: true,
-                json: async () => ({datasources: mockDatasources, total: 1, page: 1, per_page: 10, total_pages: 1}),
-            })
-            .mockResolvedValueOnce({
-                ok: true,
-            })
-            .mockResolvedValueOnce({
-                ok: true,
-                json: async () => ({datasources: [], total: 0, page: 1, per_page: 10, total_pages: 0}),
-            });
+        mockApiService.datasource.getDatasources
+            .mockResolvedValueOnce({ datasources: mockDatasources })
+            .mockResolvedValueOnce({ datasources: [] });
+
+        mockApiService.datasource.deleteDatasource.mockResolvedValue({});
 
         window.confirm = jest.fn().mockImplementation(() => true);
 
         await act(async () => {
-            render(<DatasourcesPage/>);
+            render(<DatasourcesPage />);
         });
 
         await waitFor(() => {
@@ -94,28 +111,17 @@ describe('DatasourcesPage', () => {
 
     it('handles activate datasource', async () => {
         const mockDatasources = [
-            {uuid: '1', name: 'Test Datasource', source_type: 'test', status: 'inactive'}
+            { uuid: '1', name: 'Test Datasource', source_type: 'test', status: 'inactive' }
         ];
 
-        (global.fetch as jest.Mock)
-            .mockResolvedValueOnce({
-                ok: true,
-                json: async () => ({datasources: mockDatasources, total: 1, page: 1, per_page: 10, total_pages: 1}),
-            })
-            .mockResolvedValueOnce({
-                ok: true,
-                json: async () => ({message: 'Datasource activated successfully'}),
-            })
-            .mockResolvedValueOnce({
-                ok: true,
-                json: async () => ({
-                    datasources: [{...mockDatasources[0], status: 'active'}],
-                    total: 1, page: 1, per_page: 10, total_pages: 1
-                }),
-            });
+        mockApiService.datasource.getDatasources
+            .mockResolvedValueOnce({ datasources: mockDatasources })
+            .mockResolvedValueOnce({ datasources: [{ ...mockDatasources[0], status: 'active' }] });
+
+        mockApiService.datasource.activateDatasource.mockResolvedValue({ message: 'Datasource activated successfully' });
 
         await act(async () => {
-            render(<DatasourcesPage/>);
+            render(<DatasourcesPage />);
         });
 
         await waitFor(() => {
@@ -133,28 +139,17 @@ describe('DatasourcesPage', () => {
 
     it('handles deactivate datasource', async () => {
         const mockDatasources = [
-            {uuid: '1', name: 'Test Datasource', source_type: 'test', status: 'active'}
+            { uuid: '1', name: 'Test Datasource', source_type: 'test', status: 'active' }
         ];
 
-        (global.fetch as jest.Mock)
-            .mockResolvedValueOnce({
-                ok: true,
-                json: async () => ({datasources: mockDatasources, total: 1, page: 1, per_page: 10, total_pages: 1}),
-            })
-            .mockResolvedValueOnce({
-                ok: true,
-                json: async () => ({message: 'Datasource deactivated successfully'}),
-            })
-            .mockResolvedValueOnce({
-                ok: true,
-                json: async () => ({
-                    datasources: [{...mockDatasources[0], status: 'inactive'}],
-                    total: 1, page: 1, per_page: 10, total_pages: 1
-                }),
-            });
+        mockApiService.datasource.getDatasources
+            .mockResolvedValueOnce({ datasources: mockDatasources })
+            .mockResolvedValueOnce({ datasources: [{ ...mockDatasources[0], status: 'inactive' }] });
+
+        mockApiService.datasource.deactivateDatasource.mockResolvedValue({ message: 'Datasource deactivated successfully' });
 
         await act(async () => {
-            render(<DatasourcesPage/>);
+            render(<DatasourcesPage />);
         });
 
         await waitFor(() => {
@@ -173,20 +168,16 @@ describe('DatasourcesPage', () => {
     // Additional tests to improve coverage
     it('handles API error on delete', async () => {
         const mockDatasources = [
-            {uuid: '1', name: 'Test Datasource', source_type: 'test', status: 'active'}
+            { uuid: '1', name: 'Test Datasource', source_type: 'test', status: 'active' }
         ];
 
-        (global.fetch as jest.Mock)
-            .mockResolvedValueOnce({
-                ok: true,
-                json: async () => ({datasources: mockDatasources, total: 1, page: 1, per_page: 10, total_pages: 1}),
-            })
-            .mockRejectedValueOnce(new Error('Delete failed'));
+        mockApiService.datasource.getDatasources.mockResolvedValue({ datasources: mockDatasources });
+        mockApiService.datasource.deleteDatasource.mockRejectedValue(new Error('Delete failed'));
 
         window.confirm = jest.fn().mockImplementation(() => true);
 
         await act(async () => {
-            render(<DatasourcesPage/>);
+            render(<DatasourcesPage />);
         });
 
         await waitFor(() => {
@@ -198,24 +189,20 @@ describe('DatasourcesPage', () => {
         });
 
         await waitFor(() => {
-            expect(screen.getByText('Failed to delete datasource. Please try again.')).toBeInTheDocument();
+            expect(screen.getByText('Delete failed')).toBeInTheDocument();
         });
     });
 
     it('handles API error on activate', async () => {
         const mockDatasources = [
-            {uuid: '1', name: 'Test Datasource', source_type: 'test', status: 'inactive'}
+            { uuid: '1', name: 'Test Datasource', source_type: 'test', status: 'inactive' }
         ];
 
-        (global.fetch as jest.Mock)
-            .mockResolvedValueOnce({
-                ok: true,
-                json: async () => ({datasources: mockDatasources, total: 1, page: 1, per_page: 10, total_pages: 1}),
-            })
-            .mockRejectedValueOnce(new Error('Activation failed'));
+        mockApiService.datasource.getDatasources.mockResolvedValue({ datasources: mockDatasources });
+        mockApiService.datasource.activateDatasource.mockRejectedValue(new Error('Activation failed'));
 
         await act(async () => {
-            render(<DatasourcesPage/>);
+            render(<DatasourcesPage />);
         });
 
         await waitFor(() => {
@@ -233,18 +220,14 @@ describe('DatasourcesPage', () => {
 
     it('handles API error on deactivate', async () => {
         const mockDatasources = [
-            {uuid: '1', name: 'Test Datasource', source_type: 'test', status: 'active'}
+            { uuid: '1', name: 'Test Datasource', source_type: 'test', status: 'active' }
         ];
 
-        (global.fetch as jest.Mock)
-            .mockResolvedValueOnce({
-                ok: true,
-                json: async () => ({datasources: mockDatasources, total: 1, page: 1, per_page: 10, total_pages: 1}),
-            })
-            .mockRejectedValueOnce(new Error('Deactivation failed'));
+        mockApiService.datasource.getDatasources.mockResolvedValue({ datasources: mockDatasources });
+        mockApiService.datasource.deactivateDatasource.mockRejectedValue(new Error('Deactivation failed'));
 
         await act(async () => {
-            render(<DatasourcesPage/>);
+            render(<DatasourcesPage />);
         });
 
         await waitFor(() => {

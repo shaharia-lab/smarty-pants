@@ -1,17 +1,22 @@
 'use client';
 
-import {useParams} from 'next/navigation';
-import {useEffect, useState} from 'react';
+import { useParams } from 'next/navigation';
+import React, { useEffect, useState, useMemo } from 'react';
 import Navbar from '../../../components/Navbar';
 import DocumentDetailsClient from '../../../components/DocumentDetailsClient';
-import {Document} from '@/types';
+import { Document } from '@/types';
+import { createApiService } from "@/services/apiService";
+import AuthService from "@/services/authService";
+import axios, { CancelTokenSource } from "axios";
 
 export default function DocumentDetailsPage() {
-    const params = useParams();
+    const params = useParams() as { uuid: string };
     const uuid = params.uuid as string;
     const [document, setDocument] = useState<Document | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+
+    const apiService = useMemo(() => createApiService(AuthService), []);
 
     useEffect(() => {
         if (!uuid) {
@@ -20,23 +25,28 @@ export default function DocumentDetailsPage() {
             return;
         }
 
+        const cancelTokenSource: CancelTokenSource = axios.CancelToken.source();
+
         async function fetchDocument() {
             try {
-                const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/document/${uuid}`);
-                if (!response.ok) {
-                    throw new Error('Failed to fetch document');
-                }
-                const data: Document = await response.json();
+                const data = await apiService.documents.getDocumentByUuid(uuid, cancelTokenSource.token);
                 setDocument(data);
             } catch (err) {
-                setError('Error fetching document details');
+                if (!axios.isCancel(err)) {
+                    setError('Error fetching document details');
+                    console.error('Error fetching document:', err);
+                }
             } finally {
                 setLoading(false);
             }
         }
 
         fetchDocument();
-    }, [uuid]);
+
+        return () => {
+            cancelTokenSource.cancel('Operation canceled due to component unmount or re-render.');
+        };
+    }, [uuid, apiService]);
 
     return (
         <div className="min-h-screen bg-gray-100">

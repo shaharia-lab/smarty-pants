@@ -1,5 +1,3 @@
-// File: /components/SetupGuide.tsx
-
 'use client';
 
 import React, {useEffect, useState} from 'react';
@@ -14,11 +12,11 @@ const SetupGuide: React.FC = () => {
     useEffect(() => {
         const checkConfiguration = async () => {
             try {
-                const datasourcesResponse = await fetch('http://localhost:8080/api/v1/datasource?limit=1');
+                const datasourcesResponse = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/datasource?limit=1`);
                 const datasourcesData = await datasourcesResponse.json();
                 setHasDatasource(datasourcesData.total > 0);
 
-                const embeddingProvidersResponse = await fetch('http://localhost:8080/api/v1/embedding-provider?limit=1');
+                const embeddingProvidersResponse = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/embedding-provider?limit=1`);
                 const embeddingProvidersData = await embeddingProvidersResponse.json();
                 setHasEmbeddingProvider(embeddingProvidersData.total > 0);
             } catch (error) {

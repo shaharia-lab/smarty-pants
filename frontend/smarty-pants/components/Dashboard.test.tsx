@@ -2,6 +2,13 @@ import React from 'react';
 import { render, screen, waitFor, act } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import Dashboard from './Dashboard';
+import { createApiService } from "@/services/apiService";
+import { AnalyticsOverview } from "@/types/api";
+
+// Mock the createApiService function
+jest.mock("@/services/apiService", () => ({
+    createApiService: jest.fn(),
+}));
 
 // Mock the Chart.js library
 jest.mock('chart.js', () => ({
@@ -22,50 +29,25 @@ jest.mock('react-chartjs-2', () => ({
     Pie: () => <div data-testid="mock-pie-chart">Mocked Pie Chart</div>,
 }));
 
-// Mock the global fetch function with proper typing
-const mockFetch = jest.fn() as jest.MockedFunction<typeof fetch>;
-global.fetch = mockFetch;
-
-// Helper function to create a mock Response
-const createMockResponse = (data: any): Response => {
-    return {
-        json: jest.fn().mockResolvedValue(data),
-        ok: true,
-        status: 200,
-        statusText: 'OK',
-        headers: new Headers(),
-        redirected: false,
-        type: 'basic',
-        url: 'http://test.com',
-        clone: jest.fn(),
-        body: null,
-        bodyUsed: false,
-        arrayBuffer: jest.fn(),
-        blob: jest.fn(),
-        formData: jest.fn(),
-        text: jest.fn(),
-    } as Response;
-};
-
 describe('Dashboard Component', () => {
-    const mockAnalyticsData = {
+    const mockAnalyticsData: AnalyticsOverview = {
         embedding_providers: {
             total_providers: 2,
-            total_active_providers: 1,
             active_provider: {
                 name: 'OpenAI',
-                type: 'API',
                 model: 'text-embedding-ada-002',
+                type: 'OpenAI',
             },
+            total_active_providers: 1,
         },
         llm_providers: {
             total_providers: 3,
-            total_active_providers: 1,
             active_provider: {
-                name: 'OpenAI',
-                type: 'API',
+                name: 'Example 2',
                 model: 'gpt-3.5-turbo',
+                type: 'OpenAI',
             },
+            total_active_providers: 1,
         },
         datasources: {
             configured_datasources: [
@@ -73,22 +55,28 @@ describe('Dashboard Component', () => {
                     name: 'Web Crawler',
                     type: 'web',
                     status: 'active',
-                    created_at: '2023-01-01T00:00:00Z',
+                    created_at: '2021-10-01T00:00:00Z',
                 },
             ],
             total_datasources: 1,
-            total_datasources_by_type: { web: 1 },
             total_datasources_by_status: { active: 1 },
+            total_datasources_by_type: { web: 1 },
             total_documents_fetched_by_datasource_type: { web: 100 },
         },
     };
 
     beforeEach(() => {
-        jest.resetAllMocks();
+        jest.clearAllMocks();
+        (createApiService as jest.Mock).mockReturnValue({
+            analytics: {
+                getAnalyticsOverview: jest.fn(),
+            },
+        });
     });
 
     test('renders error state when API call fails', async () => {
-        mockFetch.mockRejectedValueOnce(new Error('API Error'));
+        const mockError = new Error('API Error');
+        (createApiService as jest.Mock)().analytics.getAnalyticsOverview.mockRejectedValueOnce(mockError);
 
         await act(async () => {
             render(<Dashboard />);
@@ -100,7 +88,7 @@ describe('Dashboard Component', () => {
     });
 
     test('renders dashboard with correct data after successful API call', async () => {
-        mockFetch.mockResolvedValueOnce(createMockResponse(mockAnalyticsData));
+        (createApiService as jest.Mock)().analytics.getAnalyticsOverview.mockResolvedValueOnce(mockAnalyticsData);
 
         await act(async () => {
             render(<Dashboard />);
@@ -109,21 +97,13 @@ describe('Dashboard Component', () => {
         await waitFor(() => {
             expect(screen.getByText('Embedding Providers')).toBeInTheDocument();
             expect(screen.getByText('2')).toBeInTheDocument(); // Total Embedding Providers
-
-            // Check for OpenAI in Embedding Providers section
-            const embeddingProvidersSection = screen.getByText('Embedding Providers').closest('div');
-            expect(embeddingProvidersSection).toBeInTheDocument();
-            expect(embeddingProvidersSection).toHaveTextContent('OpenAI');
-            expect(embeddingProvidersSection).toHaveTextContent('Model: text-embedding-ada-002');
+            expect(screen.getByText('OpenAI')).toBeInTheDocument(); // Embedding Provider name
+            expect(screen.getByText('Model: text-embedding-ada-002')).toBeInTheDocument();
 
             expect(screen.getByText('LLM Providers')).toBeInTheDocument();
             expect(screen.getByText('3')).toBeInTheDocument(); // Total LLM Providers
-
-            // Check for OpenAI in LLM Providers section
-            const llmProvidersSection = screen.getByText('LLM Providers').closest('div');
-            expect(llmProvidersSection).toBeInTheDocument();
-            expect(llmProvidersSection).toHaveTextContent('OpenAI');
-            expect(llmProvidersSection).toHaveTextContent('Model: gpt-3.5-turbo');
+            expect(screen.getByText('Example 2')).toBeInTheDocument(); // LLM Provider name
+            expect(screen.getByText('Model: gpt-3.5-turbo')).toBeInTheDocument();
 
             expect(screen.getByText('Datasources')).toBeInTheDocument();
             expect(screen.getByText('1')).toBeInTheDocument(); // Total Datasources
@@ -144,7 +124,7 @@ describe('Dashboard Component', () => {
                 configured_datasources: [],
             },
         };
-        mockFetch.mockResolvedValueOnce(createMockResponse(modifiedMockData));
+        (createApiService as jest.Mock)().analytics.getAnalyticsOverview.mockResolvedValueOnce(modifiedMockData);
 
         await act(async () => {
             render(<Dashboard />);
@@ -164,7 +144,7 @@ describe('Dashboard Component', () => {
                 total_documents_fetched_by_datasource_type: {},
             },
         };
-        mockFetch.mockResolvedValueOnce(createMockResponse(modifiedMockData));
+        (createApiService as jest.Mock)().analytics.getAnalyticsOverview.mockResolvedValueOnce(modifiedMockData);
 
         await act(async () => {
             render(<Dashboard />);

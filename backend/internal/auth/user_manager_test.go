@@ -14,6 +14,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
+	logger2 "github.com/shaharia-lab/smarty-pants/backend/internal/logger"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/storage"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/types"
 	"github.com/sirupsen/logrus"
@@ -21,11 +22,38 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
+func TestUserManager_CreateUser_SuperAdmin(t *testing.T) {
+	ctx := context.Background()
+	mockStorage := new(storage.StorageMock)
+	mockLogger := logger2.NoOpsLogger()
+	mockACLManager := NewACLManager(mockLogger, false) // Assuming you have a mock for ACLManager
+	superAdminEmail := "superadmin@example.com"
+
+	userManager := NewUserManager(mockStorage, mockLogger, mockACLManager, superAdminEmail)
+
+	name := "Super Admin"
+	email := superAdminEmail
+	status := types.UserStatusActive
+
+	mockStorage.On("CreateUser", ctx, mock.AnythingOfType("*types.User")).Return(nil)
+
+	user, err := userManager.CreateUser(ctx, name, email, status)
+
+	assert.NoError(t, err)
+	assert.NotNil(t, user)
+	assert.Equal(t, name, user.Name)
+	assert.Equal(t, email, user.Email)
+	assert.Equal(t, status, user.Status)
+	assert.Contains(t, user.Roles, types.UserRoleAdmin)
+
+	mockStorage.AssertExpectations(t)
+}
+
 func TestUserManager_handleGetUser(t *testing.T) {
 	mockStorage := new(storage.StorageMock)
 	logger := logrus.New()
 	logger.SetLevel(logrus.DebugLevel)
-	um := NewUserManager(mockStorage, logger, NewACLManager(logger, false))
+	um := NewUserManager(mockStorage, logger, NewACLManager(logger, false), "")
 
 	userUUID := uuid.New()
 	user := &types.User{
@@ -81,7 +109,7 @@ func TestUserManager_handleGetUser(t *testing.T) {
 func TestUserManager_handleActivateUser(t *testing.T) {
 	mockStorage := new(storage.StorageMock)
 	logger := logrus.New()
-	um := NewUserManager(mockStorage, logger, NewACLManager(logger, false))
+	um := NewUserManager(mockStorage, logger, NewACLManager(logger, false), "")
 
 	userUUID := uuid.New()
 	user := &types.User{
@@ -113,7 +141,7 @@ func TestUserManager_handleActivateUser(t *testing.T) {
 func TestUserManager_handleDeactivateUser(t *testing.T) {
 	mockStorage := new(storage.StorageMock)
 	logger := logrus.New()
-	um := NewUserManager(mockStorage, logger, NewACLManager(logger, false))
+	um := NewUserManager(mockStorage, logger, NewACLManager(logger, false), "")
 
 	userUUID := uuid.New()
 	user := &types.User{
@@ -195,7 +223,7 @@ func TestUserManager_ResolveUserFromRequest(t *testing.T) {
 			mockStorage := new(storage.StorageMock)
 			logger := logrus.New()
 			logger.SetOutput(io.Discard) // Suppress log output during tests
-			um := NewUserManager(mockStorage, logger, NewACLManager(logger, false))
+			um := NewUserManager(mockStorage, logger, NewACLManager(logger, false), "")
 
 			tt.setupMock(mockStorage)
 
@@ -232,7 +260,7 @@ func TestUserManager_ResolveUserFromRequest(t *testing.T) {
 func TestUserManager_ResolveUserFromRequest_InvalidUUID(t *testing.T) {
 	mockStorage := new(storage.StorageMock)
 	logger := logrus.New()
-	um := NewUserManager(mockStorage, logger, NewACLManager(logger, false))
+	um := NewUserManager(mockStorage, logger, NewACLManager(logger, false), "")
 
 	r := chi.NewRouter()
 	r.Use(um.ResolveUserFromRequest)
@@ -252,7 +280,7 @@ func TestUserManager_handleListUsers(t *testing.T) {
 	mockStorage := new(storage.StorageMock)
 	logger := logrus.New()
 	logger.SetLevel(logrus.DebugLevel)
-	um := NewUserManager(mockStorage, logger, NewACLManager(logger, false))
+	um := NewUserManager(mockStorage, logger, NewACLManager(logger, false), "")
 
 	user1 := &types.User{
 		UUID:      uuid.New(),

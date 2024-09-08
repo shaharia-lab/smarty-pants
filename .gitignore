@@ -14,6 +14,9 @@ frontend/chat_widget/node_modules
 frontend/chat_widget/dist
 frontend/chat_widget/coverage
 
+frontend/smarty-pants/cypress/screenshots
+frontend/smarty-pants/cypress/videos
+
 .DS_Store
 *.pem
 
@@ -32,6 +35,9 @@ frontend/smarty-pants/.env.local
 frontend/smarty-pants/.env.development.local
 frontend/smarty-pants/.env.test.local
 frontend/smarty-pants/.env.production.local
+
+frontend/cypress/videos
+frontend/cypress/screenshots
 
 
 ## ignore for backend

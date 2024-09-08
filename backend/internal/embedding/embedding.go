@@ -34,7 +34,7 @@ func NewEmbeddingManager(s storage.Storage, l *logrus.Logger, aclManager auth.AC
 
 // RegisterRoutes registers the embedding provider routes
 func (h *Manager) RegisterRoutes(r chi.Router) {
-	r.Route("/embedding-provider", func(r chi.Router) {
+	r.Route("/api/v1/embedding-provider", func(r chi.Router) {
 		r.Post("/", h.addProviderHandler)
 		r.Route("/{uuid}", func(r chi.Router) {
 			r.Delete("/", h.deleteProviderHandler)

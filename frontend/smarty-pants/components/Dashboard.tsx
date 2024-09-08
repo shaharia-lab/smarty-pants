@@ -1,63 +1,41 @@
 'use client';
 
-import React, {useEffect, useState} from 'react';
-import {ArcElement, BarElement, CategoryScale, Chart as ChartJS, Legend, LinearScale, Title, Tooltip} from 'chart.js';
-import {Pie} from 'react-chartjs-2';
-import {Loader2} from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { ArcElement, BarElement, CategoryScale, Chart as ChartJS, Legend, LinearScale, Title, Tooltip } from 'chart.js';
+import { Pie } from 'react-chartjs-2';
+import { Loader2 } from 'lucide-react';
+import AuthService from "@/services/authService";
+import axios from "axios";
+import { ApiError, createApiService } from "@/services/apiService";
+import {AnalyticsOverview} from "@/types/api";
 
 ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, Title);
 
-interface AnalyticsOverview {
-    embedding_providers: {
-        total_providers: number;
-        total_active_providers: number;
-        active_provider: {
-            name: string;
-            type: string;
-            model: string;
-        };
-    };
-    llm_providers: {
-        total_providers: number;
-        total_active_providers: number;
-        active_provider: {
-            name: string;
-            type: string;
-            model: string;
-        };
-    };
-    datasources: {
-        configured_datasources: Array<{
-            name: string;
-            type: string;
-            status: string;
-            created_at: string;
-        }> | null;
-        total_datasources: number;
-        total_datasources_by_type: { [key: string]: number };
-        total_datasources_by_status: { [key: string]: number };
-        total_documents_fetched_by_datasource_type: { [key: string]: number };
-    };
-}
-
 const Dashboard = () => {
     const [analyticsData, setAnalyticsData] = useState<AnalyticsOverview | null>(null);
+    const apiService = createApiService(AuthService);
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
+        const source = axios.CancelToken.source();
         const fetchAnalytics = async () => {
             try {
-                const response = await fetch('http://localhost:8080/api/v1/analytics/overview');
-                const data = await response.json();
+                const data = await apiService.analytics.getAnalyticsOverview(source.token);
                 setAnalyticsData(data);
             } catch (error) {
-                console.error('Error fetching analytics data:', error);
+                if (!axios.isCancel(error)) {
+                    console.error('Error fetching analytics data:', error);
+                }
             } finally {
                 setIsLoading(false);
             }
         };
 
         fetchAnalytics();
+
+        return () => {
+            source.cancel('Component unmounted');
+        };
     }, []);
 
     if (isLoading) {

@@ -1,16 +1,19 @@
 'use client';
 
-import React, {useState} from 'react';
-import {useRouter} from 'next/navigation';
+import React, { useState, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Navbar from '../../../../components/Navbar';
-import Header, {HeaderConfig} from '../../../../components/Header';
-import {getDatasourceById} from '@/utils/datasources';
-import {SlackDatasourcePayload} from '@/types/datasource';
+import Header, { HeaderConfig } from '../../../../components/Header';
+import { getDatasourceById } from '@/utils/datasources';
+import { SlackDatasourcePayload } from '@/types/datasource';
+import AuthService from "@/services/authService";
+import {createApiService} from "@/services/apiService";
 
 const SlackConfigPage: React.FC = () => {
     const router = useRouter();
     const slackDatasource = getDatasourceById('slack');
+    const datasourcesApi = createApiService(AuthService).datasource;
 
     const headerConfig: HeaderConfig = {
         title: `Configure ${slackDatasource?.name ?? 'Slack'} Datasource`
@@ -29,11 +32,11 @@ const SlackConfigPage: React.FC = () => {
     const buttonText = isLoading ? 'Validating...' : isValidated ? 'Validated' : 'Validate';
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const {name, value} = e.target;
-        setFormData(prevData => ({...prevData, [name]: value}));
+        const { name, value } = e.target;
+        setFormData(prevData => ({ ...prevData, [name]: value }));
     };
 
-    const handleValidate = async () => {
+    const handleValidate = useCallback(async () => {
         setIsLoading(true);
         setError(null);
         try {
@@ -45,9 +48,9 @@ const SlackConfigPage: React.FC = () => {
         } finally {
             setIsLoading(false);
         }
-    };
+    }, []);
 
-    const handleSave = async () => {
+    const handleSave = useCallback(async () => {
         setIsLoading(true);
         setError(null);
         try {
@@ -61,25 +64,14 @@ const SlackConfigPage: React.FC = () => {
                 }
             };
 
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/datasource`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(payload),
-            });
-
-            if (!response.ok) {
-                throw new Error('Failed to create datasource');
-            }
-
+            await datasourcesApi.addSlackDatasource(payload);
             router.push('/datasources');
         } catch (err) {
             setError('Failed to create datasource. Please try again.');
         } finally {
             setIsLoading(false);
         }
-    };
+    }, [formData, datasourcesApi, router]);
 
     if (!slackDatasource) {
         return <div>Slack datasource configuration not found.</div>;
@@ -98,7 +90,6 @@ const SlackConfigPage: React.FC = () => {
                     </div>
 
                     <div className="flex flex-col md:flex-row gap-8">
-                        {/* Left column: Form */}
                         <div className="w-full md:w-1/2">
                             <div className="bg-white shadow sm:rounded-lg">
                                 <div className="px-4 py-5 sm:p-6">

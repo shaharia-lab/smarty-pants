@@ -9,8 +9,6 @@ import (
 type Config struct {
 	AppName string `envconfig:"APP_NAME" default:"smarty-pants"`
 
-	AdminEmail string `envconfig:"ADMIN_EMAIL" default:"your@emailaddress.com"`
-
 	DBHost string `envconfig:"DB_HOST" default:"localhost"`
 	DBPort int    `envconfig:"DB_PORT" default:"5432"`
 	DBUser string `envconfig:"DB_USER" default:"app"`
@@ -42,6 +40,17 @@ type Config struct {
 	ProcessorRefreshIntervalInSecs int `envconfig:"PROCESSOR_REFRESH_INTERVAL_IN_SECS" default:"60"`
 
 	EnableAuthentication bool `envconfig:"ENABLE_AUTH" default:"false"`
+
+	GoogleOAuthClientID     string `envconfig:"GOOGLE_OAUTH_CLIENT_ID"`
+	GoogleOAuthClientSecret string `envconfig:"GOOGLE_OAUTH_CLIENT_SECRET"`
+	GoogleOAuthRedirectURL  string `envconfig:"GOOGLE_OAUTH_REDIRECT_URL"`
+
+	MockOAuthBaseURL      string `envconfig:"MOCK_OAUTH_BASE_URL"`
+	MockOAuthClientID     string `envconfig:"MOCK_OAUTH_CLIENT_ID"`
+	MockOAuthClientSecret string `envconfig:"MOCK_OAUTH_CLIENT_SECRET"`
+	MockOAuthRedirectURL  string `envconfig:"MOCK_OAUTH_REDIRECT_URL"`
+
+	SuperAdminEmail string `envconfig:"SUPER_ADMIN_EMAIL" default:""`
 }
 
 // Load loads the configuration options from the environment

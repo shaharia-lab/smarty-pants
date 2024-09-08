@@ -1,8 +1,21 @@
-// File: components/Navbar.test.tsx
 import React from 'react';
-import { render, screen, fireEvent, act } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import Navbar from './Navbar';
+import { useRouter, usePathname } from 'next/navigation';
+import authService from '../services/authService';
+
+// Mock the next/navigation hooks
+jest.mock('next/navigation', () => ({
+    useRouter: jest.fn(),
+    usePathname: jest.fn(),
+}));
+
+// Mock the authService
+jest.mock('../services/authService', () => ({
+    isAuthenticated: jest.fn(),
+    logout: jest.fn(),
+}));
 
 // Mock the next/link component
 jest.mock('next/link', () => {
@@ -31,6 +44,12 @@ Object.defineProperty(window, 'location', {
 });
 
 describe('Navbar', () => {
+    beforeEach(() => {
+        (useRouter as jest.Mock).mockReturnValue({ push: jest.fn() });
+        (usePathname as jest.Mock).mockReturnValue('/');
+        (authService.isAuthenticated as jest.Mock).mockReturnValue(false);
+    });
+
     it('renders without crashing', () => {
         render(<Navbar />);
         expect(screen.getByText('SmartyPants')).toBeInTheDocument();
@@ -38,73 +57,51 @@ describe('Navbar', () => {
 
     it('displays all top-level navigation items', () => {
         render(<Navbar />);
-
         const topLevelItems = ['Home', 'Assistant', 'Datasources', 'AI Providers', 'Management'];
-
         topLevelItems.forEach(item => {
-            const elements = screen.getAllByText(item);
-            const topLevelElement = elements.find(el =>
-                el.tagName === 'BUTTON' || (el.tagName === 'A' && el.getAttribute('href'))
-            );
-            expect(topLevelElement).toBeInTheDocument();
+            expect(screen.getByText(item)).toBeInTheDocument();
         });
     });
 
     it('highlights the current active route', () => {
-        render(<Navbar initialPath="/" />);
+        (usePathname as jest.Mock).mockReturnValue('/');
+        render(<Navbar />);
         const homeLink = screen.getByText('Home').closest('a');
-        expect(homeLink).toHaveClass('bg-gray-900');
-        expect(homeLink).toHaveClass('text-white');
+        expect(homeLink).toHaveClass('bg-gray-900 text-white');
     });
 
     it('opens dropdown menu when clicked', () => {
         render(<Navbar />);
-        const assistantDropdown = screen.getByText('Assistant');
-        fireEvent.click(assistantDropdown);
+        fireEvent.click(screen.getByText('Assistant'));
         expect(screen.getByText('Conversation')).toBeVisible();
     });
 
     it('highlights parent item when child route is active', () => {
-        render(<Navbar initialPath="/ask" />);
+        (usePathname as jest.Mock).mockReturnValue('/ask');
+        render(<Navbar />);
         const assistantDropdown = screen.getByText('Assistant').closest('button');
-        expect(assistantDropdown).toHaveClass('bg-gray-900');
-        expect(assistantDropdown).toHaveClass('text-white');
+        expect(assistantDropdown).toHaveClass('bg-gray-900 text-white');
     });
 
-    it('handles window popstate event', () => {
+    it('renders login button when unauthenticated', () => {
         render(<Navbar />);
-        act(() => {
-            window.dispatchEvent(new PopStateEvent('popstate'));
-        });
-        // This test just ensures that the event listener doesn't throw an error
-        expect(true).toBeTruthy();
+        expect(screen.getByText('Login')).toBeInTheDocument();
     });
 
-    it('removes popstate event listener on unmount', () => {
-        const removeEventListenerSpy = jest.spyOn(window, 'removeEventListener');
-        const { unmount } = render(<Navbar />);
-        unmount();
-        expect(removeEventListenerSpy).toHaveBeenCalledWith('popstate', expect.any(Function));
-    });
-
-    it('renders the SVG logo with correct props', () => {
+    it('renders logout button when authenticated', () => {
+        (authService.isAuthenticated as jest.Mock).mockReturnValue(true);
         render(<Navbar />);
-        const svgLogo = screen.getByTestId('svg-logo');
-        expect(svgLogo).toBeInTheDocument();
+        expect(screen.getByText('Logout')).toBeInTheDocument();
+    });
 
-        // Parse the props from the data-props attribute
-        const logoProps = JSON.parse(svgLogo.getAttribute('data-props') || '{}');
-
-        // Check if the logo has the correct props
-        expect(logoProps).toEqual({
-            width: 40,
-            height: 40,
-            leftBrainColor: '#FFF',
-            rightBrainColor: '#FFF',
-            centerSquareColor: '#8CA6C9',
-            centerSquareBlinkColor: '#FFFFFF',
-            onHoverRotationDegree: 15
-        });
+    it('calls logout function and redirects on logout button click', () => {
+        (authService.isAuthenticated as jest.Mock).mockReturnValue(true);
+        const routerPush = jest.fn();
+        (useRouter as jest.Mock).mockReturnValue({ push: routerPush });
+        render(<Navbar />);
+        fireEvent.click(screen.getByText('Logout'));
+        expect(authService.logout).toHaveBeenCalled();
+        expect(routerPush).toHaveBeenCalledWith('/login');
     });
 
     it('renders the logo and brand name together', () => {

@@ -3,9 +3,12 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import UserList from './UserList';
 import { User, UserRole, UserStatus } from '@/types/user';
+import { createApiService } from "@/services/apiService";
 
-// Mock fetch function
-global.fetch = jest.fn();
+// Mock createApiService
+jest.mock("@/services/apiService", () => ({
+    createApiService: jest.fn(),
+}));
 
 const mockUsers: User[] = [
     {
@@ -36,8 +39,16 @@ const mockProps = {
 };
 
 describe('UserList Component', () => {
+    const mockApiService = {
+        usersApi: {
+            updateUserStatus: jest.fn(),
+            updateUserRoles: jest.fn(),
+        },
+    };
+
     beforeEach(() => {
         jest.clearAllMocks();
+        (createApiService as jest.Mock).mockReturnValue(mockApiService);
     });
 
     test('renders user list correctly', () => {
@@ -62,9 +73,17 @@ describe('UserList Component', () => {
         expect(screen.getByText('Jane Smith')).toBeInTheDocument();
     });
 
+    test('filters users by status', () => {
+        render(<UserList {...mockProps} />);
+        const statusFilter = screen.getByTestId('status-filter') as HTMLSelectElement;
+        fireEvent.change(statusFilter, { target: { value: 'inactive' } });
+        expect(screen.queryByText('John Doe')).not.toBeInTheDocument();
+        expect(screen.getByText('Jane Smith')).toBeInTheDocument();
+    });
+
     test('filters users by role', () => {
         render(<UserList {...mockProps} />);
-        const roleFilter = screen.getAllByRole('combobox', { name: '' })[1];
+        const roleFilter = screen.getByTestId('role-filter') as HTMLSelectElement;
         fireEvent.change(roleFilter, { target: { value: 'admin' } });
         expect(screen.queryByText('John Doe')).not.toBeInTheDocument();
         expect(screen.getByText('Jane Smith')).toBeInTheDocument();
@@ -80,35 +99,44 @@ describe('UserList Component', () => {
     });
 
     test('updates user status', async () => {
-        (global.fetch as jest.Mock).mockResolvedValueOnce({ ok: true });
+        mockApiService.usersApi.updateUserStatus.mockResolvedValueOnce({ ...mockUsers[0], status: 'inactive' });
         render(<UserList {...mockProps} />);
         const showDetailsButton = screen.getAllByText('Show Details')[0];
         fireEvent.click(showDetailsButton);
         const deactivateButton = screen.getByText('Deactivate');
         fireEvent.click(deactivateButton);
         await waitFor(() => {
-            expect(global.fetch).toHaveBeenCalledWith(
-                expect.stringContaining('/api/v1/users/1/deactivate'),
-                expect.objectContaining({ method: 'PUT' })
-            );
+            expect(mockApiService.usersApi.updateUserStatus).toHaveBeenCalledWith('1', 'inactive');
         });
     });
 
     test('updates user roles', async () => {
-        (global.fetch as jest.Mock).mockResolvedValueOnce({ ok: true });
+        mockApiService.usersApi.updateUserRoles.mockResolvedValueOnce({ ...mockUsers[0], roles: ['user', 'developer'] });
         render(<UserList {...mockProps} />);
         const showDetailsButton = screen.getAllByText('Show Details')[0];
         fireEvent.click(showDetailsButton);
         const developerCheckbox = screen.getByLabelText('developer');
         fireEvent.click(developerCheckbox);
         await waitFor(() => {
-            expect(global.fetch).toHaveBeenCalledWith(
-                expect.stringContaining('/api/v1/users/1'),
-                expect.objectContaining({
-                    method: 'PUT',
-                    body: JSON.stringify({ roles: ['user', 'developer'] }),
-                })
-            );
+            expect(mockApiService.usersApi.updateUserRoles).toHaveBeenCalledWith('1', ['user', 'developer']);
         });
+    });
+
+    test('calls onPageChange when pagination is used', () => {
+        render(<UserList {...mockProps} totalPages={2} />);
+
+        // Try to find the "Next" button in the main pagination controls
+        const nextPageButtons = screen.getAllByRole('button', { name: /next/i });
+
+        // Choose the first enabled "Next" button
+        const enabledNextButton = nextPageButtons.find(button => !(button as HTMLButtonElement).disabled);
+
+        if (enabledNextButton) {
+            fireEvent.click(enabledNextButton);
+            expect(mockProps.onPageChange).toHaveBeenCalledWith(2);
+        } else {
+            console.error('No enabled "Next" button found');
+            throw new Error('No enabled "Next" button found');
+        }
     });
 });
