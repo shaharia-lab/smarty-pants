@@ -1,7 +1,8 @@
-// File: components/UserList.tsx
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { User, UserRole, UserStatus } from '@/types/user';
 import Pagination from '@/components/Pagination';
+import {createApiService} from '@/services/apiService';
+import AuthService from "@/services/authService";
 
 interface UserListProps {
     users: User[];
@@ -10,10 +11,16 @@ interface UserListProps {
     onPageChange: (page: number) => void;
 }
 
-const UserList: React.FC<UserListProps> = ({ users, currentPage, totalPages, onPageChange }) => {
+const UserList: React.FC<UserListProps> = ({ users: initialUsers, currentPage, totalPages, onPageChange }) => {
     const [expandedUser, setExpandedUser] = useState<string | null>(null);
     const [filter, setFilter] = useState({ name: '', email: '', status: '', role: '' });
-    const [localUsers, setLocalUsers] = useState<User[]>(users);
+    const [localUsers, setLocalUsers] = useState<User[]>(initialUsers);
+
+    const usersApi = createApiService(AuthService).usersApi;
+
+    useEffect(() => {
+        setLocalUsers(initialUsers);
+    }, [initialUsers]);
 
     const toggleUserExpansion = (uuid: string) => {
         setExpandedUser(expandedUser === uuid ? null : uuid);
@@ -32,52 +39,35 @@ const UserList: React.FC<UserListProps> = ({ users, currentPage, totalPages, onP
         );
     });
 
-    const updateUserStatus = async (uuid: string, newStatus: UserStatus) => {
+    const updateUserStatus = useCallback(async (uuid: string, newStatus: UserStatus) => {
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/users/${uuid}/${newStatus === 'active' ? 'activate' : 'deactivate'}`, {
-                method: 'PUT',
-            });
-            if (!response.ok) {
-                throw new Error('Failed to update user status');
-            }
-
-            // Update local state immediately
+            const updatedUser = await usersApi.updateUserStatus(uuid, newStatus);
             setLocalUsers(prevUsers =>
                 prevUsers.map(user =>
-                    user.uuid === uuid ? { ...user, status: newStatus } : user
+                    user.uuid === uuid ? updatedUser : user
                 )
             );
         } catch (error) {
             console.error('Error updating user status:', error);
         }
-    };
+    }, [usersApi]);
 
-    const updateUserRoles = async (uuid: string, roles: UserRole[]) => {
+    const updateUserRoles = useCallback(async (uuid: string, roles: UserRole[]) => {
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/users/${uuid}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ roles }),
-            });
-            if (!response.ok) {
-                throw new Error('Failed to update user roles');
-            }
-
-            // Update local state immediately
+            const updatedUser = await usersApi.updateUserRoles(uuid, roles);
             setLocalUsers(prevUsers =>
                 prevUsers.map(user =>
-                    user.uuid === uuid ? { ...user, roles } : user
+                    user.uuid === uuid ? updatedUser : user
                 )
             );
         } catch (error) {
             console.error('Error updating user roles:', error);
         }
-    };
+    }, [usersApi]);
 
     return (
         <div>
+            {/* Filter inputs */}
             <div className="mb-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <input
                     type="text"
@@ -96,6 +86,7 @@ const UserList: React.FC<UserListProps> = ({ users, currentPage, totalPages, onP
                     className="border p-2 rounded"
                 />
                 <select
+                    data-testid="status-filter"
                     name="status"
                     value={filter.status}
                     onChange={handleFilterChange}
@@ -106,6 +97,7 @@ const UserList: React.FC<UserListProps> = ({ users, currentPage, totalPages, onP
                     <option value="inactive">Inactive</option>
                 </select>
                 <select
+                    data-testid="role-filter"
                     name="role"
                     value={filter.role}
                     onChange={handleFilterChange}
@@ -118,6 +110,7 @@ const UserList: React.FC<UserListProps> = ({ users, currentPage, totalPages, onP
                 </select>
             </div>
 
+            {/* User list */}
             <div className="bg-white shadow overflow-hidden sm:rounded-md">
                 <ul className="divide-y divide-gray-200">
                     {filteredUsers.map((user) => (

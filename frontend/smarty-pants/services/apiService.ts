@@ -6,6 +6,7 @@ import {ChatHistoriesApi} from "@/services/api/interactions";
 import {DatasourcesApi} from "@/services/api/datasource";
 import {EmbeddingProviderApi} from "@/services/api/embedding_provider";
 import {LLMProviderApi} from "@/services/api/llm_provider";
+import {UsersApi} from "@/services/api/users";
 
 export class ApiError extends Error {
     constructor(public status: number, message: string) {
@@ -21,6 +22,7 @@ export class ApiService {
     public datasource: DatasourcesApi;
     public embeddingProvider: EmbeddingProviderApi
     public llmProvider: LLMProviderApi;
+    public usersApi: UsersApi;
 
     constructor(private authService: IAuthService) {
         this.axiosInstance = this.authService.getAuthenticatedAxiosInstance();
@@ -30,6 +32,7 @@ export class ApiService {
         this.datasource = new DatasourcesApi(this.axiosInstance);
         this.embeddingProvider = new EmbeddingProviderApi(this.axiosInstance)
         this.llmProvider = new LLMProviderApi(this.axiosInstance);
+        this.usersApi = new UsersApi(this.axiosInstance);
     }
 
     // Make this method protected so it can be used by subclasses if needed
