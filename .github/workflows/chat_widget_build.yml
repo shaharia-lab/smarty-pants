@@ -1,0 +1,37 @@
+name: Build and Upload Chat Widget
+
+on:
+  push:
+    paths:
+      - 'frontend/chat_widget/**'
+  pull_request:
+    paths:
+      - 'frontend/chat_widget/**'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Use Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: |
+          cd frontend/chat_widget
+          npm ci
+
+      - name: Build widget
+        run: |
+          cd frontend/chat_widget
+          npm run build
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: chat-widget
+          path: frontend/chat_widget/dist/chat-widget-bundle.js
