@@ -1,25 +1,22 @@
-describe('Add OpenAI Embedding Provider', () => {
+describe('Configure OpenAI Embedding Provider', () => {
     beforeEach(() => {
-        // Assuming you have a custom command for login, if not, you'll need to implement the login logic here
         cy.login();
-
-        // Navigate to the embedding providers page
         cy.visit('/embedding-providers');
     });
 
-    it('should add a new OpenAI embedding provider', () => {
-        // Click on the "Add Provider" button
-        cy.contains('button', 'Add Provider').click();
+    it('should configure a new OpenAI embedding provider', () => {
+        // Click on the "Configure" button for OpenAI provider
+        cy.contains('OpenAI').parent().contains('button', 'Configure').click();
 
-        // Select OpenAI from the provider options
-        cy.contains('OpenAI').click();
+        // Verify we're on the configuration page
+        cy.url().should('include', '/embedding-providers/openai');
 
         // Fill out the form
         cy.get('#name').type('Test OpenAI Provider');
         cy.get('#apiKey').type('test-api-key');
         cy.get('#modelId').select('text-embedding-ada-002');
 
-        // Click the Validate button (if it exists and is required)
+        // Click the Validate button
         cy.get('button').contains('Validate').click();
 
         // Submit the form
@@ -36,8 +33,8 @@ describe('Add OpenAI Embedding Provider', () => {
     });
 
     it('should display an error message for invalid input', () => {
-        cy.contains('button', 'Add Provider').click();
-        cy.contains('OpenAI').click();
+        // Click on the "Configure" button for OpenAI provider
+        cy.contains('OpenAI').parent().contains('button', 'Configure').click();
 
         // Submit the form without filling it out
         cy.get('button[type="submit"]').contains('Save Provider').click();
@@ -48,8 +45,11 @@ describe('Add OpenAI Embedding Provider', () => {
     });
 
     it('should allow editing an existing OpenAI provider', () => {
-        // Assuming there's at least one OpenAI provider in the list
-        cy.contains('Test OpenAI Provider').parent().find('button[aria-label="Edit"]').click();
+        // Assuming there's at least one configured OpenAI provider in the list
+        cy.contains('Test OpenAI Provider').parent().contains('button', 'Edit').click();
+
+        // Verify we're on the edit page
+        cy.url().should('include', '/embedding-providers/openai/edit');
 
         // Update the name
         cy.get('#name').clear().type('Updated OpenAI Provider');
