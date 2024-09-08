@@ -103,7 +103,7 @@ jobs:
       - name: Run Chat Widget Tests
         run: |
           cd frontend/chat_widget
-          npm run test:coverage
+          npm test
 
       - name: Publish artifacts
         uses: actions/upload-artifact@v3
