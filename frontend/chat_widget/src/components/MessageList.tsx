@@ -9,7 +9,9 @@ const MessageList: React.FC<MessageListProps> = ({ messages }) => {
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+        if (messagesEndRef.current && messagesEndRef.current.scrollIntoView) {
+            messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+        }
     }, [messages]);
 
     return (

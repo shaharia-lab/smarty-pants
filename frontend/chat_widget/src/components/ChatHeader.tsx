@@ -16,15 +16,17 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ title, branding, onClose }) => 
             {branding.logo ? (
                 <img src={branding.logo} alt={branding.name} className="w-8 h-8 mr-2" />
             ) : (
-                <SVGLogo
-                    width={32}
-                    height={32}
-                    leftBrainColor="#FFF"
-                    rightBrainColor="#FFF"
-                    centerSquareColor="#8CA6C9"
-                    centerSquareBlinkColor="#FFFFFF"
-                    onHoverRotationDegree={15}
-                />
+                <div role="img" aria-label="Brand logo">
+                    <SVGLogo
+                        width={32}
+                        height={32}
+                        leftBrainColor="#FFF"
+                        rightBrainColor="#FFF"
+                        centerSquareColor="#8CA6C9"
+                        centerSquareBlinkColor="#FFFFFF"
+                        onHoverRotationDegree={15}
+                    />
+                </div>
             )}
             <h3 className="font-semibold ml-2">{title}</h3>
         </div>

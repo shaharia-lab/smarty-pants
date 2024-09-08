@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Chat Widget</title>
+</head>
+<body>
+<script src="dist/chat-widget-bundle.js"></script>
+<script>
+    window.initChatWidget({
+        position: 'bottom-right',
+        title: 'Chat with Smarty Pants',
+        primaryColor: '#4A90E2',
+        width: '350px',
+        height: '500px',
+        branding: {
+            name: 'Smarty Pants',
+        },
+        backend: {
+            endpoint: 'https://api.your-backend.com/chat',
+            api_key: 'your-api-key',
+            widget_id: 'your-widget-id'
+        }
+    });
+</script>
+</body>
+</html>

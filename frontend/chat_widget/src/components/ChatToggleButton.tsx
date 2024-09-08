@@ -16,16 +16,19 @@ const ChatToggleButton: React.FC<ChatToggleButtonProps> = ({ onClick }) => (
             justifyContent: 'center',
             alignItems: 'center'
         }}
+        aria-label="Toggle chat"
     >
-        <SVGLogo
-            width={32}
-            height={32}
-            leftBrainColor="#FFF"
-            rightBrainColor="#FFF"
-            centerSquareColor="#8CA6C9"
-            centerSquareBlinkColor="#FFFFFF"
-            onHoverRotationDegree={15}
-        />
+        <span role="img" aria-label="Chat logo">
+            <SVGLogo
+                width={32}
+                height={32}
+                leftBrainColor="#FFF"
+                rightBrainColor="#FFF"
+                centerSquareColor="#8CA6C9"
+                centerSquareBlinkColor="#FFFFFF"
+                onHoverRotationDegree={15}
+            />
+        </span>
     </button>
 );
 
