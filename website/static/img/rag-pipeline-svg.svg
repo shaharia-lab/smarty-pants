@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <!-- Data Source Icons -->
+  <circle cx="30" cy="50" r="15" fill="#4a90e2"/>
+  <circle cx="30" cy="100" r="15" fill="#50c878"/>
+  <circle cx="30" cy="150" r="15" fill="#f39c12"/>
+  
+  <!-- Connecting Lines -->
+  <line x1="45" y1="50" x2="80" y2="100" stroke="#333" stroke-width="2"/>
+  <line x1="45" y1="100" x2="80" y2="100" stroke="#333" stroke-width="2"/>
+  <line x1="45" y1="150" x2="80" y2="100" stroke="#333" stroke-width="2"/>
+  
+  <!-- Indexing Box -->
+  <rect x="80" y="80" width="40" height="40" fill="#a569bd" rx="5"/>
+  <text x="100" y="105" font-family="Arial, sans-serif" font-size="10" fill="white" text-anchor="middle">Index</text>
+  
+  <!-- Arrow to LLM -->
+  <line x1="120" y1="100" x2="155" y2="100" stroke="#333" stroke-width="2"/>
+  <polygon points="155,96 155,104 165,100" fill="#333"/>
+  
+  <!-- LLM Circle -->
+  <circle cx="170" cy="100" r="20" fill="#e74c3c"/>
+  <text x="170" y="104" font-family="Arial, sans-serif" font-size="12" fill="white" text-anchor="middle">LLM</text>
+  
+  <!-- Plug Icon -->
+  <rect x="85" y="10" width="30" height="40" fill="#34495e" rx="5"/>
+  <rect x="95" y="50" width="10" height="10" fill="#34495e"/>
+  <circle cx="100" cy="25" r="8" fill="#ecf0f1"/>
+  <circle cx="100" cy="40" r="8" fill="#ecf0f1"/>
+  
+  <!-- Lightning Bolt -->
+  <path d="M160 170 L140 190 L150 180 L130 200 L150 180 L140 190 Z" fill="#f1c40f"/>
+</svg>
