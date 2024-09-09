@@ -1,11 +1,12 @@
 import {themes as prismThemes} from 'prism-react-renderer';
 import type {Config} from '@docusaurus/types';
 import type * as Preset from '@docusaurus/preset-classic';
+import * as path from "node:path";
 
 const config: Config = {
   title: 'SmartyPants',
   tagline: 'Democratizing Generative AI. Start using Generative AI without any pre-requisite skills and domain knowledge.',
-  favicon: 'img/favicon.ico',
+  favicon: 'img/favicon.svg',
 
   // Set the production url of your site here
   url: 'https://your-docusaurus-site.example.com',
@@ -66,10 +67,10 @@ const config: Config = {
     // Replace with your project's social card
     image: 'img/docusaurus-social-card.jpg',
     navbar: {
-      title: 'SmartyPants - Democratizing Generative AI',
+      title: 'SmartyPants',
       logo: {
         alt: 'SmartyPants Logo',
-        src: 'img/logo.svg',
+        src: 'img/logo_light.svg',
       },
       items: [
         {
