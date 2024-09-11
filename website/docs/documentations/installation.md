@@ -15,11 +15,11 @@ Before installing SmartyPants, ensure you have a PostgreSQL database with the pg
 
 ```bash
 docker run -d \
-  --name postgres-vector \
-  -e POSTGRES_DB=app \
-  -e POSTGRES_USER=app \
-  -e POSTGRES_PASSWORD=pass \
-  -p 5432:5432 \
+  --name smarty-pants-postgresql \
+  -e POSTGRES_DB=<your_db_name> \
+  -e POSTGRES_USER=<your_db_user> \
+  -e POSTGRES_PASSWORD=<your_db_password> \
+  -p <your_db_port>:5432 \
   ankane/pgvector
 ```
 
