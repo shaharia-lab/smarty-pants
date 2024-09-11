@@ -1,3 +1,8 @@
+---
+sidebar_position: 5
+title: Technical Architecture
+---
+
 # Technical Architecture
 
 SmartyPants is designed with a modular, scalable architecture that enables flexibility and extensibility. Here's an overview of the key components and how they interact:

@@ -1,3 +1,8 @@
+---
+sidebar_position: 4
+title: Features
+---
+
 # Features at a Glance
 
 SmartyPants offers a comprehensive suite of features designed to make generative AI accessible and powerful. Here's a quick overview of what SmartyPants brings to the table:

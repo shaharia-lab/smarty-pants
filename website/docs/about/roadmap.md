@@ -1,3 +1,8 @@
+---
+sidebar_position: 6
+title: Roadmap
+---
+
 # Future Roadmap
 
 SmartyPants is committed to continuous improvement and expansion. Our roadmap outlines the exciting features and enhancements we plan to implement in the coming months and years. This roadmap is dynamic and may evolve based on community feedback and emerging technologies.

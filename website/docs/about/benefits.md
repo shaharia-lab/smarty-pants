@@ -1,3 +1,8 @@
+---
+sidebar_position: 3
+title: Benefits
+---
+
 # Why SmartyPants? Benefits of Using SmartyPants
 
 SmartyPants offers a range of compelling benefits for individuals and organizations looking to leverage AI in their applications. Here's why you should consider using SmartyPants for your generative AI needs:

@@ -74,10 +74,14 @@ const config: Config = {
       },
       items: [
         {
-          type: 'docSidebar',
-          sidebarId: 'tutorialSidebar',
+          href: '/docs/about/intro',
+          label: 'About SmartyPants',
           position: 'left',
+        },
+        {
+          href: '/docs/category/documentations',
           label: 'Documentations',
+          position: 'left',
         },
         {to: '/blog', label: 'Blog', position: 'left'},
         {
@@ -91,11 +95,20 @@ const config: Config = {
       style: 'dark',
       links: [
         {
+          title: 'About SmartyPants',
+          items: [
+            {
+              label: 'About SmartyPants',
+              to: '/docs/about/intro',
+            },
+          ],
+        },
+        {
           title: 'Docs',
           items: [
             {
               label: 'Documentation',
-              to: '/docs/what-is-smarty-pants',
+              to: '/docs/documentations/installation',
             },
           ],
         },
