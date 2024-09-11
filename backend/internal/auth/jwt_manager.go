@@ -47,14 +47,13 @@ func (m *JWTManager) IssueToken(ctx context.Context, userUUID uuid.UUID, audienc
 		"expiration": expiration,
 	}).Debug("Attempting to issue new token for user")
 
-	// Verify user exists and is active
 	user, err := m.userManager.GetUser(ctx, userUUID)
 	if err != nil {
 		m.logger.WithError(err).Error("Failed to get user")
 		return "", fmt.Errorf("failed to get user: %w", err)
 	}
 
-	if user.Status != "active" {
+	if user.Status != types.UserStatusActive {
 		m.logger.WithField("userUUID", userUUID).Error("User is not active")
 		return "", errors.New("user is not active")
 	}

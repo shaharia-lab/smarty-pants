@@ -16,7 +16,7 @@ interface FlashMessage {
 
 const SlackEditPage: React.FC = () => {
     useRouter();
-    const params = useParams();
+    const params = useParams() as { uuid: string };
     const uuid = params.uuid as string;
     const slackDatasource = getDatasourceById('slack');
 

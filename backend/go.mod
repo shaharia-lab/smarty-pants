@@ -24,11 +24,13 @@ require (
 	go.opentelemetry.io/otel/metric v1.28.0
 	go.opentelemetry.io/otel/sdk v1.28.0
 	go.opentelemetry.io/otel/trace v1.28.0
+	golang.org/x/oauth2 v0.20.0
 	golang.org/x/sync v0.7.0
 	google.golang.org/grpc v1.65.0
 )
 
 require (
+	cloud.google.com/go/compute/metadata v0.3.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect

@@ -87,6 +87,29 @@ func runStart(cmd *cobra.Command, _ []string) error {
 		return err
 	}
 
+	var oauthProviders = map[string]auth.OAuthProvider{}
+	if cfg.GoogleOAuthClientID != "" && cfg.GoogleOAuthClientSecret != "" && cfg.GoogleOAuthRedirectURL != "" {
+		oauthProviders["google"] = auth.NewGoogleProvider(
+			cfg.GoogleOAuthClientID,
+			cfg.GoogleOAuthClientSecret,
+			cfg.GoogleOAuthRedirectURL,
+		)
+	}
+
+	if cfg.MockOAuthBaseURL != "" && cfg.MockOAuthClientID != "" && cfg.MockOAuthClientSecret != "" && cfg.MockOAuthRedirectURL != "" {
+		oauthProviders["google"] = auth.NewMockOAuthProvider(
+			cfg.MockOAuthBaseURL,
+			cfg.MockOAuthClientID,
+			cfg.MockOAuthClientSecret,
+			cfg.MockOAuthRedirectURL,
+		)
+	}
+
+	if cfg.EnableAuthentication && len(oauthProviders) == 0 {
+		logging.Warn("No OAuth providers configured")
+		return errors.New("authentication is enabled but no OAuth providers configured")
+	}
+
 	metricsServer := observability.StartMetricsServer(cfg.OtelMetricsExposedPort, logging)
 
 	shutdownManager := initializeShutdownManager(cfg, logging)
@@ -107,13 +130,21 @@ func runStart(cmd *cobra.Command, _ []string) error {
 	}
 
 	searchSystem := search.NewSearchSystem(logging, st)
-	userManager := auth.NewUserManager(st, logging, aclManager)
+	userManager := auth.NewUserManager(st, logging, aclManager, cfg.SuperAdminEmail)
+	jwtManager := auth.NewJWTManager(auth.NewKeyManager(st, logging), userManager, logging, authSkipEndpoints)
+	oauthManager := auth.NewOAuthManager(
+		oauthProviders,
+		userManager,
+		jwtManager,
+		logging,
+	)
+
 	apiServer := setupAPIServer(
 		cfg,
 		logging,
 		st,
 		userManager,
-		auth.NewJWTManager(auth.NewKeyManager(st, logging), userManager, logging, authSkipEndpoints),
+		jwtManager,
 		aclManager,
 		cfg.EnableAuthentication,
 		analytics.NewManager(st, logging, aclManager),
@@ -124,6 +155,7 @@ func runStart(cmd *cobra.Command, _ []string) error {
 		llm.NewManager(st, logging, aclManager),
 		search.NewManager(searchSystem, logging, aclManager),
 		settings.NewManager(st, logging, aclManager),
+		oauthManager,
 	)
 
 	shutdownManager.RegisterShutdownFn(func(ctx context.Context) error {
@@ -294,6 +326,7 @@ func setupAPIServer(
 	llmManager *llm.Manager,
 	searchManager *search.Manager,
 	settingsManager *settings.Manager,
+	oauthManager *auth.OAuthManager,
 ) *api.API {
 	logging.Info("Creating API server")
 	return api.NewAPI(
@@ -318,6 +351,7 @@ func setupAPIServer(
 		llmManager,
 		searchManager,
 		settingsManager,
+		oauthManager,
 	)
 }
 

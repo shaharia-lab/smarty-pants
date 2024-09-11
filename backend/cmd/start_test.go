@@ -34,6 +34,10 @@ func TestStartCommand(t *testing.T) {
 	os.Setenv("PROCESSOR_WORKER_COUNT", "1")
 	os.Setenv("GRACEFUL_SHUTDOWN_TIMEOUT_IN_SECS", "5")
 
+	os.Setenv("GOOGLE_OAUTH_CLIENT_ID", "test-client-id")
+	os.Setenv("GOOGLE_OAUTH_CLIENT_SECRET", "test-client")
+	os.Setenv("GOOGLE_OAUTH_REDIRECT_URL", "http://localhost:8080/auth/google/callback")
+
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 

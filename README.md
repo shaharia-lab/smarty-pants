@@ -109,7 +109,6 @@ Make sure to configure any necessary network settings to allow the frontend to c
 | Variable                             | Required | Default value     | Description                                       |
 |--------------------------------------|----------|-------------------|---------------------------------------------------|
 | `APP_NAME`                           | No       | `smarty-pants-ai` | Name of the application                           |
-| `ADMIN_EMAIL`                        | No       | `""`              | Email address of the application super-admin      |
 | `DB_HOST`                            | Yes      | `"localhost"`     | Database host address                             |
 | `DB_PORT`                            | Yes      | `5432`            | Database port number                              |
 | `DB_USER`                            | Yes      | `"app"`           | Database user name                                |
@@ -134,6 +133,10 @@ Make sure to configure any necessary network settings to allow the frontend to c
 | `PROCESSOR_SHUTDOWN_TIMEOUT_IN_SECS` | No       | `10`              | Processor shutdown timeout in seconds             |
 | `PROCESSOR_REFRESH_INTERVAL_IN_SECS` | No       | `60`              | Processor refresh interval in seconds             |
 | `ENABLE_AUTH`                        | No       | `false`           | Enable authentication system for the application  |
+| `GOOGLE_OAUTH_CLIENT_ID`             | No       | `""`              | Google OAuth client ID                            |
+| `GOOGLE_OAUTH_CLIENT_SECRET`         | No       | `""`              | Google OAuth client secret                        |
+| `GOOGLE_OAUTH_REDIRECT_URL`          | No       | `""`              | Google OAuth redirect URL                         |
+| `SUPER_ADMIN_EMAIL`                  | Yes      | `""`              | Email address of super admin                      |
 
 ## 📋 Development
 

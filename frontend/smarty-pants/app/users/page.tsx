@@ -1,10 +1,13 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import axios, { CancelTokenSource } from 'axios';
 import Navbar from '@/components/Navbar';
 import Header from '@/components/Header';
-import UserList from '../../components/UserList';
-import { User, PaginatedUsers } from '@/types/user';
+import UserList from '@/components/UserList';
+import { User } from '@/types/user';
+import AuthService from "@/services/authService";
+import { createApiService } from "@/services/apiService";
 
 const UsersPage: React.FC = () => {
     const [users, setUsers] = useState<User[]>([]);
@@ -13,32 +16,47 @@ const UsersPage: React.FC = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    useEffect(() => {
-        fetchUsers(currentPage);
-    }, [currentPage]);
+    const usersApi = useMemo(() => createApiService(AuthService).usersApi, []);
+    const cancelTokenSourceRef = useRef<CancelTokenSource | null>(null);
 
-    const fetchUsers = async (page: number) => {
+    const fetchUsers = useCallback(async (page: number) => {
+        if (cancelTokenSourceRef.current) {
+            cancelTokenSourceRef.current.cancel('Operation canceled due to new request.');
+        }
+        cancelTokenSourceRef.current = axios.CancelToken.source();
+
         setIsLoading(true);
         setError(null);
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/users?page=${page}&per_page=10`);
-            if (!response.ok) {
-                throw new Error('Failed to fetch users');
-            }
-            const data: PaginatedUsers = await response.json();
+            const data = await usersApi.getUsers(page, 10, cancelTokenSourceRef.current.token);
+            console.log('Fetched users:', data.users); // Debug log
             setUsers(data.users);
             setTotalPages(data.total_pages);
         } catch (err) {
-            setError('Error fetching users. Please try again.');
-            console.error('Error fetching users:', err);
+            if (!axios.isCancel(err)) {
+                setError('Error fetching users. Please try again.');
+                console.error('Error fetching users:', err);
+            }
         } finally {
             setIsLoading(false);
         }
-    };
+    }, [usersApi]);
+
+    useEffect(() => {
+        fetchUsers(currentPage);
+
+        return () => {
+            if (cancelTokenSourceRef.current) {
+                cancelTokenSourceRef.current.cancel('Component unmounted');
+            }
+        };
+    }, [currentPage, fetchUsers]);
 
     const handlePageChange = (newPage: number) => {
         setCurrentPage(newPage);
     };
+
+    console.log('Rendering UsersPage, users:', users); // Debug log
 
     return (
         <div className="min-h-screen bg-gray-50">
@@ -64,5 +82,4 @@ const UsersPage: React.FC = () => {
     );
 };
 
-UsersPage.displayName = 'UsersPage';
 export default UsersPage;

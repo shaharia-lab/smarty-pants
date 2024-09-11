@@ -1,5 +1,3 @@
-// File: /types/embeddingProvider.ts
-
 export interface LLMProviderConfig {
     uuid: string;
     name: string;

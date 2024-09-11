@@ -1,4 +1,3 @@
-// File: /utils/embeddingProviders.ts
 
 export const availableEmbeddingProviders = [
     {

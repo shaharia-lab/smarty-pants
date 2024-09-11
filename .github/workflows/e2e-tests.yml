@@ -1,0 +1,142 @@
+name: End-to-End Tests
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  e2e-tests:
+    name: Run E2E Tests
+    runs-on: ubuntu-latest
+
+    services:
+      db:
+        image: ankane/pgvector
+        env:
+          POSTGRES_DB: app
+          POSTGRES_USER: app
+          POSTGRES_PASSWORD: pass
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U app"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+      oauth-mock-server:
+        image: ghcr.io/shaharia-lab/oauth-mock-server:0.0.1
+        env:
+          PORT: 9999
+          CLIENT_ID: test-client
+          CLIENT_SECRET: test-secret
+        ports:
+          - 9999:9999
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+
+      - name: Build Backend Docker Image
+        run: |
+          cd backend
+          docker build -t backend-image .
+
+      - name: Wait for OAuth Mock Server to be Ready
+        run: |
+          timeout 60s bash -c 'while [[ "$(curl -s -o /dev/null -w ''%{http_code}'' http://localhost:9999/authorize)" != "400" ]]; do sleep 5; done' || false
+
+      - name: Check OAuth Mock Server Status
+        run: |
+          response=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:9999/authorize)
+          if [ $response -eq 400 ]; then
+            echo "OAuth Mock Server is up and running"
+          else
+            echo "OAuth Mock Server is not responding as expected. Status code: $response"
+            exit 1
+          fi
+
+      - name: Run Backend Docker Container
+        run: |
+          docker run -d --name backend-container \
+            --network host \
+            -e DB_HOST=127.0.0.1 \
+            -e DB_PORT=5432 \
+            -e DB_NAME=app \
+            -e DB_USER=app \
+            -e DB_PASS=pass \
+            -e MOCK_OAUTH_BASE_URL=http://127.0.0.1:9999 \
+            -e MOCK_OAUTH_CLIENT_ID=test-client \
+            -e MOCK_OAUTH_CLIENT_SECRET=test-secret \
+            -e MOCK_OAUTH_REDIRECT_URL=http://localhost:3000/auth/google/callback \
+            backend-image
+
+      - name: Check Docker Container Status
+        run: |
+          docker ps -a
+          docker logs backend-container
+
+      - name: Wait for Backend to be Ready
+        run: |
+          timeout 60s bash -c 'while [[ "$(curl -s -o /dev/null -w ''%{http_code}'' http://localhost:8080/system/ping)" != "200" ]]; do sleep 5; done' || false
+
+      - name: Check Backend Logs if Startup Failed
+        if: failure()
+        run: |
+          echo "Backend failed to start. Checking logs:"
+          docker logs backend-container
+
+      - name: Install Frontend Dependencies
+        run: |
+          cd frontend/smarty-pants
+          npm ci
+
+      - name: Build Frontend
+        run: |
+          cd frontend/smarty-pants
+          npm run build
+
+      - name: Start Frontend
+        run: |
+          cd frontend/smarty-pants
+          npm run start & # Run in background
+          echo $! > frontend.pid # Save process ID
+
+      - name: Wait for Frontend to be Ready
+        run: |
+          timeout 60s bash -c 'while [[ "$(curl -s -o /dev/null -w ''%{http_code}'' http://localhost:3000/login)" != "200" ]]; do sleep 5; done' || false
+
+      - name: Run E2E Tests
+        run: |
+          cd frontend/smarty-pants
+          npm run cypress:run -- --config baseUrl=http://localhost:3000
+
+      - name: Check Backend Logs After Tests
+        if: always()
+        run: |
+          echo "Backend logs after tests:"
+          docker logs backend-container
+
+      - name: Upload Cypress Screenshots
+        uses: actions/upload-artifact@v2
+        if: failure()
+        with:
+          name: cypress-screenshots
+          path: frontend/smarty-pants/cypress/screenshots
+
+      - name: Upload Cypress Videos
+        uses: actions/upload-artifact@v2
+        if: always()
+        with:
+          name: cypress-videos
+          path: frontend/smarty-pants/cypress/videos

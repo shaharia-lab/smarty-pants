@@ -17,17 +17,19 @@ import (
 
 // UserManager is a manager for user operations.
 type UserManager struct {
-	storage    storage.Storage
-	logger     *logrus.Logger
-	aclManager ACLManager
+	storage         storage.Storage
+	logger          *logrus.Logger
+	aclManager      ACLManager
+	superAdminEmail string
 }
 
 // NewUserManager creates a new instance of UserManager with the given storage and logger.
-func NewUserManager(storage storage.Storage, logger *logrus.Logger, aclManager ACLManager) *UserManager {
+func NewUserManager(storage storage.Storage, logger *logrus.Logger, aclManager ACLManager, superAdminEmail string) *UserManager {
 	return &UserManager{
-		storage:    storage,
-		logger:     logger,
-		aclManager: aclManager,
+		storage:         storage,
+		logger:          logger,
+		aclManager:      aclManager,
+		superAdminEmail: superAdminEmail,
 	}
 }
 
@@ -40,6 +42,9 @@ func (um *UserManager) CreateUser(ctx context.Context, name, email string, statu
 	}
 
 	user.Roles = um.ensureUserRole(user.Roles)
+	if email == um.superAdminEmail {
+		user.Roles = append(user.Roles, types.UserRoleAdmin)
+	}
 
 	err := um.storage.CreateUser(ctx, user)
 	if err != nil {
@@ -57,6 +62,20 @@ func (um *UserManager) GetUser(ctx context.Context, uuid uuid.UUID) (*types.User
 // GetAnonymousUser fetches the anonymous user data
 func (um *UserManager) GetAnonymousUser(ctx context.Context) (*types.User, error) {
 	return um.storage.GetUser(ctx, uuid.MustParse(types.AnonymousUserUUID))
+}
+
+// GetUserByEmail fetches the user details from the storage.
+func (um *UserManager) GetUserByEmail(ctx context.Context, email string) (*types.User, error) {
+	paginatedUsers, err := um.storage.GetPaginatedUsers(ctx, types.UserFilter{EmailContains: email}, types.UserFilterOption{PerPage: 1})
+	if err != nil {
+		return nil, err
+	}
+
+	if len(paginatedUsers.Users) == 0 {
+		return nil, types.UserNotFoundError
+	}
+
+	return &paginatedUsers.Users[0], nil
 }
 
 // UpdateUserStatus updates the status of the user with the given UUID.

@@ -1,10 +1,12 @@
 import React from 'react';
-import {fireEvent, render, screen, waitFor} from '@testing-library/react';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import ChatHistories from './ChatHistories';
+import { createApiService } from "@/services/apiService";
+import AuthService from "@/services/authService";
 
-// Mock the fetch function
-global.fetch = jest.fn();
+jest.mock("@/services/apiService");
+jest.mock("@/services/authService");
 
 describe('ChatHistories', () => {
     const mockOnSelectInteraction = jest.fn();
@@ -12,32 +14,33 @@ describe('ChatHistories', () => {
         { uuid: '1', title: 'Chat 1' },
         { uuid: '2', title: 'Chat 2' },
     ];
+    const mockApiService = {
+        chatHisories: {
+            getChatHistories: jest.fn(),
+        },
+    };
 
     beforeEach(() => {
         jest.resetAllMocks();
+        (createApiService as jest.Mock).mockReturnValue(mockApiService);
     });
 
     it('renders loading state initially', async () => {
-        // Mock a delayed API response
-        (global.fetch as jest.Mock).mockImplementation(
-            () => new Promise(resolve => setTimeout(() => resolve({ json: () => Promise.resolve({ interactions: [] }) }), 100))
+        mockApiService.chatHisories.getChatHistories.mockImplementation(
+            () => new Promise(resolve => setTimeout(() => resolve({ interactions: [] }), 100))
         );
 
         render(<ChatHistories onSelectInteraction={mockOnSelectInteraction} />);
 
-        // Check for loading state
         expect(screen.getByText('Loading...')).toBeInTheDocument();
 
-        // Wait for the component to update
         await waitFor(() => {
             expect(screen.queryByText('Loading...')).not.toBeInTheDocument();
         });
     });
 
     it('fetches and renders chat histories', async () => {
-        (global.fetch as jest.Mock).mockResolvedValueOnce({
-            json: () => Promise.resolve({ interactions: mockInteractions }),
-        });
+        mockApiService.chatHisories.getChatHistories.mockResolvedValue({ interactions: mockInteractions });
 
         render(<ChatHistories onSelectInteraction={mockOnSelectInteraction} />);
 
@@ -50,9 +53,7 @@ describe('ChatHistories', () => {
     });
 
     it('calls onSelectInteraction when a chat is clicked', async () => {
-        (global.fetch as jest.Mock).mockResolvedValueOnce({
-            json: () => Promise.resolve({ interactions: mockInteractions }),
-        });
+        mockApiService.chatHisories.getChatHistories.mockResolvedValue({ interactions: mockInteractions });
 
         render(<ChatHistories onSelectInteraction={mockOnSelectInteraction} />);
 
@@ -66,8 +67,8 @@ describe('ChatHistories', () => {
     });
 
     it('handles fetch error gracefully', async () => {
-        console.error = jest.fn(); // Mock console.error to prevent error output in test logs
-        (global.fetch as jest.Mock).mockRejectedValueOnce(new Error('Fetch error'));
+        console.error = jest.fn();
+        mockApiService.chatHisories.getChatHistories.mockRejectedValue(new Error('API error'));
 
         render(<ChatHistories onSelectInteraction={mockOnSelectInteraction} />);
 
@@ -79,14 +80,13 @@ describe('ChatHistories', () => {
     });
 
     it('renders correct heading', () => {
+        mockApiService.chatHisories.getChatHistories.mockResolvedValue({ interactions: [] });
         render(<ChatHistories onSelectInteraction={mockOnSelectInteraction} />);
         expect(screen.getByText('Chat Histories')).toBeInTheDocument();
     });
 
     it('renders empty list when no histories are returned', async () => {
-        (global.fetch as jest.Mock).mockResolvedValueOnce({
-            json: () => Promise.resolve({ interactions: [] }),
-        });
+        mockApiService.chatHisories.getChatHistories.mockResolvedValue({ interactions: [] });
 
         render(<ChatHistories onSelectInteraction={mockOnSelectInteraction} />);
 
@@ -95,24 +95,8 @@ describe('ChatHistories', () => {
         });
     });
 
-    it('uses correct API endpoint', async () => {
-        process.env.NEXT_PUBLIC_API_BASE_URL = 'http://test-api.com';
-
-        (global.fetch as jest.Mock).mockResolvedValueOnce({
-            json: () => Promise.resolve({ interactions: mockInteractions }),
-        });
-
-        render(<ChatHistories onSelectInteraction={mockOnSelectInteraction} />);
-
-        await waitFor(() => {
-            expect(global.fetch).toHaveBeenCalledWith('http://test-api.com/api/v1/interactions');
-        });
-    });
-
     it('applies correct CSS classes', async () => {
-        (global.fetch as jest.Mock).mockResolvedValueOnce({
-            json: () => Promise.resolve({ interactions: mockInteractions }),
-        });
+        mockApiService.chatHisories.getChatHistories.mockResolvedValue({ interactions: mockInteractions });
 
         render(<ChatHistories onSelectInteraction={mockOnSelectInteraction} />);
 

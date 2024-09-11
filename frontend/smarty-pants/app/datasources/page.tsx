@@ -1,21 +1,18 @@
+// File: src/pages/datasources/index.tsx
+
 'use client';
 
-import React, {useEffect, useState} from 'react';
+import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
+import axios, { CancelTokenSource } from 'axios';
 import Navbar from '../../components/Navbar';
-import Header, {HeaderConfig} from '../../components/Header';
-import {DatasourceConfig} from '@/types/datasource';
-import {availableDatasources} from '@/utils/datasources';
-import {Alert, AlertDescription} from '@/components/Alert';
+import Header, { HeaderConfig } from '../../components/Header';
+import { DatasourceConfig } from '@/types/datasource';
+import { availableDatasources } from '@/utils/datasources';
+import { Alert, AlertDescription } from '@/components/Alert';
 import ListComponent from '../../components/ListComponent';
 import AvailableProviders from '../../components/AvailableProviders';
-
-interface DatasourcesApiResponse {
-    datasources: DatasourceConfig[];
-    total: number;
-    page: number;
-    per_page: number;
-    total_pages: number;
-}
+import AuthService from "@/services/authService";
+import { createApiService } from "@/services/apiService";
 
 interface FlashMessage {
     type: 'success' | 'error';
@@ -28,93 +25,94 @@ const DatasourcesPage: React.FC = () => {
     const [error, setError] = useState<string | null>(null);
     const [flashMessage, setFlashMessage] = useState<FlashMessage | null>(null);
 
+    const datasourcesApi = useMemo(() => createApiService(AuthService).datasource, []);
+    const cancelTokenSourceRef = useRef<CancelTokenSource | null>(null);
+
     const headerConfig: HeaderConfig = {
         title: "Datasources"
     };
 
-    useEffect(() => {
-        fetchDatasources();
-    }, []);
+    const fetchDatasources = useCallback(async () => {
+        if (cancelTokenSourceRef.current) {
+            cancelTokenSourceRef.current.cancel('Operation canceled due to new request.');
+        }
+        cancelTokenSourceRef.current = axios.CancelToken.source();
 
-    const fetchDatasources = async () => {
+        setLoading(true);
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/datasource`);
-            if (!response.ok) {
-                throw new Error('Failed to fetch datasources');
-            }
-            const data: DatasourcesApiResponse = await response.json();
+            const data = await datasourcesApi.getDatasources(cancelTokenSourceRef.current.token);
             setConfiguredDatasources(data.datasources);
+            setError(null);
         } catch (err) {
-            setError('Failed to load datasources. Please try again later.');
+            if (!axios.isCancel(err)) {
+                setError('Failed to load datasources. Please try again later.');
+            }
         } finally {
             setLoading(false);
         }
-    };
+    }, [datasourcesApi]);
 
-    const handleDelete = async (datasourceId: string) => {
-        if (window.confirm('Are you sure you want to delete this datasource?')) {
-            try {
-                const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/datasource/${datasourceId}`, {
-                    method: 'DELETE',
+    useEffect(() => {
+        fetchDatasources();
+
+        return () => {
+            if (cancelTokenSourceRef.current) {
+                cancelTokenSourceRef.current.cancel('Component unmounted');
+            }
+        };
+    }, [fetchDatasources]);
+
+    const handleAction = useCallback(async (action: 'delete' | 'activate' | 'deactivate', datasourceId: string) => {
+        const source = axios.CancelToken.source();
+        try {
+            let message: string;
+            switch (action) {
+                case 'delete':
+                    await datasourcesApi.deleteDatasource(datasourceId, source.token);
+                    message = 'Datasource deleted successfully';
+                    break;
+                case 'activate':
+                    const activateData = await datasourcesApi.activateDatasource(datasourceId, source.token);
+                    message = activateData.message;
+                    break;
+                case 'deactivate':
+                    const deactivateData = await datasourcesApi.deactivateDatasource(datasourceId, source.token);
+                    message = deactivateData.message;
+                    break;
+            }
+            setFlashMessage({ type: 'success', message });
+            await fetchDatasources();
+        } catch (err) {
+            if (!axios.isCancel(err)) {
+                setFlashMessage({
+                    type: 'error',
+                    message: err instanceof Error ? err.message : `Failed to ${action} datasource. Please try again.`
                 });
-                if (!response.ok) {
-                    throw new Error('Failed to delete datasource');
-                }
-                setFlashMessage({type: 'success', message: 'Datasource deleted successfully'});
-                fetchDatasources();
-            } catch (err) {
-                setFlashMessage({type: 'error', message: 'Failed to delete datasource. Please try again.'});
             }
         }
-    };
+    }, [datasourcesApi, fetchDatasources]);
 
-    const handleActivate = async (datasourceId: string) => {
-        try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/datasource/${datasourceId}/activate`, {
-                method: 'PUT',
-            });
-            const data = await response.json();
-            if (!response.ok) {
-                throw new Error(data.error || 'Failed to activate datasource');
-            }
-            setFlashMessage({type: 'success', message: data.message});
-            fetchDatasources();
-        } catch (err) {
-            setFlashMessage({type: 'error', message: err instanceof Error ? err.message : 'An error occurred'});
+    const handleDelete = useCallback((datasourceId: string) => {
+        if (window.confirm('Are you sure you want to delete this datasource?')) {
+            handleAction('delete', datasourceId);
         }
-    };
+    }, [handleAction]);
 
-    const handleDeactivate = async (datasourceId: string) => {
-        try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/datasource/${datasourceId}/deactivate`, {
-                method: 'PUT',
-            });
-            const data = await response.json();
-            if (!response.ok) {
-                throw new Error(data.error || 'Failed to deactivate datasource');
-            }
-            setFlashMessage({type: 'success', message: data.message});
-            fetchDatasources();
-        } catch (err) {
-            setFlashMessage({type: 'error', message: err instanceof Error ? err.message : 'An error occurred'});
-        }
-    };
-
-    const configuredDatasourceItems = configuredDatasources.map(datasource => ({
+    const configuredDatasourceItems = useMemo(() => configuredDatasources.map(datasource => ({
         id: datasource.uuid,
         name: datasource.name,
         sourceType: datasource.source_type,
         status: datasource.status,
         imageUrl: availableDatasources.find(d => d.id === datasource.source_type)?.imageUrl ?? '/default-datasource-icon.png',
         onDelete: handleDelete,
-        onActivate: datasource.status === 'inactive' ? handleActivate : undefined,
-        onDeactivate: datasource.status === 'active' ? handleDeactivate : undefined,
-    }));
+        onActivate: datasource.status === 'inactive' ? () => handleAction('activate', datasource.uuid) : undefined,
+        onDeactivate: datasource.status === 'active' ? () => handleAction('deactivate', datasource.uuid) : undefined,
+    })), [configuredDatasources, handleDelete, handleAction]);
 
     return (
         <div className="min-h-screen bg-gray-50">
-            <Navbar/>
-            <Header config={headerConfig}/>
+            <Navbar />
+            <Header config={headerConfig} />
             <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
                 <div className="px-4 py-6 sm:px-0">
                     {flashMessage && (

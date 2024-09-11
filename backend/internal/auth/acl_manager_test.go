@@ -89,7 +89,7 @@ func TestACLManager_getUserFromContext(t *testing.T) {
 				ctx = context.WithValue(ctx, types.AuthenticatedUserCtxKey, tt.contextUser)
 			}
 
-			user, err := aclManager.getUserFromContext(ctx)
+			user, err := aclManager.GetAuthenticatedUserFromContext(ctx)
 
 			if tt.expectError {
 				assert.Error(t, err, "Expected an error")
