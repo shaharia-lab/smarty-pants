@@ -128,14 +128,14 @@ jobs:
           docker logs backend-container
 
       - name: Upload Cypress Screenshots
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         if: failure()
         with:
           name: cypress-screenshots
           path: frontend/smarty-pants/cypress/screenshots
 
       - name: Upload Cypress Videos
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: cypress-videos
