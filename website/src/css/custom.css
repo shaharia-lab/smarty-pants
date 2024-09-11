@@ -1,0 +1,103 @@
+/**
+ * Any CSS included here will be global. The classic template
+ * bundles Infima by default. Infima is a CSS framework designed to
+ * work well for content-centric websites.
+ */
+
+/* You can override the default Infima variables here. */
+:root {
+  --ifm-color-primary: rgb(40, 44, 52);
+  --ifm-color-primary-dark: rgb(36, 40, 47);
+  --ifm-color-primary-darker: rgb(34, 37, 44);
+  --ifm-color-primary-darkest: rgb(28, 31, 36);
+  --ifm-color-primary-light: rgb(44, 48, 57);
+  --ifm-color-primary-lighter: rgb(46, 51, 60);
+  --ifm-color-primary-lightest: rgb(52, 57, 68);
+  --ifm-background-color: #ffffff;
+  --ifm-navbar-background-color: rgb(28, 31, 36); /* Darker navbar */
+  --ifm-navbar-link-color: #ffffff;
+  --ifm-navbar-link-hover-color: #e0e0e0;
+  --ifm-font-color-base: #333333;
+  --ifm-code-font-size: 95%;
+  --docusaurus-highlighted-code-line-bg: rgba(40, 44, 52, 0.1);
+}
+
+/* For readability concerns, you should choose a lighter palette in dark mode. */
+[data-theme='dark'] {
+  --ifm-color-primary: rgb(80, 88, 104);
+  --ifm-color-primary-dark: rgb(72, 79, 94);
+  --ifm-color-primary-darker: rgb(68, 75, 88);
+  --ifm-color-primary-darkest: rgb(56, 62, 73);
+  --ifm-color-primary-light: rgb(88, 97, 114);
+  --ifm-color-primary-lighter: rgb(92, 101, 120);
+  --ifm-color-primary-lightest: rgb(104, 114, 135);
+  --ifm-background-color: rgb(28, 31, 36);
+  --ifm-navbar-background-color: rgb(24, 26, 31); /* Slightly darker navbar for dark mode */
+  --ifm-navbar-link-color: #e0e0e0;
+  --ifm-navbar-link-hover-color: #ffffff;
+  --ifm-font-color-base: #e0e0e0;
+  --docusaurus-highlighted-code-line-bg: rgba(80, 88, 104, 0.3);
+}
+
+/* Additional custom styles */
+.navbar__title {
+  font-weight: bold;
+  color: #ffffff;
+}
+
+.footer {
+  background-color: rgb(40, 44, 52);
+  color: #ffffff;
+}
+
+[data-theme='dark'] .footer {
+  background-color: rgb(34, 37, 44);
+  color: #e0e0e0;
+}
+
+/* Style adjustments for better contrast and readability */
+.navbar__link {
+  color: var(--ifm-navbar-link-color);
+}
+
+.navbar__link:hover,
+.navbar__link--active {
+  color: var(--ifm-navbar-link-hover-color);
+}
+
+.button--secondary {
+  color: var(--ifm-color-primary);
+  border-color: var(--ifm-color-primary);
+}
+
+.button--secondary:hover {
+  background-color: var(--ifm-color-primary);
+  color: #ffffff;
+}
+
+[data-theme='dark'] .button--secondary {
+  color: var(--ifm-color-primary-lightest);
+  border-color: var(--ifm-color-primary-lightest);
+}
+
+[data-theme='dark'] .button--secondary:hover {
+  background-color: var(--ifm-color-primary-lightest);
+  color: var(--ifm-background-color);
+}
+
+/* Adjust link colors for better visibility */
+a {
+  color: rgb(60, 66, 78);
+}
+
+[data-theme='dark'] a {
+  color: rgb(120, 132, 156);
+}
+
+a:hover {
+  color: rgb(80, 88, 104);
+}
+
+[data-theme='dark'] a:hover {
+  color: rgb(140, 154, 182);
+}

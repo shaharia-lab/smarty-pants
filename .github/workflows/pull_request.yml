@@ -150,21 +150,21 @@ jobs:
           fetch-depth: 0
 
       - name: Download frontend coverage
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: frontend-coverage-pr${{ github.event.pull_request.number }}-${{ github.sha }}
           path: frontend/smarty-pants/coverage
         continue-on-error: true
 
       - name: Download backend test coverage
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: backend-coverage-pr${{ github.event.pull_request.number }}-${{ github.sha }}
           path: backend
         continue-on-error: true
 
       - name: Download chat widget coverage
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: chat-widget-coverage-pr${{ github.event.pull_request.number }}-${{ github.sha }}
           path: frontend/chat_widget/coverage
