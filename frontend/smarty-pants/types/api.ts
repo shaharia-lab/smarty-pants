@@ -77,7 +77,6 @@ export interface Settings {
     };
 }
 
-// Types definitions
 export interface SystemInfo {
     version: string;
     app: SystemApp;
