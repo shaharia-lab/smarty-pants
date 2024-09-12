@@ -29,6 +29,7 @@ import (
 	"github.com/shaharia-lab/smarty-pants/backend/internal/settings"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/shutdown"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/storage"
+	"github.com/shaharia-lab/smarty-pants/backend/internal/system"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/types"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -139,6 +140,21 @@ func runStart(cmd *cobra.Command, _ []string) error {
 		logging,
 	)
 
+	var enabledOAuthProviders []string
+	for name, _ := range oauthProviders {
+		enabledOAuthProviders = append(enabledOAuthProviders, name)
+	}
+
+	// Initialize system manager
+	systemManager := system.NewManager(logging, system.Info{
+		Version: cmd.Version,
+		App:     system.App{Name: cfg.AppName},
+		Settings: system.Settings{
+			AuthEnabled:    cfg.EnableAuthentication,
+			OAuthProviders: enabledOAuthProviders,
+		},
+	})
+
 	apiServer := setupAPIServer(
 		cfg,
 		logging,
@@ -156,6 +172,7 @@ func runStart(cmd *cobra.Command, _ []string) error {
 		search.NewManager(searchSystem, logging, aclManager),
 		settings.NewManager(st, logging, aclManager),
 		oauthManager,
+		systemManager,
 	)
 
 	shutdownManager.RegisterShutdownFn(func(ctx context.Context) error {
@@ -327,6 +344,7 @@ func setupAPIServer(
 	searchManager *search.Manager,
 	settingsManager *settings.Manager,
 	oauthManager *auth.OAuthManager,
+	systemManager *system.Manager,
 ) *api.API {
 	logging.Info("Creating API server")
 	return api.NewAPI(
@@ -352,6 +370,7 @@ func setupAPIServer(
 		searchManager,
 		settingsManager,
 		oauthManager,
+		systemManager,
 	)
 }
 

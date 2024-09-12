@@ -50,6 +50,19 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ReadinessResponse'
+  /system/info:
+    get:
+      summary: Get system information
+      description: Retrieves information about the system, including version, app details, and settings
+      operationId: getSystemInfo
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemInfo'
+
   /analytics/overview:
     get:
       summary: Get analytics overview
@@ -1260,6 +1273,45 @@ components:
           $ref: '#/components/schemas/DebuggingSettings'
         search:
           $ref: '#/components/schemas/SearchSettings'
+
+    SystemInfo:
+      type: object
+      properties:
+        version:
+          type: string
+          description: The version of the system
+        app:
+          $ref: '#/components/schemas/SystemApp'
+        settings:
+          $ref: '#/components/schemas/SystemSettings'
+      required:
+        - version
+        - app
+        - settings
+
+    SystemApp:
+      type: object
+      properties:
+        name:
+          type: string
+          description: The name of the application
+      required:
+        - name
+
+    SystemSettings:
+      type: object
+      properties:
+        auth_enabled:
+          type: boolean
+          description: Whether authentication is enabled
+        oauth_providers:
+          type: array
+          items:
+            type: string
+          description: List of enabled OAuth providers
+      required:
+        - auth_enabled
+        - oauth_providers
 
     GeneralSettings:
       type: object
