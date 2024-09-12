@@ -1,7 +1,7 @@
 import { AxiosInstance, CancelToken } from 'axios';
 import {GenerateResponseMsg, SystemInfo} from '@/types/api';
 
-export class SystemApi {
+export class SystemAPI {
     constructor(private axiosInstance: AxiosInstance) {}
 
     async getSystemInfo(cancelToken?: CancelToken): Promise<SystemInfo> {

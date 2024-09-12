@@ -8,7 +8,7 @@ import { EmbeddingProviderApi } from "@/services/api/embedding_provider";
 import { LLMProviderApi } from "@/services/api/llm_provider";
 import { UsersApi } from "@/services/api/users";
 import { SettingsApi } from "@/services/api/settings";
-import { SystemApi } from "@/services/api/SystemApi";
+import { SystemAPI } from "@/services/api/system";
 
 export class ApiError extends Error {
     constructor(public status: number, message: string) {
@@ -27,12 +27,20 @@ export class ApiService {
     public llmProvider: LLMProviderApi;
     public usersApi: UsersApi;
     public settingsApi: SettingsApi
-    public systemApi: SystemApi;
+    public systemApi: SystemAPI;
 
     constructor(private authService: IAuthService) {
+        let backendUrl = process.env.NEXT_PUBLIC_API_BASE_URL || ''; // Fallback to empty string or default URL
+
+        if (typeof window !== 'undefined') {
+            backendUrl = localStorage.getItem('backendUrl') || backendUrl;
+        }
+
         this.authenticatedAxiosInstance = this.authService.getAuthenticatedAxiosInstance();
+        this.authenticatedAxiosInstance.defaults.baseURL = backendUrl;
+
         this.unauthenticatedAxiosInstance = axios.create({
-            baseURL: process.env.NEXT_PUBLIC_API_BASE_URL,
+            baseURL: backendUrl,
         });
 
         this.analytics = new AnalyticsApi(this.authenticatedAxiosInstance);
@@ -43,7 +51,7 @@ export class ApiService {
         this.llmProvider = new LLMProviderApi(this.authenticatedAxiosInstance);
         this.usersApi = new UsersApi(this.authenticatedAxiosInstance);
         this.settingsApi = new SettingsApi(this.authenticatedAxiosInstance);
-        this.systemApi = new SystemApi(this.unauthenticatedAxiosInstance);
+        this.systemApi = new SystemAPI(this.unauthenticatedAxiosInstance);
     }
 }
 

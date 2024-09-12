@@ -5,7 +5,7 @@ import { useRouter } from 'next/router';
 import authService from '@/services/authService';
 import LoadingSpinner from '@/components/LoadingSpinner';
 
-const publicRoutes = ['/login', '/register', '/forgot-password', '/auth/google/callback'];
+const publicRoutes = ['/login', '/register', '/forgot-password', '/auth/google/callback', '/setup'];
 
 function MyApp({ Component, pageProps }: AppProps) {
     const router = useRouter();
@@ -14,6 +14,13 @@ function MyApp({ Component, pageProps }: AppProps) {
     useEffect(() => {
         const checkAuth = async () => {
             setIsAuthChecking(true);
+            const backendUrl = localStorage.getItem('backendUrl');
+            if (!backendUrl && router.pathname !== '/setup') {
+                router.push('/setup');
+                setIsAuthChecking(false);
+                return;
+            }
+
             const isAuth = await authService.isAuthenticated();
             if (!isAuth && !publicRoutes.includes(router.pathname)) {
                 router.push('/login');
@@ -24,6 +31,12 @@ function MyApp({ Component, pageProps }: AppProps) {
         checkAuth();
 
         const handleRouteChange = async (url: string) => {
+            const backendUrl = localStorage.getItem('backendUrl');
+            if (!backendUrl && url !== '/setup') {
+                router.push('/setup');
+                return;
+            }
+
             if (!publicRoutes.includes(url) && !(await authService.isAuthenticated())) {
                 router.push('/login');
             }
