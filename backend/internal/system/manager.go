@@ -1,3 +1,4 @@
+// Package system provides the system information and health check endpoints.
 package system
 
 import (
@@ -10,21 +11,25 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// App represents the application name
 type App struct {
 	Name string `json:"name"`
 }
 
+// Settings represents the application settings
 type Settings struct {
 	AuthEnabled    bool     `json:"auth_enabled"`
 	OAuthProviders []string `json:"oauth_providers"`
 }
 
+// Info represents the system information
 type Info struct {
 	Version  string   `json:"version"`
 	App      App      `json:"app"`
 	Settings Settings `json:"settings"`
 }
 
+// Manager represents the system manager
 type Manager struct {
 	logger     *logrus.Logger
 	storage    storage.Storage
@@ -32,6 +37,7 @@ type Manager struct {
 	systemInfo Info
 }
 
+// NewManager creates a new system manager
 func NewManager(logger *logrus.Logger, systemInfo Info) *Manager {
 	return &Manager{
 		logger:     logger,
