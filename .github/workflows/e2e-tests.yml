@@ -75,6 +75,7 @@ jobs:
             -e DB_NAME=app \
             -e DB_USER=app \
             -e DB_PASS=pass \
+            -e API_PORT=9090 \
             -e MOCK_OAUTH_BASE_URL=http://127.0.0.1:9999 \
             -e MOCK_OAUTH_CLIENT_ID=test-client \
             -e MOCK_OAUTH_CLIENT_SECRET=test-secret \
@@ -88,7 +89,7 @@ jobs:
 
       - name: Wait for Backend to be Ready
         run: |
-          timeout 60s bash -c 'while [[ "$(curl -s -o /dev/null -w ''%{http_code}'' http://localhost:8080/system/ping)" != "200" ]]; do sleep 5; done' || false
+          timeout 60s bash -c 'while [[ "$(curl -s -o /dev/null -w ''%{http_code}'' http://localhost:9090/system/ping)" != "200" ]]; do sleep 5; done' || false
 
       - name: Check Backend Logs if Startup Failed
         if: failure()
@@ -107,6 +108,8 @@ jobs:
           npm run build
 
       - name: Start Frontend
+        env:
+          API_BASE_URL: http://localhost:9090
         run: |
           cd frontend/smarty-pants
           npm run start & # Run in background
