@@ -1,13 +1,14 @@
-import { AxiosInstance, AxiosError, CancelToken } from 'axios';
+import { AxiosInstance, AxiosError, CancelToken, default as axios } from 'axios';
 import { IAuthService } from './authService';
 import { AnalyticsApi } from './api/analytics';
-import {DocumentApi} from "@/services/api/document";
-import {ChatHistoriesApi} from "@/services/api/interactions";
-import {DatasourcesApi} from "@/services/api/datasource";
-import {EmbeddingProviderApi} from "@/services/api/embedding_provider";
-import {LLMProviderApi} from "@/services/api/llm_provider";
-import {UsersApi} from "@/services/api/users";
-import {SettingsApi} from "@/services/api/settings";
+import { DocumentApi } from "@/services/api/document";
+import { ChatHistoriesApi } from "@/services/api/interactions";
+import { DatasourcesApi } from "@/services/api/datasource";
+import { EmbeddingProviderApi } from "@/services/api/embedding_provider";
+import { LLMProviderApi } from "@/services/api/llm_provider";
+import { UsersApi } from "@/services/api/users";
+import { SettingsApi } from "@/services/api/settings";
+import { SystemApi } from "@/services/api/SystemApi";
 
 export class ApiError extends Error {
     constructor(public status: number, message: string) {
@@ -16,7 +17,8 @@ export class ApiError extends Error {
 }
 
 export class ApiService {
-    private axiosInstance: AxiosInstance;
+    private authenticatedAxiosInstance: AxiosInstance;
+    private unauthenticatedAxiosInstance: AxiosInstance;
     public analytics: AnalyticsApi;
     public documents: DocumentApi;
     public chatHisories: ChatHistoriesApi;
@@ -25,35 +27,23 @@ export class ApiService {
     public llmProvider: LLMProviderApi;
     public usersApi: UsersApi;
     public settingsApi: SettingsApi
+    public systemApi: SystemApi;
 
     constructor(private authService: IAuthService) {
-        this.axiosInstance = this.authService.getAuthenticatedAxiosInstance();
-        this.analytics = new AnalyticsApi(this.axiosInstance);
-        this.documents = new DocumentApi(this.axiosInstance);
-        this.chatHisories = new ChatHistoriesApi(this.axiosInstance);
-        this.datasource = new DatasourcesApi(this.axiosInstance);
-        this.embeddingProvider = new EmbeddingProviderApi(this.axiosInstance)
-        this.llmProvider = new LLMProviderApi(this.axiosInstance);
-        this.usersApi = new UsersApi(this.axiosInstance);
-        this.settingsApi = new SettingsApi(this.axiosInstance);
-    }
+        this.authenticatedAxiosInstance = this.authService.getAuthenticatedAxiosInstance();
+        this.unauthenticatedAxiosInstance = axios.create({
+            baseURL: process.env.NEXT_PUBLIC_API_BASE_URL,
+        });
 
-    // Make this method protected so it can be used by subclasses if needed
-    protected async request<T>(method: string, url: string, data?: any, cancelToken?: CancelToken): Promise<T> {
-        try {
-            const response = await this.axiosInstance.request<T>({
-                method,
-                url,
-                data,
-                cancelToken,
-            });
-            return response.data;
-        } catch (error) {
-            if (error instanceof AxiosError) {
-                throw new ApiError(error.response?.status || 500, error.message);
-            }
-            throw error;
-        }
+        this.analytics = new AnalyticsApi(this.authenticatedAxiosInstance);
+        this.documents = new DocumentApi(this.authenticatedAxiosInstance);
+        this.chatHisories = new ChatHistoriesApi(this.authenticatedAxiosInstance);
+        this.datasource = new DatasourcesApi(this.authenticatedAxiosInstance);
+        this.embeddingProvider = new EmbeddingProviderApi(this.authenticatedAxiosInstance)
+        this.llmProvider = new LLMProviderApi(this.authenticatedAxiosInstance);
+        this.usersApi = new UsersApi(this.authenticatedAxiosInstance);
+        this.settingsApi = new SettingsApi(this.authenticatedAxiosInstance);
+        this.systemApi = new SystemApi(this.unauthenticatedAxiosInstance);
     }
 }
 
