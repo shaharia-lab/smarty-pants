@@ -1,7 +1,7 @@
 import axios, { AxiosInstance } from 'axios';
 import Cookies from "js-cookie";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
+import {getRuntimeConfig} from "@/config";
 
 export interface AuthFlowResponse {
     auth_flow: {
@@ -22,8 +22,11 @@ class AuthService {
     private accessToken: string | null = null;
     private refreshToken: string | null = null;
     private expirationTime: number | null = null;
+    private apiBaseURL: string;
 
     private constructor() {
+        const { API_BASE_URL } = getRuntimeConfig();
+        this.apiBaseURL = API_BASE_URL;
         this.loadTokens();
     }
 
@@ -44,7 +47,7 @@ class AuthService {
     }
 
     async initiateAuth(provider: string): Promise<AuthFlowResponse> {
-        const response = await axios.post(`${API_BASE_URL}/api/v1/auth/initiate`, {
+        const response = await axios.post(`${this.apiBaseURL}/api/v1/auth/initiate`, {
             auth_flow: { provider }
         });
         return response.data;
@@ -64,7 +67,7 @@ class AuthService {
             }
 
             // If it doesn't match the stored token, verify with the backend
-            const response = await axios.post(`${API_BASE_URL}/api/v1/auth/verify`, { token });
+            const response = await axios.post(`${this.apiBaseURL}/api/v1/auth/verify`, { token });
             return response.data.isValid;
         } catch (error) {
             console.error('Error verifying token:', error);
@@ -73,7 +76,7 @@ class AuthService {
     }
 
     async handleCallback(provider: string, authCode: string, state: string): Promise<void> {
-        const response = await axios.post(`${API_BASE_URL}/api/v1/auth/callback`, {
+        const response = await axios.post(`${this.apiBaseURL}/api/v1/auth/callback`, {
             auth_flow: { provider, auth_code: authCode, state }
         });
         this.setTokens(response.data);
@@ -130,7 +133,7 @@ class AuthService {
 
     getAuthenticatedAxiosInstance(): AxiosInstance {
         const axiosInstance = axios.create({
-            baseURL: API_BASE_URL,
+            baseURL: this.apiBaseURL,
         });
 
         axiosInstance.interceptors.request.use(async (config) => {

@@ -9,6 +9,7 @@ import { LLMProviderApi } from "@/services/api/llm_provider";
 import { UsersApi } from "@/services/api/users";
 import { SettingsApi } from "@/services/api/settings";
 import { SystemApi } from "@/services/api/SystemApi";
+import {getRuntimeConfig} from "@/config";
 
 export class ApiError extends Error {
     constructor(public status: number, message: string) {
@@ -30,9 +31,10 @@ export class ApiService {
     public systemApi: SystemApi;
 
     constructor(private authService: IAuthService) {
+        const { API_BASE_URL } = getRuntimeConfig();
         this.authenticatedAxiosInstance = this.authService.getAuthenticatedAxiosInstance();
         this.unauthenticatedAxiosInstance = axios.create({
-            baseURL: process.env.NEXT_PUBLIC_API_BASE_URL,
+            baseURL: API_BASE_URL,
         });
 
         this.analytics = new AnalyticsApi(this.authenticatedAxiosInstance);
