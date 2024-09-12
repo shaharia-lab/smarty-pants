@@ -76,3 +76,23 @@ export interface Settings {
         per_page: number;
     };
 }
+
+// Types definitions
+export interface SystemInfo {
+    version: string;
+    app: SystemApp;
+    settings: SystemSettings;
+}
+
+export interface SystemApp {
+    name: string;
+}
+
+export interface SystemSettings {
+    auth_enabled: boolean;
+    oauth_providers: string[];
+}
+
+export interface GenerateResponseMsg {
+    message: string;
+}
