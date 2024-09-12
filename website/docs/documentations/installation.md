@@ -65,9 +65,12 @@ docker pull ghcr.io/shaharia-lab/smarty-pants-frontend:<version>
 ```bash
 docker run -d \
   --name smarty-pants-frontend \
+  -e API_BASE_URL=<your_backend_endpoint> \
   -p 3000:3000 \
   ghcr.io/shaharia-lab/smarty-pants-frontend:<version>
 ```
+
+Replace `<your_backend_endpoint>` with the URL of your backend API. For example, if you are running the backend on `http://localhost:8080`, you should set `API_BASE_URL` to `http://localhost:8080`.
 
 ### Method 2: Using Docker Compose
 
