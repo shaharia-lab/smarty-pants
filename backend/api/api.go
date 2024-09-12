@@ -23,6 +23,8 @@ import (
 	"github.com/shaharia-lab/smarty-pants/backend/internal/search"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/settings"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/storage"
+	"github.com/shaharia-lab/smarty-pants/backend/internal/system"
+	"github.com/shaharia-lab/smarty-pants/backend/internal/types"
 	"github.com/shaharia-lab/smarty-pants/backend/internal/util"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/sync/errgroup"
@@ -55,6 +57,7 @@ type API struct {
 	searchManager      *search.Manager
 	settingsManager    *settings.Manager
 	oauthManager       *auth.OAuthManager
+	systemManager      *system.Manager
 }
 
 type Config struct {
@@ -64,7 +67,7 @@ type Config struct {
 	IdleTimeout       int
 }
 
-func NewAPI(logger *logrus.Logger, storage storage.Storage, searchSystem search.System, config Config, userManager *auth.UserManager, jwtManager *auth.JWTManager, aclManager auth.ACLManager, enableAuth bool, analyticsManager *analytics.Analytics, datasourceManager *datasource.Manager, documentManager *document.Manager, embeddingManager *embedding.Manager, interactionManager *interaction.Manager, llmManager *llm.Manager, searchManager *search.Manager, settingsManager *settings.Manager, oauthManager *auth.OAuthManager) *API {
+func NewAPI(logger *logrus.Logger, storage storage.Storage, searchSystem search.System, config Config, userManager *auth.UserManager, jwtManager *auth.JWTManager, aclManager auth.ACLManager, enableAuth bool, analyticsManager *analytics.Analytics, datasourceManager *datasource.Manager, documentManager *document.Manager, embeddingManager *embedding.Manager, interactionManager *interaction.Manager, llmManager *llm.Manager, searchManager *search.Manager, settingsManager *settings.Manager, oauthManager *auth.OAuthManager, systemManager *system.Manager) *API {
 	api := &API{
 		config:             config,
 		router:             chi.NewRouter(),
@@ -85,6 +88,7 @@ func NewAPI(logger *logrus.Logger, storage storage.Storage, searchSystem search.
 		searchManager:      searchManager,
 		settingsManager:    settingsManager,
 		oauthManager:       oauthManager,
+		systemManager:      systemManager,
 	}
 	api.setupMiddleware()
 	api.setupRoutes()
@@ -125,30 +129,12 @@ func (a *API) setupMiddleware() {
 }
 
 func (a *API) setupRoutes() {
-	type gResponse struct {
-		Message string `json:"message"`
-	}
 
 	a.router.Get("/", func(w http.ResponseWriter, r *http.Request) {
-		util.SendSuccessResponse(w, http.StatusOK, gResponse{Message: "Smart assistant!"}, a.logger, nil)
+		util.SendSuccessResponse(w, http.StatusOK, types.GenerateResponseMsg{Message: "Smart assistant!"}, a.logger, nil)
 	})
 
-	a.router.Route("/system", func(r chi.Router) {
-		r.Get("/ping", func(w http.ResponseWriter, r *http.Request) {
-			util.SendSuccessResponse(w, http.StatusOK, gResponse{Message: "Pong"}, a.logger, nil)
-		})
-
-		r.Route("/probes", func(r chi.Router) {
-			r.Get("/liveness", func(w http.ResponseWriter, r *http.Request) {
-				util.SendSuccessResponse(w, http.StatusOK, gResponse{Message: "I am alive"}, a.logger, nil)
-			})
-
-			r.Get("/readiness", func(w http.ResponseWriter, r *http.Request) {
-				util.SendSuccessResponse(w, http.StatusOK, gResponse{Message: "I am ready"}, a.logger, nil)
-			})
-		})
-	})
-
+	a.systemManager.RegisterRoutes(a.router)
 	a.userManager.RegisterRoutes(a.router.With(a.jwtManager.AuthMiddleware(a.enableAuth)))
 	a.analyticsManager.RegisterRoutes(a.router.With(a.jwtManager.AuthMiddleware(a.enableAuth)))
 	a.datasourceManager.RegisterRoutes(a.router.With(a.jwtManager.AuthMiddleware(a.enableAuth)))
