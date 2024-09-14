@@ -6,8 +6,11 @@ const nextConfig = {
     experimental: {
         forceSwcTransforms: false,
     },
+    serverRuntimeConfig: {
+        API_BASE_URL: process.env.API_BASE_URL,
+    },
     publicRuntimeConfig: {
-        API_BASE_URL: process.env.API_BASE_URL || 'http://localhost:8080',
+        API_BASE_URL: process.env.API_BASE_URL,
     },
     env: {
         NEXT_PUBLIC_API_BASE_URL: process.env.API_BASE_URL,
