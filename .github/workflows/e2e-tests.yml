@@ -112,7 +112,8 @@ jobs:
           API_BASE_URL: http://localhost:9090
         run: |
           cd frontend/smarty-pants
-          PI_BASE_URL=$API_BASE_URL next start & # Run in background
+          export API_BASE_URL=$API_BASE_URL
+          npm run start & # Run in background
           echo $! > frontend.pid # Save process ID
 
       - name: Wait for Frontend to be Ready

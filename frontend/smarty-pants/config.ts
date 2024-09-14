@@ -5,17 +5,23 @@ interface RuntimeConfig {
 }
 
 export function getRuntimeConfig(): RuntimeConfig {
-    const { serverRuntimeConfig, publicRuntimeConfig } = getConfig();
-
     if (typeof window === 'undefined') {
         // Server-side
         return {
-            API_BASE_URL: serverRuntimeConfig.API_BASE_URL || 'http://localhost:8080',
+            API_BASE_URL: process.env.API_BASE_URL || 'http://localhost:8080',
         };
     }
 
     // Client-side
+    if (process.env.NEXT_PUBLIC_API_BASE_URL) {
+        return {
+            API_BASE_URL: process.env.NEXT_PUBLIC_API_BASE_URL,
+        };
+    }
+
+    // Fallback to runtime config if available
+    const runtimeConfig = getConfig()?.publicRuntimeConfig;
     return {
-        API_BASE_URL: publicRuntimeConfig.API_BASE_URL || 'http://localhost:8080',
+        API_BASE_URL: runtimeConfig?.API_BASE_URL || 'http://localhost:8080',
     };
 }
