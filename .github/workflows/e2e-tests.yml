@@ -103,16 +103,15 @@ jobs:
           npm ci
 
       - name: Build Frontend
+        env:
+          API_BASE_URL: http://localhost:9090
         run: |
           cd frontend/smarty-pants
           npm run build
 
       - name: Start Frontend
-        env:
-          API_BASE_URL: http://localhost:9090
         run: |
           cd frontend/smarty-pants
-          export API_BASE_URL=$API_BASE_URL
           npm run start & # Run in background
           echo $! > frontend.pid # Save process ID
 
