@@ -3,7 +3,6 @@ import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import ChatHistories from './ChatHistories';
 import { createApiService } from "@/services/apiService";
-import AuthService from "@/services/authService";
 import { PaginatedInteractionsResponse, Interaction } from "@/types/api";
 
 jest.mock("@/services/apiService");
