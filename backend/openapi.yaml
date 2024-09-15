@@ -449,11 +449,11 @@ paths:
       summary: Get all interactions
       responses:
         '200':
-          description: Successful response
+          description: Get all paginated interactions
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/InteractionsResponse'
+                $ref: '#/components/schemas/PaginatedInteractions'
 
   /interactions/{uuid}:
     get:
@@ -1165,16 +1165,20 @@ components:
           type: string
           format: date-time
 
-    InteractionsResponse:
+    PaginatedInteractions:
       type: object
       properties:
-        interactions:
+        llm_providers:
           type: array
           items:
-            $ref: '#/components/schemas/InteractionSummary'
-        limit:
+            $ref: '#/components/schemas/Interaction'
+        total:
+          type: integer
+        page:
           type: integer
         per_page:
+          type: integer
+        total_pages:
           type: integer
 
     InteractionSummary:

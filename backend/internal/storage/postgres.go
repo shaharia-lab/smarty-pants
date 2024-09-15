@@ -1505,14 +1505,17 @@ func (p *Postgres) GetAllInteractions(ctx context.Context, page, perPage int) (*
 	offset := (page - 1) * perPage
 
 	query := `
-		SELECT uuid, query, created_at
-		FROM interactions
-		ORDER BY created_at DESC
+		SELECT i.uuid, i.query, i.created_at
+		FROM interactions i
+		INNER JOIN conversations c ON i.uuid = c.interaction_uuid
+		GROUP BY i.uuid, i.query, i.created_at
+		HAVING COUNT(c.uuid) > 0
+		ORDER BY i.created_at DESC
 		LIMIT $1 OFFSET $2
 	`
-	rows, err := p.db.Query(query, perPage, offset)
+	rows, err := p.db.QueryContext(ctx, query, perPage, offset)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to query interactions: %w", err)
 	}
 	defer rows.Close()
 
@@ -1521,20 +1524,30 @@ func (p *Postgres) GetAllInteractions(ctx context.Context, page, perPage int) (*
 	for rows.Next() {
 		var interaction types.Interaction
 		if err := rows.Scan(&interaction.UUID, &interaction.Query, &interaction.CreatedAt); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to scan interaction: %w", err)
 		}
+
+		interaction.Conversations, err = p.GetConversation(ctx, interaction.UUID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get conversation for interaction %s: %w", interaction.UUID, err)
+		}
+
 		interactions = append(interactions, interaction)
 	}
 
 	if err := rows.Err(); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error iterating over rows: %w", err)
 	}
 
-	// Get total count
+	// Get total count of interactions with conversations
 	var totalCount int
-	countQuery := "SELECT COUNT(*) FROM interactions"
-	if err := p.db.QueryRow(countQuery).Scan(&totalCount); err != nil {
-		return nil, err
+	countQuery := `
+		SELECT COUNT(DISTINCT i.uuid)
+		FROM interactions i
+		INNER JOIN conversations c ON i.uuid = c.interaction_uuid
+	`
+	if err := p.db.QueryRowContext(ctx, countQuery).Scan(&totalCount); err != nil {
+		return nil, fmt.Errorf("failed to get total count: %w", err)
 	}
 
 	totalPages := (totalCount + perPage - 1) / perPage

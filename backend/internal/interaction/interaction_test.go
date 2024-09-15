@@ -90,6 +90,27 @@ func TestCreateInteractionHandler(t *testing.T) {
 
 func TestGetInteractionsHandler(t *testing.T) {
 	st := new(storage.StorageMock)
+	st.On("GetAllInteractions", mock.Anything, 1, 10).Return(&types.PaginatedInteractions{
+		Interactions: []types.Interaction{
+			{
+				UUID:          uuid.UUID{},
+				Query:         "",
+				Conversations: nil,
+				CreatedAt:     time.Time{},
+			},
+			{
+				UUID:          uuid.UUID{},
+				Query:         "",
+				Conversations: nil,
+				CreatedAt:     time.Time{},
+			},
+		},
+		Total:      2,
+		Page:       1,
+		PerPage:    10,
+		TotalPages: 1,
+	}, nil)
+
 	l := logger.NoOpsLogger()
 	ss := search.NewSearchSystem(l, st)
 	aclManager := auth.NewACLManager(l, false)
@@ -105,16 +126,35 @@ func TestGetInteractionsHandler(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, rr.Code)
 
-	var response InteractionsResponse
+	var response types.PaginatedInteractions
 	err = json.Unmarshal(rr.Body.Bytes(), &response)
 	assert.NoError(t, err)
 	assert.Len(t, response.Interactions, 2)
-	assert.Equal(t, 1, response.Limit)
+	assert.Equal(t, 2, response.Total)
 	assert.Equal(t, 10, response.PerPage)
 }
 
 func TestGetInteractionHandler(t *testing.T) {
 	st := new(storage.StorageMock)
+	st.On("GetInteraction", mock.Anything, mock.Anything).Return(types.Interaction{
+		UUID:  uuid.MustParse("12345678-1234-1234-1234-1234567890ab"),
+		Query: "Sample query",
+		Conversations: []types.Conversation{
+			{
+				UUID:      uuid.UUID{},
+				Role:      "",
+				Text:      "",
+				CreatedAt: time.Time{},
+			},
+			{
+				UUID:      uuid.UUID{},
+				Role:      "",
+				Text:      "",
+				CreatedAt: time.Time{},
+			},
+		},
+		CreatedAt: time.Time{},
+	}, nil)
 	l := logger.NoOpsLogger()
 	ss := search.NewSearchSystem(l, st)
 	aclManager := auth.NewACLManager(l, false)
@@ -140,7 +180,7 @@ func TestGetInteractionHandler(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, uuidParsed, response.UUID)
 	assert.Equal(t, "Sample query", response.Query)
-	assert.Len(t, response.Conversations, 3)
+	assert.Len(t, response.Conversations, 2)
 }
 
 func TestSendMessageHandler(t *testing.T) {

@@ -113,16 +113,14 @@ func (m *Manager) getInteractionsHandler(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	response := InteractionsResponse{
-		Interactions: []InteractionSummary{
-			{UUID: uuid.New().String(), Title: "Sample query 1"},
-			{UUID: uuid.New().String(), Title: "Sample query 2"},
-		},
-		Limit:   1,
-		PerPage: 10,
+	interactions, err := m.storage.GetAllInteractions(r.Context(), 1, 10)
+	if err != nil {
+		m.logger.WithError(err).Error("Failed to get interactions")
+		util.SendErrorResponse(w, http.StatusInternalServerError, "failed to get interactions", m.logger, nil)
+		return
 	}
 
-	util.SendSuccessResponse(w, http.StatusOK, response, m.logger, nil)
+	util.SendSuccessResponse(w, http.StatusOK, interactions, m.logger, nil)
 }
 
 func (m *Manager) getInteractionHandler(w http.ResponseWriter, r *http.Request) {
@@ -130,9 +128,20 @@ func (m *Manager) getInteractionHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	interactionUUID := chi.URLParam(r, "uuid")
+	interactionUUID, err := uuid.Parse(chi.URLParam(r, "uuid"))
+	if err != nil {
+		util.SendErrorResponse(w, http.StatusBadRequest, "invalid interaction UUID", m.logger, nil)
+		return
+	}
 
-	interaction := types.Interaction{
+	getInteraction, err := m.storage.GetInteraction(r.Context(), interactionUUID)
+	if err != nil {
+		m.logger.WithError(err).Error("Failed to get interaction")
+		util.SendErrorResponse(w, http.StatusInternalServerError, "failed to get interaction", m.logger, nil)
+		return
+	}
+
+	/*interaction := types.Interaction{
 		UUID:  uuid.MustParse(interactionUUID),
 		Query: "Sample query",
 		Conversations: []types.Conversation{
@@ -140,9 +149,9 @@ func (m *Manager) getInteractionHandler(w http.ResponseWriter, r *http.Request) 
 			{Role: "user", Text: "Sample user message"},
 			{Role: "system", Text: "Sample system response"},
 		},
-	}
+	}*/
 
-	util.SendSuccessResponse(w, http.StatusOK, interaction, m.logger, nil)
+	util.SendSuccessResponse(w, http.StatusOK, getInteraction, m.logger, nil)
 }
 
 func (m *Manager) sendMessageHandler(w http.ResponseWriter, r *http.Request) {
