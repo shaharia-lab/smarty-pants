@@ -37,18 +37,10 @@ func TestCreateInteractionHandler(t *testing.T) {
 			expectedStatus: http.StatusOK,
 			expectedQuery:  "Test query",
 			setupMock: func(st *storage.StorageMock) {
-				st.On("CreateInteraction", mock.Anything, mock.MatchedBy(func(i types.Interaction) bool {
-					return i.Query == "Test query" &&
-						len(i.Conversations) == 1 &&
-						i.Conversations[0].Role == types.InteractionRoleUser &&
-						i.Conversations[0].Text == "Test query" &&
-						i.UUID != uuid.Nil
-				})).Return(types.Interaction{
-					UUID:  uuid.New(),
-					Query: "Test query",
-					Conversations: []types.Conversation{
-						{Role: types.InteractionRoleUser, Text: "Test query"},
-					},
+				st.On("CreateInteraction", mock.Anything, mock.Anything).Return(types.Interaction{
+					UUID:          uuid.New(),
+					Query:         "Test query",
+					Conversations: nil,
 				}, nil)
 			},
 		},
@@ -89,9 +81,6 @@ func TestCreateInteractionHandler(t *testing.T) {
 				assert.NoError(t, err)
 				assert.NotEmpty(t, response.UUID)
 				assert.Equal(t, tt.expectedQuery, response.Query)
-				assert.Len(t, response.Conversations, 1)
-				assert.Equal(t, types.InteractionRoleUser, response.Conversations[0].Role)
-				assert.Equal(t, tt.expectedQuery, response.Conversations[0].Text)
 			}
 
 			st.AssertExpectations(t)
@@ -181,6 +170,14 @@ func TestSendMessageHandler(t *testing.T) {
 			_, _ = observability.InitTracer(ctx, "smarty-pants-ai", logger.NoOpsLogger(), &config.Config{})
 
 			sm := new(storage.StorageMock)
+			userMessageMatcher := mock.MatchedBy(func(ctx context.Context) bool {
+				return true
+			})
+
+			// Set up expectations with the custom matchers
+			sm.On("AddConversation", userMessageMatcher, mock.Anything, "user", "Test message").Return(types.Conversation{}, nil).Once()
+			sm.On("AddConversation", userMessageMatcher, mock.Anything, "system", "Thank you for your message").Return(types.Conversation{}, nil).Once()
+
 			sm.On("GetAllLLMProviders",
 				mock.Anything,
 				types.LLMProviderFilter{Status: "active"},
@@ -271,16 +268,18 @@ func TestSendMessageHandler(t *testing.T) {
 			aclManager := auth.NewACLManager(l, false)
 
 			m := NewManager(sm, l, searchSystemMock, aclManager)
-			handler := http.HandlerFunc(m.sendMessageHandler)
 
-			req, err := http.NewRequest("POST", "/interactions/123/message", bytes.NewBufferString(tt.inputBody))
+			r := chi.NewRouter()
+			r.Post("/interactions/{uuid}/message", m.sendMessageHandler)
+
+			req, err := http.NewRequest("POST", "/interactions/"+uuid.New().String()+"/message", bytes.NewBufferString(tt.inputBody))
 			assert.NoError(t, err)
 
 			rr := httptest.NewRecorder()
 
 			done := make(chan bool)
 			go func() {
-				handler.ServeHTTP(rr, req)
+				r.ServeHTTP(rr, req)
 				done <- true
 			}()
 
@@ -298,6 +297,10 @@ func TestSendMessageHandler(t *testing.T) {
 				err = json.Unmarshal(rr.Body.Bytes(), &c)
 				assert.NoError(t, err)
 				assert.Equal(t, tt.expectedResponse, c.Text)
+			}
+
+			if tt.expectedStatus != http.StatusBadRequest {
+				sm.AssertExpectations(t)
 			}
 		})
 	}

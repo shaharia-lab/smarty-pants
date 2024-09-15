@@ -1469,6 +1469,23 @@ func (p *Postgres) AddConversationTx(ctx context.Context, tx *sql.Tx, interactio
 	return conversation, nil
 }
 
+// AddConversation store a new conversation in the database
+func (p *Postgres) AddConversation(ctx context.Context, interactionUUID uuid.UUID, role string, message string) (types.Conversation, error) {
+	conversation := types.Conversation{
+		UUID: uuid.New(),
+		Role: types.InteractionRole(role),
+		Text: message,
+	}
+
+	_, err := p.db.ExecContext(ctx, "INSERT INTO conversations (uuid, interaction_uuid, role, text, created_at) VALUES ($1, $2, $3, $4, $5)",
+		conversation.UUID, interactionUUID.String(), conversation.Role, conversation.Text, time.Now().UTC())
+	if err != nil {
+		return conversation, err
+	}
+
+	return conversation, nil
+}
+
 // GetInteraction retrieves an interaction from the database
 func (p *Postgres) GetInteraction(ctx context.Context, uuid uuid.UUID) (types.Interaction, error) {
 	var interaction types.Interaction
