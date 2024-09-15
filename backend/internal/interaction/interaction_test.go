@@ -216,7 +216,12 @@ func TestSendMessageHandler(t *testing.T) {
 
 			// Set up expectations with the custom matchers
 			sm.On("AddConversation", userMessageMatcher, mock.Anything, "user", "Test message").Return(types.Conversation{}, nil).Once()
-			sm.On("AddConversation", userMessageMatcher, mock.Anything, "system", "Thank you for your message").Return(types.Conversation{}, nil).Once()
+			sm.On("AddConversation", userMessageMatcher, mock.Anything, "system", "Thank you for your message").Return(types.Conversation{
+				UUID:      uuid.UUID{},
+				Role:      "system",
+				Text:      "Thank you for your message",
+				CreatedAt: time.Time{},
+			}, nil).Once()
 
 			sm.On("GetAllLLMProviders",
 				mock.Anything,

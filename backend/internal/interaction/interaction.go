@@ -218,7 +218,7 @@ func (m *Manager) sendMessageHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = m.AddSystemConversation(ctx, interactionUUID, llmResponse)
+	systemMessage, err := m.AddSystemConversation(ctx, interactionUUID, llmResponse)
 	if err != nil {
 		m.logger.WithError(err).Error("Failed to store system response")
 		util.SendErrorResponse(w, http.StatusInternalServerError, "failed to store system conversation", m.logger, nil)
@@ -226,8 +226,5 @@ func (m *Manager) sendMessageHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	m.logger.Infof("LLM response: %s", llmResponse)
-	util.SendSuccessResponse(w, http.StatusOK, types.Conversation{
-		Role: "system",
-		Text: llmResponse,
-	}, m.logger, nil)
+	util.SendSuccessResponse(w, http.StatusOK, systemMessage, m.logger, nil)
 }
