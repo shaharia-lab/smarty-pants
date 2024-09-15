@@ -188,7 +188,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ interactionId }) => {
                 <h2 className="text-xl font-semibold">Chat Session</h2>
                 <button
                     onClick={handleStartNewSession}
-                    className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="bg-gray-800 text-white px-4 py-2 rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                     Start New Session
                 </button>
@@ -221,7 +221,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ interactionId }) => {
                     <button
                         type="submit"
                         disabled={isLoading}
-                        className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+                        className="bg-gray-800 text-white px-4 py-2 rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
                     >
                         Send
                     </button>
