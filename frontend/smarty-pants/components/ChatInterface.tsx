@@ -123,10 +123,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ interactionId }) => {
 
             setInteraction(prev => prev ? {
                 ...prev,
-                conversations: [...prev.conversations, {role: 'user', text: inputMessage}, {
-                    role: 'system',
-                    text: data.response
-                }]
+                conversations: [...prev.conversations, {role: 'user', text: inputMessage}, data]
             } : null);
 
             setInputMessage('');

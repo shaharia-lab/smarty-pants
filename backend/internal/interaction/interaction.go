@@ -36,11 +36,6 @@ type MessageRequest struct {
 	Query string `json:"query"`
 }
 
-// MessageResponse represents a response containing a message
-type MessageResponse struct {
-	Response string `json:"response"`
-}
-
 // Manager is the interaction manager
 type Manager struct {
 	storage      storage.Storage
@@ -192,10 +187,9 @@ func (m *Manager) sendMessageHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response := MessageResponse{
-		Response: llmResponse,
-	}
-
 	m.logger.Infof("LLM response: %s", llmResponse)
-	util.SendSuccessResponse(w, http.StatusOK, response, m.logger, nil)
+	util.SendSuccessResponse(w, http.StatusOK, types.Conversation{
+		Role: "system",
+		Text: llmResponse,
+	}, m.logger, nil)
 }

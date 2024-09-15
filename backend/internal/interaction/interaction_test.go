@@ -294,10 +294,10 @@ func TestSendMessageHandler(t *testing.T) {
 			assert.Equal(t, tt.expectedStatus, rr.Code)
 
 			if tt.expectedStatus == http.StatusOK {
-				var response MessageResponse
-				err = json.Unmarshal(rr.Body.Bytes(), &response)
+				var c types.Conversation
+				err = json.Unmarshal(rr.Body.Bytes(), &c)
 				assert.NoError(t, err)
-				assert.Equal(t, tt.expectedResponse, response.Response)
+				assert.Equal(t, tt.expectedResponse, c.Text)
 			}
 		})
 	}
