@@ -8,6 +8,7 @@ import { Interaction, Message } from '@/types/api';
 import { createApiService } from "@/services/apiService";
 import AuthService from "@/services/authService";
 import axios, { CancelToken } from "axios";
+import {ChatHistoriesApi} from "@/services/api/interactions";
 
 interface ChatInterfaceProps {
     interactionId: string | null;
@@ -118,12 +119,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ interactionId }) => {
 
         setIsLoading(true);
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/interactions/${interaction.uuid}/message`, {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({query: inputMessage}),
-            });
-            const data = await response.json();
+            const data = await chatHistoriesApi.sendMessage(interaction.uuid, inputMessage);
 
             setInteraction(prev => prev ? {
                 ...prev,

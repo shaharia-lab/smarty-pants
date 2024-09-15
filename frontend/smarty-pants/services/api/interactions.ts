@@ -1,5 +1,5 @@
 import axios, { AxiosInstance, CancelToken } from 'axios';
-import {InteractionsResponse, Interaction} from '@/types/api';
+import {InteractionsResponse, Interaction, Message, MessageResponse} from '@/types/api';
 
 export class ChatHistoriesApi {
     constructor(private axiosInstance: AxiosInstance) {}
@@ -20,6 +20,15 @@ export class ChatHistoriesApi {
 
     async getInteraction(id: string, cancelToken?: CancelToken): Promise<Interaction> {
         const response = await this.axiosInstance.get<Interaction>(`/api/v1/interactions/${id}`, { cancelToken });
+        return response.data;
+    }
+
+    async sendMessage(interactionId: string, message: string, cancelToken?: CancelToken): Promise<MessageResponse> {
+        const response = await this.axiosInstance.post<MessageResponse>(
+            `/api/v1/interactions/${interactionId}/message`,
+            { query: message },
+            cancelToken ? { cancelToken } : {}
+        );
         return response.data;
     }
 }

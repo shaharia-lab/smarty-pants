@@ -49,6 +49,10 @@ export interface Message {
     text: string;
 }
 
+export interface MessageResponse {
+    response: string;
+}
+
 export interface Interaction {
     uuid: string;
     query: string;
