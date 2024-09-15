@@ -163,7 +163,7 @@ func TestSendMessageHandler(t *testing.T) {
 	}{
 		{
 			name:             "Success",
-			inputBody:        `{"query": "Test message"}`,
+			inputBody:        `{"text": "Test message", "role": "user"}`,
 			expectedStatus:   http.StatusOK,
 			expectedResponse: "Thank you for your message",
 		},
