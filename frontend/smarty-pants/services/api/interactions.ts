@@ -1,11 +1,11 @@
 import axios, { AxiosInstance, CancelToken } from 'axios';
-import {InteractionsResponse, Interaction, Message, MessageResponse} from '@/types/api';
+import {Interaction, Message, PaginatedInteractionsResponse} from '@/types/api';
 
 export class ChatHistoriesApi {
     constructor(private axiosInstance: AxiosInstance) {}
 
-    async getChatHistories(cancelToken?: CancelToken): Promise<InteractionsResponse> {
-        const response = await this.axiosInstance.get<InteractionsResponse>('/api/v1/interactions', { cancelToken });
+    async getChatHistories(cancelToken?: CancelToken): Promise<PaginatedInteractionsResponse> {
+        const response = await this.axiosInstance.get<PaginatedInteractionsResponse>('/api/v1/interactions', { cancelToken });
         return response.data;
     }
 
