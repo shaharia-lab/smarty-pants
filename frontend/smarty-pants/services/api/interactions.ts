@@ -9,10 +9,10 @@ export class ChatHistoriesApi {
         return response.data;
     }
 
-    async startNewSession(cancelToken?: CancelToken): Promise<Interaction> {
+    async startNewSession(message: Message, cancelToken?: CancelToken): Promise<Interaction> {
         const response = await this.axiosInstance.post<Interaction>(
             '/api/v1/interactions',
-            { query: 'Start new session' },
+            message,
             cancelToken ? { cancelToken } : {}
         );
         return response.data;

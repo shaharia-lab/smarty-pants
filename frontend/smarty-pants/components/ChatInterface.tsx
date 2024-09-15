@@ -40,7 +40,11 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ interactionId }) => {
     const startNewSession = useCallback(async (cancelToken?: CancelToken) => {
         setIsLoading(true);
         try {
-            const data = await chatHistoriesApi.startNewSession(cancelToken);
+            const newSessionMessage: Message = {
+                role: 'user',
+                text: 'Start new session'
+            };
+            const data = await chatHistoriesApi.startNewSession(newSessionMessage, cancelToken);
             setInteraction({
                 ...data,
                 conversations: [

@@ -436,10 +436,7 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                query:
-                  type: string
+              $ref: '#/components/schemas/Conversation'
       responses:
         '200':
           description: Interaction created successfully

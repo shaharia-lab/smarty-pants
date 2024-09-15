@@ -33,7 +33,7 @@ func TestCreateInteractionHandler(t *testing.T) {
 	}{
 		{
 			name:           "Success",
-			inputBody:      `{"query": "Test query"}`,
+			inputBody:      `{"role": "user", "text": "Test query"}`,
 			expectedStatus: http.StatusOK,
 			expectedQuery:  "Test query",
 			setupMock: func(st *storage.StorageMock) {

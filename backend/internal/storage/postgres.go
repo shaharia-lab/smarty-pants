@@ -1437,6 +1437,9 @@ func (p *Postgres) CreateInteraction(ctx context.Context, interaction types.Inte
 
 	// Add conversation using the transaction
 	for _, conversation := range interaction.Conversations {
+		if conversation.UUID == uuid.Nil {
+			conversation.UUID = uuid.New()
+		}
 		_, err = p.AddConversationTx(ctx, tx, interaction.UUID.String(), conversation)
 		if err != nil {
 			return interaction, err

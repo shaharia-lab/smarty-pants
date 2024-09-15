@@ -31,11 +31,6 @@ type InteractionsResponse struct {
 	PerPage      int                  `json:"per_page"`
 }
 
-// MessageRequest represents a request to send a message
-type MessageRequest struct {
-	Query string `json:"query"`
-}
-
 // Manager is the interaction manager
 type Manager struct {
 	storage      storage.Storage
@@ -76,17 +71,17 @@ func (m *Manager) createInteractionHandler(w http.ResponseWriter, r *http.Reques
 	ctx, span := observability.StartSpan(r.Context(), "api.createInteractionHandler")
 	defer span.End()
 
-	var req MessageRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	var c types.Conversation
+	if err := json.NewDecoder(r.Body).Decode(&c); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	interaction, err := m.storage.CreateInteraction(ctx, types.Interaction{
 		UUID:  uuid.New(),
-		Query: req.Query,
+		Query: c.Text,
 		Conversations: []types.Conversation{
-			{Role: types.InteractionRoleUser, Text: req.Query},
+			{Role: types.InteractionRoleUser, Text: c.Text, UUID: uuid.New(), CreatedAt: c.CreatedAt},
 		},
 	})
 
