@@ -23,10 +23,10 @@ export class ChatHistoriesApi {
         return response.data;
     }
 
-    async sendMessage(interactionId: string, message: string, cancelToken?: CancelToken): Promise<Message> {
+    async sendMessage(interactionId: string, message: Message, cancelToken?: CancelToken): Promise<Message> {
         const response = await this.axiosInstance.post<Message>(
             `/api/v1/interactions/${interactionId}/message`,
-            { query: message },
+            message,
             cancelToken ? { cancelToken } : {}
         );
         return response.data;

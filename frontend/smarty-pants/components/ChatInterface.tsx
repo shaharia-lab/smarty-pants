@@ -119,11 +119,15 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ interactionId }) => {
 
         setIsLoading(true);
         try {
-            const data = await chatHistoriesApi.sendMessage(interaction.uuid, inputMessage);
+            const newMessage: Message = {
+                role: 'user',
+                text: inputMessage
+            };
+            const data = await chatHistoriesApi.sendMessage(interaction.uuid, newMessage);
 
             setInteraction(prev => prev ? {
                 ...prev,
-                conversations: [...prev.conversations, {role: 'user', text: inputMessage}, data]
+                conversations: [...prev.conversations, newMessage, data]
             } : null);
 
             setInputMessage('');
