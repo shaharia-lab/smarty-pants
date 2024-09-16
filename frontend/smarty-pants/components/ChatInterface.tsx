@@ -8,6 +8,7 @@ import { Interaction, Message } from '@/types/api';
 import { createApiService } from "@/services/apiService";
 import AuthService from "@/services/authService";
 import axios, { CancelToken } from "axios";
+import {ChatHistoriesApi} from "@/services/api/interactions";
 
 interface ChatInterfaceProps {
     interactionId: string | null;
@@ -39,7 +40,11 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ interactionId }) => {
     const startNewSession = useCallback(async (cancelToken?: CancelToken) => {
         setIsLoading(true);
         try {
-            const data = await chatHistoriesApi.startNewSession(cancelToken);
+            const newSessionMessage: Message = {
+                role: 'user',
+                text: 'Start new session'
+            };
+            const data = await chatHistoriesApi.startNewSession(newSessionMessage, cancelToken);
             setInteraction({
                 ...data,
                 conversations: [
@@ -118,19 +123,15 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ interactionId }) => {
 
         setIsLoading(true);
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/interactions/${interaction.uuid}/message`, {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({query: inputMessage}),
-            });
-            const data = await response.json();
+            const newMessage: Message = {
+                role: 'user',
+                text: inputMessage
+            };
+            const data = await chatHistoriesApi.sendMessage(interaction.uuid, newMessage);
 
             setInteraction(prev => prev ? {
                 ...prev,
-                conversations: [...prev.conversations, {role: 'user', text: inputMessage}, {
-                    role: 'system',
-                    text: data.response
-                }]
+                conversations: [...prev.conversations, newMessage, data]
             } : null);
 
             setInputMessage('');
@@ -187,7 +188,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ interactionId }) => {
                 <h2 className="text-xl font-semibold">Chat Session</h2>
                 <button
                     onClick={handleStartNewSession}
-                    className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="bg-gray-800 text-white px-4 py-2 rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                     Start New Session
                 </button>
@@ -220,7 +221,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ interactionId }) => {
                     <button
                         type="submit"
                         disabled={isLoading}
-                        className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+                        className="bg-gray-800 text-white px-4 py-2 rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
                     >
                         Send
                     </button>

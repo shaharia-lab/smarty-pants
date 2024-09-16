@@ -20,3 +20,10 @@ type PaginatedInteractions struct {
 	PerPage      int           `json:"per_page"`
 	TotalPages   int           `json:"total_pages"`
 }
+
+type Conversation struct {
+	UUID      uuid.UUID       `json:"uuid"`
+	Role      InteractionRole `json:"role"`
+	Text      string          `json:"text"`
+	CreatedAt time.Time       `json:"created_at"`
+}

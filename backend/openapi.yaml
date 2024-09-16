@@ -436,10 +436,7 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                query:
-                  type: string
+              $ref: '#/components/schemas/Conversation'
       responses:
         '200':
           description: Interaction created successfully
@@ -452,11 +449,11 @@ paths:
       summary: Get all interactions
       responses:
         '200':
-          description: Successful response
+          description: Get all paginated interactions
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/InteractionsResponse'
+                $ref: '#/components/schemas/PaginatedInteractions'
 
   /interactions/{uuid}:
     get:
@@ -497,11 +494,11 @@ paths:
                   type: string
       responses:
         '200':
-          description: Message sent successfully
+          description: Successful reply from generative AI assistant
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/MessageResponse'
+                $ref: '#/components/schemas/Conversation'
 
   /llm-provider:
     post:
@@ -1168,16 +1165,20 @@ components:
           type: string
           format: date-time
 
-    InteractionsResponse:
+    PaginatedInteractions:
       type: object
       properties:
-        interactions:
+        llm_providers:
           type: array
           items:
-            $ref: '#/components/schemas/InteractionSummary'
-        limit:
+            $ref: '#/components/schemas/Interaction'
+        total:
+          type: integer
+        page:
           type: integer
         per_page:
+          type: integer
+        total_pages:
           type: integer
 
     InteractionSummary:

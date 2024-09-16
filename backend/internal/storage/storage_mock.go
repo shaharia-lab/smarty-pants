@@ -18,6 +18,34 @@ type StorageMock struct {
 	mock.Mock
 }
 
+// AddConversation provides a mock function with given fields: ctx, interactionUUID, role, message
+func (_m *StorageMock) AddConversation(ctx context.Context, interactionUUID uuid.UUID, role string, message string) (types.Conversation, error) {
+	ret := _m.Called(ctx, interactionUUID, role, message)
+
+	if len(ret) == 0 {
+		panic("no return value specified for AddConversation")
+	}
+
+	var r0 types.Conversation
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID, string, string) (types.Conversation, error)); ok {
+		return rf(ctx, interactionUUID, role, message)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID, string, string) types.Conversation); ok {
+		r0 = rf(ctx, interactionUUID, role, message)
+	} else {
+		r0 = ret.Get(0).(types.Conversation)
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, uuid.UUID, string, string) error); ok {
+		r1 = rf(ctx, interactionUUID, role, message)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // AddConversationTx provides a mock function with given fields: ctx, tx, interactionUUID, conversation
 func (_m *StorageMock) AddConversationTx(ctx context.Context, tx *sql.Tx, interactionUUID string, conversation types.Conversation) (types.Conversation, error) {
 	ret := _m.Called(ctx, tx, interactionUUID, conversation)
