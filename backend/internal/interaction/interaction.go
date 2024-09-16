@@ -128,16 +128,6 @@ func (m *Manager) getInteractionHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	/*interaction := types.Interaction{
-		UUID:  uuid.MustParse(interactionUUID),
-		Query: "Sample query",
-		Conversations: []types.Conversation{
-			{Role: "system", Text: "Hello, how may I help you today?"},
-			{Role: "user", Text: "Sample user message"},
-			{Role: "system", Text: "Sample system response"},
-		},
-	}*/
-
 	util.SendSuccessResponse(w, http.StatusOK, getInteraction, m.logger, nil)
 }
 
