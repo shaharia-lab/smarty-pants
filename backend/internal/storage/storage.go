@@ -60,6 +60,7 @@ type Storage interface {
 	GetInteraction(ctx context.Context, uuid uuid.UUID) (types.Interaction, error)
 	GetAllInteractions(ctx context.Context, page, perPage int) (*types.PaginatedInteractions, error)
 	AddConversationTx(ctx context.Context, tx *sql.Tx, interactionUUID string, conversation types.Conversation) (types.Conversation, error)
+	AddConversation(ctx context.Context, interactionUUID uuid.UUID, role string, message string) (types.Conversation, error)
 	GetConversation(ctx context.Context, interactionUUID uuid.UUID) ([]types.Conversation, error)
 
 	GetAnalyticsOverview(ctx context.Context) (types.AnalyticsOverview, error)

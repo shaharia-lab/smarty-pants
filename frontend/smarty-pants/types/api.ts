@@ -33,15 +33,12 @@ export interface AnalyticsOverview {
     };
 }
 
-export interface InteractionSummary {
-    uuid: string;
-    title: string;
-}
-
-export interface InteractionsResponse {
-    interactions: InteractionSummary[];
-    limit: number;
+export interface PaginatedInteractionsResponse {
+    interactions: Interaction[];
+    total: number;
+    page: number;
     per_page: number;
+    total_pages: number;
 }
 
 export interface Message {

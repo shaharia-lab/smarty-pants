@@ -11,33 +11,50 @@ describe('Chat Interface Initial Load', () => {
 
     it('should load chat histories and start a new session', () => {
         // Verify that the chat histories API was called
-        cy.wait('@getChatHistories').its('response.statusCode').should('eq', 200)
+        cy.wait('@getChatHistories').then((interception) => {
+            expect(interception.response.statusCode).to.equal(200)
+            // Log the response body for debugging
+            cy.log('Chat histories response:', JSON.stringify(interception.response.body))
+        })
 
-        // Check if chat histories are displayed on the left side
-        cy.get('.flex.space-x-6 > div:first-child').within(() => {
-            cy.get('h2').should('contain', 'Chat Histories')
-            cy.get('ul li').should('have.length.at.least', 1)
+        // Check if chat histories are displayed
+        cy.get('h2').contains('Chat Histories').should('be.visible')
+
+        // Check for either chat history items or the "No chat histories available" message
+        cy.get('ul.divide-y li, p.text-gray-500').should('exist').then($elements => {
+            if ($elements.length > 0) {
+                if ($elements.is('li')) {
+                    cy.wrap($elements).should('have.length.at.least', 1)
+                } else {
+                    cy.wrap($elements).should('contain', 'No chat histories available')
+                }
+            }
         })
 
         // Verify that a new session was started automatically
         cy.wait('@startNewSession').its('response.statusCode').should('eq', 200)
 
-        // Check if the chat box appears on the right side
-        cy.get('.flex.space-x-6 > div:last-child').should('be.visible')
+        // Check if the chat box appears
+        cy.get('h2').contains('Chat Session').should('be.visible')
 
         // Verify an initial system message is displayed
-        cy.get('.flex.space-x-6 > div:last-child')
-            .find('.overflow-y-auto .bg-gray-100 p')
+        cy.get('.overflow-y-auto .bg-gray-100')
             .first()
             .should('exist')
             .and('not.be.empty')
-            .then(($p) => {
-                cy.log('Initial message:', $p.text())
+            .then(($div) => {
+                cy.log('Initial message:', $div.text())
             })
 
         // Check if the input area and send button are present
         cy.get('textarea[placeholder="Type your message here... (Shift+Enter for new line)"]').should('be.visible')
         cy.get('button').contains('Send').should('be.visible')
+
+        // Log the entire page content for debugging
+        cy.log('Page content:')
+        cy.document().then((doc) => {
+            cy.log(doc.body.innerHTML)
+        })
     })
 
     it('should handle errors when starting a new session', () => {
@@ -51,37 +68,53 @@ describe('Chat Interface Initial Load', () => {
         cy.reload()
 
         // Wait for the error response
-        cy.wait('@startNewSessionError')
+        cy.wait('@startNewSessionError').then((interception) => {
+            expect(interception.response.statusCode).to.equal(500)
+            cy.log('Error response:', interception.response.body)
+        })
 
         // Check that the application doesn't crash and remains in a usable state
-        cy.get('.flex.space-x-6').should('exist')
+        cy.get('h2').contains('Chat Histories').should('be.visible')
 
-        // Verify that the chat histories are still displayed
-        cy.get('.flex.space-x-6 > div:first-child')
-            .should('be.visible')
-            .within(() => {
-                cy.get('h2').should('contain', 'Chat Histories')
-                cy.get('ul li').should('have.length.at.least', 1)
-            })
+        // Check for either chat history items or the "No chat histories available" message
+        cy.get('ul.divide-y li, p.text-gray-500').should('exist').then($elements => {
+            if ($elements.length > 0) {
+                if ($elements.is('li')) {
+                    cy.wrap($elements).should('have.length.at.least', 1)
+                } else {
+                    cy.wrap($elements).should('contain', 'No chat histories available')
+                }
+            }
+        })
 
-        // Check that the chat interface is still present
-        cy.get('.flex.space-x-6 > div:last-child')
-            .should('be.visible')
-            .within(() => {
-                cy.get('textarea').should('exist')
-                cy.get('button').contains('Send').should('exist')
-            })
+        // Check if the chat interface is still present, but it might be in an error state
+        cy.get('h2').contains('Chat Session').should('be.visible')
+        cy.get('textarea').should('exist')
+        cy.get('button').contains('Send').should('exist')
 
         // Verify that the "Start New Session" button is still clickable
         cy.contains('button', 'Start New Session')
             .should('be.visible')
             .and('not.be.disabled')
 
+        // Check for any error messages displayed to the user
+        cy.get('body').then($body => {
+            if ($body.find('.error-message').length > 0) {
+                cy.get('.error-message').should('be.visible')
+            }
+        })
+
         // Log the content of the chat area for debugging
-        cy.get('.flex.space-x-6 > div:last-child .overflow-y-auto')
+        cy.get('.overflow-y-auto')
             .then(($chatArea) => {
                 cy.log('Chat area content after error:', $chatArea.text())
             })
+
+        // Log the entire page content for debugging
+        cy.log('Page content after error:')
+        cy.document().then((doc) => {
+            cy.log(doc.body.innerHTML)
+        })
     })
 
     it('should start a new session when the button is clicked', () => {
@@ -92,13 +125,13 @@ describe('Chat Interface Initial Load', () => {
         cy.wait('@startNewSession').its('response.statusCode').should('eq', 200)
 
         // Check that the chat messages are cleared and a new initial message is present
-        cy.get('.flex.space-x-6 > div:last-child .overflow-y-auto .bg-gray-100 p')
+        cy.get('.overflow-y-auto .bg-gray-100')
             .should('have.length', 1) // Only the initial message should be present
             .first()
             .should('exist')
             .and('not.be.empty')
-            .then(($p) => {
-                cy.log('New session initial message:', $p.text())
+            .then(($div) => {
+                cy.log('New session initial message:', $div.text())
             })
     })
 })

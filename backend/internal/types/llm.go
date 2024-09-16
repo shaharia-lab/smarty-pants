@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"time"
 
 	"github.com/google/uuid"
 )
@@ -162,11 +161,4 @@ type LLMProviderFilter struct {
 type LLMProviderFilterOption struct {
 	Limit int `json:"limit"`
 	Page  int `json:"page"`
-}
-
-type Conversation struct {
-	UUID      uuid.UUID       `json:"uuid"`
-	Role      InteractionRole `json:"role"`
-	Text      string          `json:"text"`
-	CreatedAt time.Time       `json:"created_at"`
 }

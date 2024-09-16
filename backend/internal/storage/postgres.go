@@ -1437,6 +1437,9 @@ func (p *Postgres) CreateInteraction(ctx context.Context, interaction types.Inte
 
 	// Add conversation using the transaction
 	for _, conversation := range interaction.Conversations {
+		if conversation.UUID == uuid.Nil {
+			conversation.UUID = uuid.New()
+		}
 		_, err = p.AddConversationTx(ctx, tx, interaction.UUID.String(), conversation)
 		if err != nil {
 			return interaction, err
@@ -1466,6 +1469,23 @@ func (p *Postgres) AddConversationTx(ctx context.Context, tx *sql.Tx, interactio
 	return conversation, nil
 }
 
+// AddConversation store a new conversation in the database
+func (p *Postgres) AddConversation(ctx context.Context, interactionUUID uuid.UUID, role string, message string) (types.Conversation, error) {
+	conversation := types.Conversation{
+		UUID: uuid.New(),
+		Role: types.InteractionRole(role),
+		Text: message,
+	}
+
+	_, err := p.db.ExecContext(ctx, "INSERT INTO conversations (uuid, interaction_uuid, role, text, created_at) VALUES ($1, $2, $3, $4, $5)",
+		conversation.UUID, interactionUUID.String(), conversation.Role, conversation.Text, time.Now().UTC())
+	if err != nil {
+		return conversation, err
+	}
+
+	return conversation, nil
+}
+
 // GetInteraction retrieves an interaction from the database
 func (p *Postgres) GetInteraction(ctx context.Context, uuid uuid.UUID) (types.Interaction, error) {
 	var interaction types.Interaction
@@ -1485,14 +1505,17 @@ func (p *Postgres) GetAllInteractions(ctx context.Context, page, perPage int) (*
 	offset := (page - 1) * perPage
 
 	query := `
-		SELECT uuid, query, created_at
-		FROM interactions
-		ORDER BY created_at DESC
+		SELECT i.uuid, i.query, i.created_at
+		FROM interactions i
+		INNER JOIN conversations c ON i.uuid = c.interaction_uuid
+		GROUP BY i.uuid, i.query, i.created_at
+		HAVING COUNT(c.uuid) > 0
+		ORDER BY i.created_at DESC
 		LIMIT $1 OFFSET $2
 	`
-	rows, err := p.db.Query(query, perPage, offset)
+	rows, err := p.db.QueryContext(ctx, query, perPage, offset)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to query interactions: %w", err)
 	}
 	defer rows.Close()
 
@@ -1501,20 +1524,30 @@ func (p *Postgres) GetAllInteractions(ctx context.Context, page, perPage int) (*
 	for rows.Next() {
 		var interaction types.Interaction
 		if err := rows.Scan(&interaction.UUID, &interaction.Query, &interaction.CreatedAt); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to scan interaction: %w", err)
 		}
+
+		interaction.Conversations, err = p.GetConversation(ctx, interaction.UUID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get conversation for interaction %s: %w", interaction.UUID, err)
+		}
+
 		interactions = append(interactions, interaction)
 	}
 
 	if err := rows.Err(); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error iterating over rows: %w", err)
 	}
 
-	// Get total count
+	// Get total count of interactions with conversations
 	var totalCount int
-	countQuery := "SELECT COUNT(*) FROM interactions"
-	if err := p.db.QueryRow(countQuery).Scan(&totalCount); err != nil {
-		return nil, err
+	countQuery := `
+		SELECT COUNT(DISTINCT i.uuid)
+		FROM interactions i
+		INNER JOIN conversations c ON i.uuid = c.interaction_uuid
+	`
+	if err := p.db.QueryRowContext(ctx, countQuery).Scan(&totalCount); err != nil {
+		return nil, fmt.Errorf("failed to get total count: %w", err)
 	}
 
 	totalPages := (totalCount + perPage - 1) / perPage
