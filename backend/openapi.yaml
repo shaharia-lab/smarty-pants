@@ -50,6 +50,19 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ReadinessResponse'
+  /system/info:
+    get:
+      summary: Get system information
+      description: Retrieves information about the system, including version, app details, and settings
+      operationId: getSystemInfo
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemInfo'
+
   /analytics/overview:
     get:
       summary: Get analytics overview
@@ -423,10 +436,7 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                query:
-                  type: string
+              $ref: '#/components/schemas/Conversation'
       responses:
         '200':
           description: Interaction created successfully
@@ -439,11 +449,11 @@ paths:
       summary: Get all interactions
       responses:
         '200':
-          description: Successful response
+          description: Get all paginated interactions
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/InteractionsResponse'
+                $ref: '#/components/schemas/PaginatedInteractions'
 
   /interactions/{uuid}:
     get:
@@ -484,11 +494,11 @@ paths:
                   type: string
       responses:
         '200':
-          description: Message sent successfully
+          description: Successful reply from generative AI assistant
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/MessageResponse'
+                $ref: '#/components/schemas/Conversation'
 
   /llm-provider:
     post:
@@ -1155,16 +1165,20 @@ components:
           type: string
           format: date-time
 
-    InteractionsResponse:
+    PaginatedInteractions:
       type: object
       properties:
-        interactions:
+        llm_providers:
           type: array
           items:
-            $ref: '#/components/schemas/InteractionSummary'
-        limit:
+            $ref: '#/components/schemas/Interaction'
+        total:
+          type: integer
+        page:
           type: integer
         per_page:
+          type: integer
+        total_pages:
           type: integer
 
     InteractionSummary:
@@ -1260,6 +1274,45 @@ components:
           $ref: '#/components/schemas/DebuggingSettings'
         search:
           $ref: '#/components/schemas/SearchSettings'
+
+    SystemInfo:
+      type: object
+      properties:
+        version:
+          type: string
+          description: The version of the system
+        app:
+          $ref: '#/components/schemas/SystemApp'
+        settings:
+          $ref: '#/components/schemas/SystemSettings'
+      required:
+        - version
+        - app
+        - settings
+
+    SystemApp:
+      type: object
+      properties:
+        name:
+          type: string
+          description: The name of the application
+      required:
+        - name
+
+    SystemSettings:
+      type: object
+      properties:
+        auth_enabled:
+          type: boolean
+          description: Whether authentication is enabled
+        oauth_providers:
+          type: array
+          items:
+            type: string
+          description: List of enabled OAuth providers
+      required:
+        - auth_enabled
+        - oauth_providers
 
     GeneralSettings:
       type: object

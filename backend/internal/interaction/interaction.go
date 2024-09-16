@@ -2,8 +2,10 @@
 package interaction
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
@@ -17,29 +19,6 @@ import (
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel/attribute"
 )
-
-// InteractionSummary represents a summary of an interaction
-type InteractionSummary struct {
-	UUID  string `json:"uuid"`
-	Title string `json:"title"`
-}
-
-// InteractionsResponse represents a response containing a list of interactions
-type InteractionsResponse struct {
-	Interactions []InteractionSummary `json:"interactions"`
-	Limit        int                  `json:"limit"`
-	PerPage      int                  `json:"per_page"`
-}
-
-// MessageRequest represents a request to send a message
-type MessageRequest struct {
-	Query string `json:"query"`
-}
-
-// MessageResponse represents a response containing a message
-type MessageResponse struct {
-	Response string `json:"response"`
-}
 
 // Manager is the interaction manager
 type Manager struct {
@@ -69,8 +48,26 @@ func (m *Manager) RegisterRoutes(r chi.Router) {
 			r.Post("/message", m.sendMessageHandler)
 		})
 	})
+}
 
-	r.Post("/message", m.sendMessageHandler)
+// CreateInteraction creates a new interaction
+func (m *Manager) CreateInteraction(ctx context.Context, query string) (types.Interaction, error) {
+	return m.storage.CreateInteraction(ctx, types.Interaction{
+		UUID:          uuid.New(),
+		Query:         query,
+		Conversations: nil,
+		CreatedAt:     time.Now().UTC(),
+	})
+}
+
+// AddUserConversation adds a user conversation to an interaction
+func (m *Manager) AddUserConversation(ctx context.Context, interactionUUID uuid.UUID, message string) (types.Conversation, error) {
+	return m.storage.AddConversation(ctx, interactionUUID, "user", message)
+}
+
+// AddSystemConversation adds a system conversation to an interaction
+func (m *Manager) AddSystemConversation(ctx context.Context, interactionUUID uuid.UUID, message string) (types.Conversation, error) {
+	return m.storage.AddConversation(ctx, interactionUUID, "system", message)
 }
 
 func (m *Manager) createInteractionHandler(w http.ResponseWriter, r *http.Request) {
@@ -81,19 +78,13 @@ func (m *Manager) createInteractionHandler(w http.ResponseWriter, r *http.Reques
 	ctx, span := observability.StartSpan(r.Context(), "api.createInteractionHandler")
 	defer span.End()
 
-	var req MessageRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	var c types.Conversation
+	if err := json.NewDecoder(r.Body).Decode(&c); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	interaction, err := m.storage.CreateInteraction(ctx, types.Interaction{
-		UUID:  uuid.New(),
-		Query: req.Query,
-		Conversations: []types.Conversation{
-			{Role: types.InteractionRoleUser, Text: req.Query},
-		},
-	})
+	interaction, err := m.CreateInteraction(ctx, c.Text)
 
 	if err != nil {
 		m.logger.WithError(err).Error("Failed to create interaction")
@@ -109,16 +100,14 @@ func (m *Manager) getInteractionsHandler(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	response := InteractionsResponse{
-		Interactions: []InteractionSummary{
-			{UUID: uuid.New().String(), Title: "Sample query 1"},
-			{UUID: uuid.New().String(), Title: "Sample query 2"},
-		},
-		Limit:   1,
-		PerPage: 10,
+	interactions, err := m.storage.GetAllInteractions(r.Context(), 1, 10)
+	if err != nil {
+		m.logger.WithError(err).Error("Failed to get interactions")
+		util.SendErrorResponse(w, http.StatusInternalServerError, "failed to get interactions", m.logger, nil)
+		return
 	}
 
-	util.SendSuccessResponse(w, http.StatusOK, response, m.logger, nil)
+	util.SendSuccessResponse(w, http.StatusOK, interactions, m.logger, nil)
 }
 
 func (m *Manager) getInteractionHandler(w http.ResponseWriter, r *http.Request) {
@@ -126,19 +115,20 @@ func (m *Manager) getInteractionHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	interactionUUID := chi.URLParam(r, "uuid")
-
-	interaction := types.Interaction{
-		UUID:  uuid.MustParse(interactionUUID),
-		Query: "Sample query",
-		Conversations: []types.Conversation{
-			{Role: "system", Text: "Hello, how may I help you today?"},
-			{Role: "user", Text: "Sample user message"},
-			{Role: "system", Text: "Sample system response"},
-		},
+	interactionUUID, err := uuid.Parse(chi.URLParam(r, "uuid"))
+	if err != nil {
+		util.SendErrorResponse(w, http.StatusBadRequest, "invalid interaction UUID", m.logger, nil)
+		return
 	}
 
-	util.SendSuccessResponse(w, http.StatusOK, interaction, m.logger, nil)
+	getInteraction, err := m.storage.GetInteraction(r.Context(), interactionUUID)
+	if err != nil {
+		m.logger.WithError(err).Error("Failed to get interaction")
+		util.SendErrorResponse(w, http.StatusInternalServerError, "failed to get interaction", m.logger, nil)
+		return
+	}
+
+	util.SendSuccessResponse(w, http.StatusOK, getInteraction, m.logger, nil)
 }
 
 func (m *Manager) sendMessageHandler(w http.ResponseWriter, r *http.Request) {
@@ -149,9 +139,22 @@ func (m *Manager) sendMessageHandler(w http.ResponseWriter, r *http.Request) {
 	ctx, span := observability.StartSpan(r.Context(), "api.sendMessageHandler")
 	defer span.End()
 
-	var req MessageRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	var c types.Conversation
+	if err := json.NewDecoder(r.Body).Decode(&c); err != nil {
 		util.SendErrorResponse(w, http.StatusBadRequest, "invalid request", m.logger, nil)
+		return
+	}
+
+	interactionUUID, err := uuid.Parse(chi.URLParam(r, "uuid"))
+	if err != nil {
+		util.SendErrorResponse(w, http.StatusBadRequest, "invalid interaction UUID", m.logger, nil)
+		return
+	}
+
+	_, err = m.AddUserConversation(ctx, interactionUUID, c.Text)
+	if err != nil {
+		m.logger.WithError(err).Error("Failed to save user conversation")
+		util.SendErrorResponse(w, http.StatusInternalServerError, "failed to save user conversation", m.logger, nil)
 		return
 	}
 
@@ -162,7 +165,7 @@ func (m *Manager) sendMessageHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	llmContexts, err := m.searchSystem.GenerateLLMContext(ctx, search.Request{Query: req.Query})
+	llmContexts, err := m.searchSystem.GenerateLLMContext(ctx, search.Request{Query: c.Text})
 	if err != nil {
 		m.logger.WithError(err).Error("Failed to generate LLM contexts")
 		util.SendErrorResponse(w, http.StatusInternalServerError, "failed to generate LLM contexts", m.logger, nil)
@@ -174,7 +177,7 @@ func (m *Manager) sendMessageHandler(w http.ResponseWriter, r *http.Request) {
 
 	promptGenerator := llm.NewPromptGenerator(m.logger, llm.PromptTemplate{Template: llm.DefaultPromptTemplate})
 	prompt, err := promptGenerator.GeneratePrompt(llm.PromptTemplateData{
-		Query:                 req.Query,
+		Query:                 c.Text,
 		Documents:             llmContexts,
 		ConversationHistories: []types.Conversation{},
 	})
@@ -192,10 +195,13 @@ func (m *Manager) sendMessageHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response := MessageResponse{
-		Response: llmResponse,
+	systemMessage, err := m.AddSystemConversation(ctx, interactionUUID, llmResponse)
+	if err != nil {
+		m.logger.WithError(err).Error("Failed to store system response")
+		util.SendErrorResponse(w, http.StatusInternalServerError, "failed to store system conversation", m.logger, nil)
+		return
 	}
 
 	m.logger.Infof("LLM response: %s", llmResponse)
-	util.SendSuccessResponse(w, http.StatusOK, response, m.logger, nil)
+	util.SendSuccessResponse(w, http.StatusOK, systemMessage, m.logger, nil)
 }

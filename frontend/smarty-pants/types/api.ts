@@ -33,15 +33,12 @@ export interface AnalyticsOverview {
     };
 }
 
-export interface InteractionSummary {
-    uuid: string;
-    title: string;
-}
-
-export interface InteractionsResponse {
-    interactions: InteractionSummary[];
-    limit: number;
+export interface PaginatedInteractionsResponse {
+    interactions: Interaction[];
+    total: number;
+    page: number;
     per_page: number;
+    total_pages: number;
 }
 
 export interface Message {
@@ -75,4 +72,23 @@ export interface Settings {
     search: {
         per_page: number;
     };
+}
+
+export interface SystemInfo {
+    version: string;
+    app: SystemApp;
+    settings: SystemSettings;
+}
+
+export interface SystemApp {
+    name: string;
+}
+
+export interface SystemSettings {
+    auth_enabled: boolean;
+    oauth_providers: string[];
+}
+
+export interface GenerateResponseMsg {
+    message: string;
 }

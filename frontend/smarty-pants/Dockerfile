@@ -13,6 +13,10 @@ RUN npm ci --ignore-scripts
 # Copy all files
 COPY . .
 
+# Set default value for NEXT_PUBLIC_API_BASE_URL
+ARG NEXT_PUBLIC_API_BASE_URL=http://localhost:8080
+ENV NEXT_PUBLIC_API_BASE_URL=$NEXT_PUBLIC_API_BASE_URL
+
 # Build the Next.js application
 RUN npm run build
 
