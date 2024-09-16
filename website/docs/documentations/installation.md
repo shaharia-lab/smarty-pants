@@ -54,6 +54,10 @@ Replace `<your_db_host>`, `<your_db_port>`, `<your_db_user>`, `<your_db_password
 
 #### Frontend Installation
 
+The frontend Docker image is pre-built with a default backend API endpoint of `http://localhost:8080`. If this default setting works for your setup, you can simply pull and run the pre-built image. If you need to use a different backend API endpoint, you'll need to build the Docker image yourself.
+
+##### Option 1: Using the pre-built image (default backend: http://localhost:8080)
+
 1. Pull the frontend Docker image:
 
 ```bash
@@ -65,12 +69,69 @@ docker pull ghcr.io/shaharia-lab/smarty-pants-frontend:<version>
 ```bash
 docker run -d \
   --name smarty-pants-frontend \
-  -e API_BASE_URL=<your_backend_endpoint> \
   -p 3000:3000 \
   ghcr.io/shaharia-lab/smarty-pants-frontend:<version>
 ```
 
-Replace `<your_backend_endpoint>` with the URL of your backend API. For example, if you are running the backend on `http://localhost:8080`, you should set `API_BASE_URL` to `http://localhost:8080`.
+##### Option 2: Building a custom image (for a different backend API endpoint)
+
+If you need to use a different backend API endpoint, you'll need to build the Docker image yourself. You can do this using either standard Docker build or Docker Buildx.
+
+1. Clone the repository:
+
+```bash
+git clone https://github.com/shaharia-lab/smarty-pants.git
+cd smarty-pants
+```
+
+2. Build the image using Docker:
+
+```bash
+docker build \
+  --build-arg NEXT_PUBLIC_API_BASE_URL=http://your-custom-backend-url.com \
+  -t smarty-pants-frontend:custom \
+  -f frontend/smarty-pants/Dockerfile \
+  frontend/smarty-pants
+```
+
+Or, using Docker Buildx (which allows building directly from the GitHub repository):
+
+```bash
+docker buildx build \
+  https://github.com/shaharia-lab/smarty-pants.git#main:frontend/smarty-pants \
+  --build-arg NEXT_PUBLIC_API_BASE_URL=http://your-custom-backend-url.com \
+  -t smarty-pants-frontend:custom \
+  --load
+```
+
+Replace `http://your-custom-backend-url.com` with your actual backend API endpoint.
+
+3. Run your custom-built frontend container:
+
+```bash
+docker run -d \
+  --name smarty-pants-frontend \
+  -p 3000:3000 \
+  smarty-pants-frontend:custom
+```
+
+Note: When building a custom image, the `NEXT_PUBLIC_API_BASE_URL` is baked into the image at build time due to 
+[Next.js limitations](https://github.com/shaharia-lab/smarty-pants/issues/60) with runtime environment variables. You cannot change this value at runtime without rebuilding 
+the image.
+
+##### Using a specific version or tag
+
+If you want to build from a specific version or tag of the repository, modify the Buildx command like this:
+
+```bash
+docker buildx build \
+  https://github.com/shaharia-lab/smarty-pants.git#refs/tags/<tag-name>:frontend/smarty-pants \
+  --build-arg NEXT_PUBLIC_API_BASE_URL=http://your-custom-backend-url.com \
+  -t smarty-pants-frontend:custom \
+  --load
+```
+
+Replace `<tag-name>` with the specific tag you want to use.
 
 ### Method 2: Using Docker Compose
 
