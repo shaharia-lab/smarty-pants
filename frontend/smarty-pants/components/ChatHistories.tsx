@@ -1,7 +1,7 @@
 import React from 'react';
 import { Interaction } from '@/types/api';
 import { truncateMessage } from "@/utils/common";
-import {useChatHistories} from "@/hooks/useChatHistories";
+import { useChatHistories } from "@/hooks/useChatHistories";
 
 interface ChatHistoriesProps {
     onSelectInteraction: (uuid: string) => void;
@@ -12,36 +12,41 @@ const ChatHistories: React.FC<ChatHistoriesProps> = ({ onSelectInteraction }) =>
 
     return (
         <div className="bg-white shadow-md rounded-lg overflow-hidden">
-            <ChatHistoryHeader />
+            <h2 className="text-xl font-semibold p-4 border-b">Chat Histories</h2>
             {isLoading ? (
-                <LoadingIndicator />
+                <div className="p-4">Loading...</div>
             ) : (
-                <ChatHistoryList histories={histories} onSelectInteraction={onSelectInteraction} />
+                <ChatHistoryList
+                    histories={histories}
+                    onSelectInteraction={onSelectInteraction}
+                />
             )}
         </div>
     );
 };
 
-const ChatHistoryHeader: React.FC = () => (
-    <h2 className="text-xl font-semibold p-4 border-b">Chat Histories</h2>
-);
-
-const LoadingIndicator: React.FC = () => (
-    <div className="p-4">Loading...</div>
-);
-
 interface ChatHistoryListProps {
-    histories: Interaction[];
+    histories: Interaction[] | null;
     onSelectInteraction: (uuid: string) => void;
 }
 
-const ChatHistoryList: React.FC<ChatHistoryListProps> = ({ histories, onSelectInteraction }) => (
-    <ul className="divide-y divide-gray-200">
-        {histories.map((history) => (
-            <ChatHistoryItem key={history.uuid} history={history} onSelect={onSelectInteraction} />
-        ))}
-    </ul>
-);
+const ChatHistoryList: React.FC<ChatHistoryListProps> = ({ histories, onSelectInteraction }) => {
+    if (!histories || histories.length === 0) {
+        return <p className="p-4 text-gray-500">No chat histories available.</p>;
+    }
+
+    return (
+        <ul className="divide-y divide-gray-200">
+            {histories.map((history) => (
+                <ChatHistoryItem
+                    key={history.uuid}
+                    history={history}
+                    onSelect={onSelectInteraction}
+                />
+            ))}
+        </ul>
+    );
+};
 
 interface ChatHistoryItemProps {
     history: Interaction;
