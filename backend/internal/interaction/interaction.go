@@ -20,19 +20,6 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 )
 
-// InteractionSummary represents a summary of an interaction
-type InteractionSummary struct {
-	UUID  string `json:"uuid"`
-	Title string `json:"title"`
-}
-
-// InteractionsResponse represents a response containing a list of interactions
-type InteractionsResponse struct {
-	Interactions []InteractionSummary `json:"interactions"`
-	Limit        int                  `json:"limit"`
-	PerPage      int                  `json:"per_page"`
-}
-
 // Manager is the interaction manager
 type Manager struct {
 	storage      storage.Storage
