@@ -1,0 +1,52 @@
+name: Android CI
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'mobile_apps/smarty-pants/**'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'mobile_apps/smarty-pants/**'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./mobile_apps/smarty-pants
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+      - name: Install dependencies
+        run: npm ci
+      - name: Run tests
+        run: npm test
+
+  build:
+    needs: test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./mobile_apps/smarty-pants
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+      - name: Install dependencies
+        run: npm ci
+      - name: Install Expo CLI
+        run: npm install -g expo-cli
+      - name: Build Android App Bundle
+        run: expo build:android -t app-bundle
+      - name: Upload App Bundle
+        uses: actions/upload-artifact@v3
+        with:
+          name: app-bundle
+          path: '*.aab'
