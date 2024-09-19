@@ -1,37 +1,47 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
-import { useFonts } from 'expo-font';
-import { Stack } from 'expo-router';
-import * as SplashScreen from 'expo-splash-screen';
-import { useEffect } from 'react';
-import 'react-native-reanimated';
+import { Drawer } from 'expo-router/drawer';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { useState } from 'react';
+import UnderConstructionModal from '../components/UnderConstructionModal';
 
-import { useColorScheme } from '@/hooks/useColorScheme';
+export default function Layout() {
+  const [modalVisible, setModalVisible] = useState(false);
 
-// Prevent the splash screen from auto-hiding before asset loading is complete.
-SplashScreen.preventAutoHideAsync();
-
-export default function RootLayout() {
-  const colorScheme = useColorScheme();
-  const [loaded] = useFonts({
-    SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
-  });
-
-  useEffect(() => {
-    if (loaded) {
-      SplashScreen.hideAsync();
-    }
-  }, [loaded]);
-
-  if (!loaded) {
-    return null;
-  }
+  const handleDrawerItemPress = () => {
+    setModalVisible(true);
+  };
 
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="+not-found" />
-      </Stack>
-    </ThemeProvider>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <Drawer
+            screenOptions={{
+              headerShown: true,
+            }}
+        >
+          <Drawer.Screen
+              name="index"
+              options={{
+                drawerLabel: 'New Conversation',
+                title: 'New Conversation',
+              }}
+              listeners={{
+                focus: handleDrawerItemPress,
+              }}
+          />
+          <Drawer.Screen
+              name="about"
+              options={{
+                drawerLabel: 'About',
+                title: 'About',
+              }}
+              listeners={{
+                focus: handleDrawerItemPress,
+              }}
+          />
+        </Drawer>
+        <UnderConstructionModal
+            visible={modalVisible}
+            onClose={() => setModalVisible(false)}
+        />
+      </GestureHandlerRootView>
   );
 }
