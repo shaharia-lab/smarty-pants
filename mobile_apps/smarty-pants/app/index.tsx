@@ -1,48 +1,103 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Modal } from 'react-native';
+// app/index.tsx
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, Animated } from 'react-native';
+import { useRouter } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import SVGLogo from '../components/SVGLogo';
 
-export default function Home() {
-    const [modalVisible, setModalVisible] = useState(false);
+export default function Welcome() {
+    const [endpoint, setEndpoint] = useState('');
+    const [isValid, setIsValid] = useState(false);
+    const router = useRouter();
+    const animatedValue = new Animated.Value(0);
+
+    useEffect(() => {
+        Animated.loop(
+            Animated.sequence([
+                Animated.timing(animatedValue, {
+                    toValue: 1,
+                    duration: 15000,
+                    useNativeDriver: true,
+                }),
+                Animated.timing(animatedValue, {
+                    toValue: 0,
+                    duration: 15000,
+                    useNativeDriver: true,
+                }),
+            ])
+        ).start();
+    }, []);
+
+    const backgroundStyle = {
+        transform: [
+            {
+                translateX: animatedValue.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [0, 50],
+                }),
+            },
+            {
+                translateY: animatedValue.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [0, 50],
+                }),
+            },
+        ],
+    };
+
+    const handleEndpointChange = (text: string) => {
+        setEndpoint(text);
+        setIsValid(isValidUrl(text));
+    };
+
+    const handleGetStarted = async () => {
+        if (isValid) {
+            await AsyncStorage.setItem('backendEndpoint', endpoint);
+            router.replace('/home');
+        }
+    };
+
+    const isValidUrl = (url: string) => {
+        const pattern = new RegExp(
+            '^(https?:\\/\\/)?' +
+            '((([a-z\\d]([a-z\\d-]*[a-z\\d])*)\\.)+[a-z]{2,}|' +
+            '((\\d{1,3}\\.){3}\\d{1,3}))' +
+            '(\\:\\d+)?(\\/[-a-z\\d%_.~+]*)*' +
+            '(\\?[;&a-z\\d%_.~+=-]*)?' +
+            '(\\#[-a-z\\d_]*)?$',
+            'i'
+        );
+        return pattern.test(url);
+    };
 
     return (
         <View style={styles.container}>
-            <View style={styles.logoContainer}>
+            <Animated.View style={[styles.backgroundAnimation, backgroundStyle]} />
+            <View style={styles.content}>
                 <SVGLogo
-                    width={200}
-                    height={200}
-                    leftBrainColor="#1f2937"
-                    rightBrainColor="#1f2937"
-                    centerSquareColor="#2e4c77"
-                    centerSquareBlinkColor="#1f2937"
+                    width={150}
+                    height={150}
+                    leftBrainColor="#ffffff"
+                    rightBrainColor="#ffffff"
+                    centerSquareColor="#4b5563"
+                    centerSquareBlinkColor="#6b7280"
                 />
+                <Text style={styles.title}>SmartyPants</Text>
+                <TextInput
+                    style={styles.input}
+                    placeholder="Enter backend endpoint"
+                    placeholderTextColor="#a0aec0"
+                    value={endpoint}
+                    onChangeText={handleEndpointChange}
+                />
+                <TouchableOpacity
+                    style={[styles.button, !isValid && styles.buttonDisabled]}
+                    onPress={handleGetStarted}
+                    disabled={!isValid}
+                >
+                    <Text style={styles.buttonText}>Get Started</Text>
+                </TouchableOpacity>
             </View>
-            <Text style={styles.title}>SmartyPants</Text>
-            <TouchableOpacity
-                style={styles.button}
-                onPress={() => setModalVisible(true)}
-            >
-                <Text style={styles.buttonText}>Ask me</Text>
-            </TouchableOpacity>
-
-            <Modal
-                animationType="fade"
-                transparent={true}
-                visible={modalVisible}
-                onRequestClose={() => setModalVisible(false)}
-            >
-                <View style={styles.modalContainer}>
-                    <View style={styles.modalContent}>
-                        <Text style={styles.modalText}>Under Construction</Text>
-                        <TouchableOpacity
-                            style={styles.modalButton}
-                            onPress={() => setModalVisible(false)}
-                        >
-                            <Text style={styles.modalButtonText}>Close</Text>
-                        </TouchableOpacity>
-                    </View>
-                </View>
-            </Modal>
         </View>
     );
 }
@@ -50,65 +105,53 @@ export default function Home() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#F7F9FC',
+        backgroundColor: '#1f2937',
         alignItems: 'center',
         justifyContent: 'center',
     },
-    logoContainer: {
-        marginBottom: 20,
+    backgroundAnimation: {
+        position: 'absolute',
+        top: -100,
+        left: -100,
+        right: -100,
+        bottom: -100,
+        backgroundColor: '#2e4c77',
+        opacity: 0.1,
+    },
+    content: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 1,
     },
     title: {
         fontSize: 32,
         fontWeight: 'bold',
-        color: '#333',
+        color: '#ffffff',
         marginBottom: 40,
     },
+    input: {
+        width: 300,
+        height: 50,
+        backgroundColor: '#374151',
+        borderRadius: 10,
+        paddingHorizontal: 15,
+        fontSize: 16,
+        color: '#ffffff',
+        marginBottom: 20,
+    },
     button: {
-        backgroundColor: '#1f2937',
+        backgroundColor: '#4b5563',
         paddingHorizontal: 40,
         paddingVertical: 15,
-        elevation: 3,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
+        borderRadius: 10,
+    },
+    buttonDisabled: {
+        backgroundColor: '#374151',
+        opacity: 0.6,
     },
     buttonText: {
-        color: '#FFF',
+        color: '#ffffff',
         fontSize: 18,
-        fontWeight: '600',
-    },
-    modalContainer: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    },
-    modalContent: {
-        backgroundColor: '#FFF',
-        borderRadius: 20,
-        padding: 30,
-        alignItems: 'center',
-        elevation: 5,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.25,
-        shadowRadius: 4,
-    },
-    modalText: {
-        fontSize: 20,
-        fontWeight: '600',
-        marginBottom: 20,
-        color: '#333',
-    },
-    modalButton: {
-        backgroundColor: '#1f2937',
-        paddingHorizontal: 30,
-        paddingVertical: 10,
-    },
-    modalButtonText: {
-        color: '#FFF',
-        fontSize: 16,
         fontWeight: '600',
     },
 });
