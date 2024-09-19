@@ -52,8 +52,14 @@ export default function Welcome() {
 
     const handleGetStarted = async () => {
         if (isValid) {
-            await AsyncStorage.setItem('backendEndpoint', endpoint);
-            router.replace('/home');
+            const existingEndpoint = await AsyncStorage.getItem('backendEndpoint');
+            if (!existingEndpoint) {
+                await AsyncStorage.setItem('backendEndpoint', endpoint);
+                router.replace('/home');
+            } else {
+                // Endpoint already exists, just navigate
+                router.replace('/home');
+            }
         }
     };
 
