@@ -1,6 +1,8 @@
 ---
+title: About Us
+sidebar_label: About SmartyPants
+sidebar_class_name: about-sidebar
 sidebar_position: 1
-title: Introduction
 ---
 
 # What is SmartyPants?

@@ -1,13 +1,9 @@
-# SmartyPants 2025 Q1-Q3 Roadmap
+---
+sidebar_position: 5
+title: Roadmap
+---
 
-## Introduction
-SmartyPants is an open-source project aimed at democratizing generative AI applications. Our vision is to provide a flexible, powerful platform that enables developers of all skill levels to build AI-powered tools easily. This roadmap outlines our plans for the first three quarters of 2025, focusing on core feature development, community engagement, and project sustainability.
-
-## How to Contribute
-We welcome contributions from developers of all experience levels. Here's how you can get involved:
-- Review our [Contribution Guidelines](link-to-guidelines)
-- Check out our [Good First Issues](link-to-issues) for newcomers
-- Join our [Community Forums](link-to-forums) to discuss ideas and ask questions
+# Roadmap
 
 ## Q1 2025: Core Feature Development
 

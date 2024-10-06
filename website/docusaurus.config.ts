@@ -30,6 +30,18 @@ const config: Config = {
     locales: ['en'],
   },
 
+  plugins: [
+    [
+      '@docusaurus/plugin-content-docs',
+      {
+        id: 'about',
+        path: 'about',
+        routeBasePath: 'about',
+        sidebarPath: require.resolve('./aboutSidebar.js'),
+      },
+    ],
+  ],
+
   presets: [
     [
       'classic',
@@ -74,7 +86,7 @@ const config: Config = {
       },
       items: [
         {
-          href: '/docs/about/intro',
+          href: '/about',
           label: 'About SmartyPants',
           position: 'left',
         },
@@ -143,7 +155,7 @@ const config: Config = {
           ],
         },
       ],
-      copyright: `Copyright © ${new Date().getFullYear()} Shaharia Lab OÜ. An Open Source initiative. Built with Docusaurus.`,
+      copyright: `Copyright © ${new Date().getFullYear()} <a href="https://shaharialab.com/open-source?utm_source=smarty_pants_website">Shaharia Lab OÜ</a>. An Open Source initiative. Built with Docusaurus.`,
     },
     prism: {
       theme: prismThemes.github,
