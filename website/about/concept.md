@@ -1,6 +1,9 @@
 ---
 sidebar_position: 2
-title: Concepts
+sidebar_label: Concepts & Motivation
+
+title: "SmartyPants: Concepts & Motivation | Democratizing AI Development"
+description: "Discover the core concepts and motivations behind SmartyPants. Learn how we're democratizing AI, enhancing data privacy, and fostering open-source innovation in AI application development."
 ---
 
 # Concepts & Motivation

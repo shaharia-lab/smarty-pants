@@ -1,8 +1,10 @@
 ---
-title: About Us
 sidebar_label: About SmartyPants
 sidebar_class_name: about-sidebar
 sidebar_position: 1
+
+title: SmartyPants, Open-Source Generative AI Platform for All | Build Custom AI Apps
+description: Democratize AI with SmartyPants. Our open-source platform empowers developers, startups, and enterprises to create custom AI applications. Integrate data sources, use LLMs, and deploy with ease.
 ---
 
 # What is SmartyPants?

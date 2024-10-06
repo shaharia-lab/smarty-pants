@@ -1,6 +1,9 @@
 ---
 sidebar_position: 5
-title: Roadmap
+sidebar_label: Roadmap
+
+title: "SmartyPants 2025 Roadmap | Open-Source AI Platform Development Plan"
+description: "Explore SmartyPants' 2025 roadmap: core feature development, community-driven enhancements, and long-term sustainability plans for our open-source AI platform."
 ---
 
 # Roadmap

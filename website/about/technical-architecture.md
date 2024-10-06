@@ -1,6 +1,10 @@
 ---
 sidebar_position: 5
-title: Technical Architecture
+sidebar_label: Technical Architecture
+
+title: "SmartyPants Technical Architecture | Scalable AI Platform Design"
+description: "Explore SmartyPants' modular, scalable architecture. Learn about core components, supporting services, and deployment options for building robust AI applications."
+
 ---
 
 # Technical Architecture

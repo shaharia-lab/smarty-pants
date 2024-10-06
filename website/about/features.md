@@ -1,6 +1,9 @@
 ---
 sidebar_position: 4
-title: Features
+sidebar_label: Features
+
+title: "SmartyPants Features: Comprehensive Generative AI Toolkit | Open-Source Platform"
+description: "Explore SmartyPants' powerful features: data integration, semantic search, LLM support, RAG pipeline, mobile apps, and more. Build custom AI solutions with our open-source platform."
 ---
 
 # Features at a Glance
@@ -67,4 +70,4 @@ SmartyPants offers a comprehensive suite of features designed to make generative
 - **Community Forums**: Engage with other users and developers
 - **Regular Updates**: Benefit from ongoing improvements and new features
 
-These features work in concert to provide a powerful, flexible, and user-friendly platform for building generative AI applications. Whether you're looking to create a simple chatbot or a complex, AI-driven system, SmartyPants offers the tools and capabilities you need to bring your vision to life.
+These features work in concert to provide a powerful, flexible, and user-friendly platform for building generative AI applications. Whether you're looking to create a simple chatbot or a complex, AI-driven system, SmartyPants offers the tools and capabilities you need to bring your vision to life.`

@@ -76,7 +76,10 @@ const config: Config = {
   ],
 
   themeConfig: {
-    // Replace with your project's social card
+    metadata: [
+      {name: 'keywords', content: 'ai, llm, generative ai, smarty pants, shaharia lab'},
+      {name: 'twitter:card', content: 'summary_large_image'},
+    ],
     image: 'img/smartypants-social-card.png',
     navbar: {
       title: 'SmartyPants',
