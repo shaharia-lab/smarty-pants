@@ -1,86 +1,117 @@
----
-sidebar_position: 6
-title: Roadmap
----
+# SmartyPants 2025 Q1-Q3 Roadmap
 
-# Future Roadmap
+## Introduction
+SmartyPants is an open-source project aimed at democratizing generative AI applications. Our vision is to provide a flexible, powerful platform that enables developers of all skill levels to build AI-powered tools easily. This roadmap outlines our plans for the first three quarters of 2025, focusing on core feature development, community engagement, and project sustainability.
 
-SmartyPants is committed to continuous improvement and expansion. Our roadmap outlines the exciting features and enhancements we plan to implement in the coming months and years. This roadmap is dynamic and may evolve based on community feedback and emerging technologies.
+## How to Contribute
+We welcome contributions from developers of all experience levels. Here's how you can get involved:
+- Review our [Contribution Guidelines](link-to-guidelines)
+- Check out our [Good First Issues](link-to-issues) for newcomers
+- Join our [Community Forums](link-to-forums) to discuss ideas and ask questions
 
-## Short-term Goals (Next 6-12 months)
+## Q1 2025: Core Feature Development
 
-### 1. Enhanced Data Source Integration
-- [ ] Add support for Microsoft Teams and Zoom transcripts
-- [ ] Implement connectors for popular CRM systems (Salesforce, HubSpot)
-- [ ] Develop a generic REST API connector for custom data sources
+### High Priority
+1. **Data Source Integration**
+    - Implement connectors for: Jira, Confluence, Slack, GitHub, Google Docs, Google Drive, Microsoft Teams, GitLab
+    - Develop a web crawler for ingesting webpage content
+    - Create a REST API connector for custom data ingestion
 
-### 2. Advanced LLM Capabilities
-- [ ] Implement few-shot learning techniques for improved performance
-- [ ] Add support for model fine-tuning on private datasets
-- [ ] Introduce multi-modal capabilities (text + image understanding)
+2. **Search Engine Enhancement**
+    - Develop and integrate semantic search capabilities
+    - Implement hybrid search combining vector and keyword-based approaches
+    - Optimize search performance and relevance ranking
 
-### 3. Improved Search and Retrieval
-- [ ] Implement hybrid search combining vector and keyword-based approaches
-- [ ] Develop advanced query expansion techniques
-- [ ] Add support for multi-language search and retrieval
+3. **LLM and Embedding Provider Support**
+    - Add support for multiple LLM providers: OpenAI, Anthropic's Claude, AWS Bedrock, Google's Gemini
+    - Integrate embedding providers: OpenAI, Mistral Embed, Vertex AI
+    - Implement support for Milvus as a vector database
 
-### 4. Enhanced User Experience
-- [ ] Create a visual RAG pipeline builder
-- [ ] Implement an AI-assisted configuration wizard
-- [ ] Develop a user feedback system for continuous improvement
+### Medium Priority
+4. **API Development**
+    - Design and implement a comprehensive REST API for the search engine
+    - Develop and document API endpoints for all core functionalities
 
-### 5. Expanded Deployment Options
-- [ ] Add support for major cloud providers (AWS, GCP, Azure) one-click deployments
-- [ ] Develop edge deployment capabilities for low-latency applications
-- [ ] Create a SaaS offering for users who prefer managed solutions
+5. **SDK Development**
+    - Create SmartyPants SDKs for: Go, Python, JavaScript, PHP
+    - Ensure comprehensive documentation and examples for each SDK
 
-## Medium-term Goals (1-2 years)
+6. **Chatbot Integration**
+    - Develop code generation tools for embedding chatbots in various platforms
+    - Create templates and examples for common chatbot use cases
 
-### 1. Advanced Analytics and Insights
-- [ ] Implement AI-driven analytics for usage patterns and content insights
-- [ ] Develop predictive models for resource allocation and scaling
-- [ ] Create customizable dashboards for business intelligence
+7. **Mobile Application Development**
+    - Initial release of Android and iOS apps with core search functionality and basic LLM interaction
 
-### 2. Enhanced Security and Compliance
-- [ ] Implement end-to-end encryption for sensitive data
-- [ ] Add support for data residency requirements
-- [ ] Develop compliance reporting tools for GDPR, CCPA, and other regulations
+### Lower Priority
+8. **Documentation and Community**
+    - Complete comprehensive documentation covering: Installation and setup, API reference, SDK usage, Best practices
+    - Develop and publish contribution guidelines
+    - Set up community forums and support channels
 
-### 3. Collaborative Features
-- [ ] Implement real-time collaborative editing of prompts and configurations
-- [ ] Develop a knowledge sharing platform for the SmartyPants community
-- [ ] Create a marketplace for custom plugins and integrations
+9. **Deployment Options**
+    - Finalize deployment configurations for: Local machine setup, Kubernetes using Helm charts, Serverless infrastructure (Google Cloud Run)
+    - Create detailed deployment guides for each option
 
-### 4. Advanced Customization
-- [ ] Develop a no-code interface for creating custom AI agents
-- [ ] Implement support for custom embedding models
-- [ ] Create tools for fine-grained control over the RAG pipeline
+10. **Testing and Quality Assurance**
+    - Implement comprehensive unit and integration testing
+    - Conduct thorough security audits
+    - Perform scalability and performance testing
 
-### 5. Expanded Ecosystem
-- [ ] Develop integrations with popular CI/CD tools
-- [ ] Create plugins for major IDEs (VSCode, IntelliJ, etc.)
-- [ ] Implement support for IoT device integration
+11. **Metrics and Monitoring**
+    - Implement system-wide observability with OpenTelemetry
+    - Create dashboards for key performance indicators
 
-## Long-term Vision (2+ years)
+12. **Beta Program**
+    - Launch a closed beta program in the relevant community as early adopters
+    - Gather and incorporate user feedback
 
-### 1. AGI Integration
-- [ ] Explore integration with emerging AGI systems
-- [ ] Develop safeguards and ethical guidelines for AGI usage
+## Q2/Q3 2025: Community-Driven Development
 
-### 2. Quantum Computing Support
-- [ ] Investigate quantum algorithms for embedding and search
-- [ ] Prepare SmartyPants architecture for quantum-ready deployments
+Following the initial release and beta program in Q1, our focus for Q2 and Q3 will shift towards community engagement and iterative improvement based on user feedback.
 
-### 3. Brain-Computer Interfaces
-- [ ] Explore integration with emerging BCI technologies
-- [ ] Develop thought-to-text interfaces for SmartyPants interactions
+1. **Community Feedback Analysis**
+    - Conduct thorough analysis of feedback received during Q1 beta and initial release
+    - Identify key themes and prioritize feature requests and improvements
 
-### 4. Federated Learning
-- [ ] Implement privacy-preserving federated learning across SmartyPants instances
-- [ ] Develop a global knowledge sharing network while maintaining data privacy
+2. **Roadmap Reassessment and Adjustment**
+    - Host community discussions and polls to gather input on project direction
+    - Re-evaluate and adjust the roadmap based on community feedback and emerging needs
+    - Publish updated roadmap and seek community validation
 
-### 5. Autonomous AI Agents
-- [ ] Create self-improving AI agents that can manage and optimize SmartyPants instances
-- [ ] Develop AI-driven content creation and curation capabilities
+3. **Implementation of High-Priority Community Requests**
+    - Select top community-requested features for implementation
+    - Assign resources to develop these features
 
-This roadmap represents our commitment to pushing the boundaries of what's possible with generative AI and knowledge management. We're excited to work with our community to bring these features to life and continue evolving SmartyPants to meet the changing needs of our users.
+4. **Enhanced Community Engagement**
+    - Establish regular community meetings or webinars
+    - Create a public issue tracker for feature requests and bug reports
+    - Implement a system for community voting on feature priorities
+
+5. **Expand Contributor Base**
+    - Develop mentorship programs for new contributors
+    - Create and improve documentation to lower the barrier for contributions
+    - Highlight and celebrate community contributions
+
+6. **Performance Optimization**
+    - Conduct community-driven benchmarking and performance testing
+    - Implement optimizations based on real-world usage patterns
+
+7. **Ecosystem Expansion**
+    - Explore partnerships with complementary open-source projects
+    - Develop integrations based on community use cases
+
+8. **Long-term Sustainability Planning**
+    - Discuss and implement governance models for long-term project sustainability
+    - Explore funding models to support ongoing development (e.g., sponsorships, grants)
+
+9. **Continuous Improvement**
+    - Regular releases incorporating community contributions and feedback
+    - Ongoing refinement of development processes based on community input
+
+## Feedback on This Roadmap
+We value your input on this roadmap. Please share your thoughts, suggestions, or concerns:
+- Open an issue on our [GitHub repository](https://github.com/shaharia-lab/smarty-pants)
+- Reach out directly to our team at [hello@shaharialab.com](mailto:hello@shaharialab.com)
+
+Our commitment to open-source principles means that this roadmap itself is open to community input and may evolve as we progress through 2025. We encourage all community members to participate in shaping the future of SmartyPants.
