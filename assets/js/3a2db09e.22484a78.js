@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunkwebsite=self.webpackChunkwebsite||[]).push([[8121],{8070:e=>{e.exports=JSON.parse('{"tags":[{"label":"smarty-pants","permalink":"/blog/tags/smarty-pants","count":1},{"label":"genai","permalink":"/blog/tags/genai","count":1}]}')}}]);

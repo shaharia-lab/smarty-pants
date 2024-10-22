@@ -2,7 +2,7 @@
 <rss version="2.0">
     <channel>
         <title>SmartyPants Blog</title>
-        <link>https://your-docusaurus-site.example.com/blog</link>
+        <link>https://smarty-pants.shaharialab.com/blog</link>
         <description>SmartyPants Blog</description>
         <lastBuildDate>Tue, 01 Oct 2024 00:00:00 GMT</lastBuildDate>
         <docs>https://validator.w3.org/feed/docs/rss2.html</docs>
@@ -10,8 +10,8 @@
         <language>en</language>
         <item>
             <title><![CDATA[Introducing Smarty Pants]]></title>
-            <link>https://your-docusaurus-site.example.com/blog/introducing-smarty-pants</link>
-            <guid>https://your-docusaurus-site.example.com/blog/introducing-smarty-pants</guid>
+            <link>https://smarty-pants.shaharialab.com/blog/introducing-smarty-pants</link>
+            <guid>https://smarty-pants.shaharialab.com/blog/introducing-smarty-pants</guid>
             <pubDate>Tue, 01 Oct 2024 00:00:00 GMT</pubDate>
             <category>smarty-pants</category>
             <category>genai</category>

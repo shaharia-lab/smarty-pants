@@ -1,16 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?><?xml-stylesheet type="text/xsl" href="atom.xsl"?>
 <feed xmlns="http://www.w3.org/2005/Atom">
-    <id>https://your-docusaurus-site.example.com/blog</id>
+    <id>https://smarty-pants.shaharialab.com/blog</id>
     <title>SmartyPants Blog</title>
     <updated>2024-10-01T00:00:00.000Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
-    <link rel="alternate" href="https://your-docusaurus-site.example.com/blog"/>
+    <link rel="alternate" href="https://smarty-pants.shaharialab.com/blog"/>
     <subtitle>SmartyPants Blog</subtitle>
-    <icon>https://your-docusaurus-site.example.com/img/favicon.svg</icon>
+    <icon>https://smarty-pants.shaharialab.com/img/favicon.svg</icon>
     <entry>
         <title type="html"><![CDATA[Introducing Smarty Pants]]></title>
-        <id>https://your-docusaurus-site.example.com/blog/introducing-smarty-pants</id>
-        <link href="https://your-docusaurus-site.example.com/blog/introducing-smarty-pants"/>
+        <id>https://smarty-pants.shaharialab.com/blog/introducing-smarty-pants</id>
+        <link href="https://smarty-pants.shaharialab.com/blog/introducing-smarty-pants"/>
         <updated>2024-10-01T00:00:00.000Z</updated>
         <author>
             <name>Shaharia Azam</name>
