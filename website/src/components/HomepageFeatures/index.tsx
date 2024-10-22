@@ -2,16 +2,24 @@ import clsx from 'clsx';
 import Heading from '@theme/Heading';
 import styles from './styles.module.css';
 
+type ImageSource = {
+    type: 'svg' | 'png';
+    source: React.ComponentType<React.ComponentProps<'svg'>> | string;
+};
+
 type FeatureItem = {
     title: string;
-    Svg: React.ComponentType<React.ComponentProps<'svg'>>;
+    image: ImageSource;
     description: JSX.Element;
 };
 
 const FeatureList: FeatureItem[] = [
     {
         title: 'Plug-and-Play RAG Pipeline',
-        Svg: require('@site/static/img/rag-pipeline-svg.svg').default,
+        image: {
+            type: 'png',
+            source: require('@site/static/img/rag.png').default,
+        },
         description: (
             <>
                 Instantly connect your data sources, index content, and leverage LLMs.
@@ -21,7 +29,10 @@ const FeatureList: FeatureItem[] = [
     },
     {
         title: 'Multi-Source Knowledge Integration',
-        Svg: require('@site/static/img/mutli-source-knowledge.svg').default,
+        image: {
+            type: 'png',
+            source: require('@site/static/img/multi_knowledge_source.png').default,
+        },
         description: (
             <>
                 Seamlessly integrate data from Slack, Google Drive, Confluence, and more.
@@ -31,7 +42,10 @@ const FeatureList: FeatureItem[] = [
     },
     {
         title: 'Provider-Agnostic Architecture',
-        Svg: require('@site/static/img/undraw_docusaurus_tree.svg').default,
+        image: {
+            type: 'png',
+            source: require('@site/static/img/undraw_docusaurus_tree.svg'),
+        },
         description: (
             <>
                 Choose from multiple embedding and LLM providers. Avoid vendor lock-in
@@ -41,7 +55,10 @@ const FeatureList: FeatureItem[] = [
     },
     {
         title: 'Advanced Observability',
-        Svg: require('@site/static/img/undraw_docusaurus_tree.svg').default,
+        image: {
+            type: 'svg',
+            source: require('@site/static/img/undraw_docusaurus_tree.svg').default,
+        },
         description: (
             <>
                 Gain deep insights into your AI operations with built-in tracing and metrics.
@@ -51,7 +68,10 @@ const FeatureList: FeatureItem[] = [
     },
     {
         title: 'Flexible Deployment Options',
-        Svg: require('@site/static/img/undraw_docusaurus_tree.svg').default,
+        image: {
+            type: 'png',
+            source: require('@site/static/img/flexible_deployment.png').default,
+        },
         description: (
             <>
                 Deploy on your local machine, in the cloud, or on Kubernetes.
@@ -61,7 +81,10 @@ const FeatureList: FeatureItem[] = [
     },
     {
         title: 'Open-Source Community Power',
-        Svg: require('@site/static/img/undraw_docusaurus_tree.svg').default,
+        image: {
+            type: 'svg',
+            source: require('@site/static/img/undraw_docusaurus_tree.svg').default,
+        },
         description: (
             <>
                 Benefit from continuous improvements driven by a vibrant community.
@@ -71,11 +94,27 @@ const FeatureList: FeatureItem[] = [
     },
 ];
 
-function Feature({title, Svg, description}: FeatureItem) {
+function FeatureImage({ image }: { image: ImageSource }) {
+    if (image.type === 'svg') {
+        const SvgComponent = image.source as React.ComponentType<React.ComponentProps<'svg'>>;
+        return <SvgComponent className={styles.featureSvg} role="img" />;
+    } else {
+        return (
+            <img
+                src={image.source as string}
+                className={styles.featureSvg}
+                alt=""
+                role="img"
+            />
+        );
+    }
+}
+
+function Feature({ title, image, description }: FeatureItem) {
     return (
         <div className={clsx('col col--4')}>
             <div className="text--center">
-                <Svg className={styles.featureSvg} role="img" />
+                <FeatureImage image={image} />
             </div>
             <div className="text--center padding-horiz--md">
                 <Heading as="h3">{title}</Heading>

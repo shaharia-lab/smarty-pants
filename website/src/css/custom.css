@@ -101,3 +101,22 @@ a:hover {
 [data-theme='dark'] a:hover {
   color: rgb(140, 154, 182);
 }
+
+.features {
+  display: flex;
+  align-items: center;
+  padding: 2rem 0;
+  width: 100%;
+}
+
+.featureSvg {
+  height: 200px;
+  width: auto;
+  object-fit: contain;
+}
+
+@media screen and (max-width: 996px) {
+  .featureSvg {
+    height: 150px;
+  }
+}
