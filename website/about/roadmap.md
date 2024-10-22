@@ -12,7 +12,14 @@ description: "Explore SmartyPants' 2025 roadmap: core feature development, commu
 
 ### High Priority
 1. **Data Source Integration**
-    - Implement connectors for: Jira, Confluence, Slack, GitHub, Google Docs, Google Drive, Microsoft Teams, GitLab
+    - Implement connectors for: 
+      - Jira
+      - Confluence
+      - Slack
+      - GitHub
+      - GitLab
+      - Google Docs
+      - Google Drive
     - Develop a web crawler for ingesting webpage content
     - Create a REST API connector for custom data ingestion
 
@@ -22,9 +29,18 @@ description: "Explore SmartyPants' 2025 roadmap: core feature development, commu
     - Optimize search performance and relevance ranking
 
 3. **LLM and Embedding Provider Support**
-    - Add support for multiple LLM providers: OpenAI, Anthropic's Claude, AWS Bedrock, Google's Gemini
-    - Integrate embedding providers: OpenAI, Mistral Embed, Vertex AI
-    - Implement support for Milvus as a vector database
+    - Add support for multiple LLM providers:
+      - OpenAI,
+      - Anthropic's Claude
+      - AWS Bedrock
+      - Google's Gemini
+    - Integrate embedding providers:
+      - OpenAI
+      - Mistral Embed
+      - Vertex AI
+    - Implement support for various vector database:
+      - PostgreSQL (with pgvector extension)
+      - Milvus
 
 ### Medium Priority
 4. **API Development**
@@ -35,11 +51,7 @@ description: "Explore SmartyPants' 2025 roadmap: core feature development, commu
     - Create SmartyPants SDKs for: Go, Python, JavaScript, PHP
     - Ensure comprehensive documentation and examples for each SDK
 
-6. **Chatbot Integration**
-    - Develop code generation tools for embedding chatbots in various platforms
-    - Create templates and examples for common chatbot use cases
-
-7. **Mobile Application Development**
+6. **Mobile Application Development**
     - Initial release of Android and iOS apps with core search functionality and basic LLM interaction
 
 ### Lower Priority
@@ -49,8 +61,11 @@ description: "Explore SmartyPants' 2025 roadmap: core feature development, commu
     - Set up community forums and support channels
 
 9. **Deployment Options**
-    - Finalize deployment configurations for: Local machine setup, Kubernetes using Helm charts, Serverless infrastructure (Google Cloud Run)
-    - Create detailed deployment guides for each option
+    - Ability to deploy in the following infrastructure: 
+      - Local machine setup
+      - Kubernetes using Helm charts
+      - Serverless infrastructure
+        - GCP Cloud Run
 
 10. **Testing and Quality Assurance**
     - Implement comprehensive unit and integration testing
