@@ -21,7 +21,7 @@ Without those components, you can't use the full potential of SmartyPants.
 To be able to ask question to SmartyPants, and be able to get the answer, you need to configure at least one LLM provider.
 Please go to http://your-frontend-app.dev/llm-providers and configure your first LLM provider.
 
-To learn more about supported LLM providers and it's configuration, please go to [LLM Providers](/docs/documentations/llm-providers) section.
+To learn more about supported LLM providers and it's configuration, please go to [LLM Providers](/docs/llm-providers) section.
 
 ### Embedding Provider
 For semantic search capability, you need to configure at least one embedding provider. So, when your datasource will 
