@@ -9,7 +9,7 @@ const config: Config = {
   favicon: 'img/favicon.svg',
 
   // Set the production url of your site here
-  url: 'https://your-docusaurus-site.example.com',
+  url: 'https://smarty-pants.shaharialab.com',
   // Set the /<baseUrl>/ pathname under which your site is served
   // For GitHub pages deployment, it is often '/<projectName>/'
   baseUrl: '/',
@@ -29,6 +29,18 @@ const config: Config = {
     defaultLocale: 'en',
     locales: ['en'],
   },
+
+  plugins: [
+    [
+      '@docusaurus/plugin-content-docs',
+      {
+        id: 'about',
+        path: 'about',
+        routeBasePath: 'about',
+        sidebarPath: require.resolve('./aboutSidebar.js'),
+      },
+    ],
+  ],
 
   presets: [
     [
@@ -64,8 +76,11 @@ const config: Config = {
   ],
 
   themeConfig: {
-    // Replace with your project's social card
-    image: 'img/docusaurus-social-card.jpg',
+    metadata: [
+      {name: 'keywords', content: 'ai, llm, generative ai, smarty pants, shaharia lab'},
+      {name: 'twitter:card', content: 'summary_large_image'},
+    ],
+    image: 'img/smartypants-social-card.png',
     navbar: {
       title: 'SmartyPants',
       logo: {
@@ -74,10 +89,14 @@ const config: Config = {
       },
       items: [
         {
-          type: 'docSidebar',
-          sidebarId: 'tutorialSidebar',
+          href: '/about',
+          label: 'About SmartyPants',
           position: 'left',
+        },
+        {
+          href: '/docs/installation',
           label: 'Documentations',
+          position: 'left',
         },
         {to: '/blog', label: 'Blog', position: 'left'},
         {
@@ -91,11 +110,20 @@ const config: Config = {
       style: 'dark',
       links: [
         {
+          title: 'About SmartyPants',
+          items: [
+            {
+              label: 'About SmartyPants',
+              to: '/about',
+            },
+          ],
+        },
+        {
           title: 'Docs',
           items: [
             {
               label: 'Documentation',
-              to: '/docs/what-is-smarty-pants',
+              to: '/docs/installation',
             },
           ],
         },
@@ -130,7 +158,7 @@ const config: Config = {
           ],
         },
       ],
-      copyright: `Copyright © ${new Date().getFullYear()} Shaharia Lab OÜ. An Open Source initiative. Built with Docusaurus.`,
+      copyright: `Copyright © ${new Date().getFullYear()} <a href="https://shaharialab.com/open-source?utm_source=smarty_pants_website">Shaharia Lab OÜ</a>. An Open Source initiative. Built with Docusaurus.`,
     },
     prism: {
       theme: prismThemes.github,
