@@ -94,7 +94,7 @@ const config: Config = {
           position: 'left',
         },
         {
-          href: '/docs/category/documentations',
+          href: '/docs/installation',
           label: 'Documentations',
           position: 'left',
         },
