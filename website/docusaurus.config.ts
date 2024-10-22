@@ -114,7 +114,7 @@ const config: Config = {
           items: [
             {
               label: 'About SmartyPants',
-              to: '/docs/about/intro',
+              to: '/about',
             },
           ],
         },
@@ -123,7 +123,7 @@ const config: Config = {
           items: [
             {
               label: 'Documentation',
-              to: '/docs/documentations/installation',
+              to: '/docs/installation',
             },
           ],
         },
