@@ -29,11 +29,11 @@ discover new documents, it will be able to generate the embeddings for those doc
 
 You need to go to http://your-frontend-app.dev/embedding-providers and configure your first embedding provider.
 
-To learn more about supported embedding providers and it's configuration, please go to [Embedding Providers](/docs/documentations/embedding-providers) section.
+To learn more about supported embedding providers and it's configuration, please go to [Embedding Providers](/docs/embedding-providers) section.
 
 
 ### Datasource Integration
 
 It's time to integrate your datasource with SmartyPants. You need to go to http://your-frontend-app.dev/datasources and configure your first datasource.
 
-To learn more about supported datasource and it's configuration, please go to [Datasources](/docs/documentations/datasources) section.
+To learn more about supported datasource and it's configuration, please go to [Datasources](/docs/datasources) section.
