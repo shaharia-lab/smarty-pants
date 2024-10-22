@@ -56,8 +56,8 @@ const FeatureList: FeatureItem[] = [
     {
         title: 'Advanced Observability',
         image: {
-            type: 'svg',
-            source: require('@site/static/img/undraw_docusaurus_tree.svg').default,
+            type: 'png',
+            source: require('@site/static/img/observability.png').default,
         },
         description: (
             <>
