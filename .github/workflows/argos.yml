@@ -3,12 +3,12 @@ name: Argos CI Screenshots
 on:
   push:
     branches:
-      - master
+      - main
     paths:
       - '.github/workflows/argos.yml'
       - 'website/**'
   pull_request:
-    branches: [ master ]
+    branches: [ main ]
     types: [ opened, synchronize, reopened ]
     paths:
       - '.github/workflows/argos.yml'
