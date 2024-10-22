@@ -44,7 +44,7 @@ const FeatureList: FeatureItem[] = [
         title: 'Provider-Agnostic Architecture',
         image: {
             type: 'png',
-            source: require('@site/static/img/undraw_docusaurus_tree.svg'),
+            source: require('@site/static/img/provider_agnostic.png').default,
         },
         description: (
             <>
@@ -82,8 +82,8 @@ const FeatureList: FeatureItem[] = [
     {
         title: 'Open-Source Community Power',
         image: {
-            type: 'svg',
-            source: require('@site/static/img/undraw_docusaurus_tree.svg').default,
+            type: 'png',
+            source: require('@site/static/img/opens_source_community.png').default,
         },
         description: (
             <>
