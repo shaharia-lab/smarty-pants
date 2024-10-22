@@ -16,6 +16,7 @@
   },
   "dependencies": {
     "@docusaurus/core": "3.5.2",
+    "@docusaurus/plugin-content-pages": "^3.5.2",
     "@docusaurus/preset-classic": "3.5.2",
     "@mdx-js/react": "^3.0.0",
     "clsx": "^2.0.0",
@@ -24,10 +25,16 @@
     "react-dom": "^18.0.0"
   },
   "devDependencies": {
+    "@argos-ci/cli": "^2.4.6",
+    "@argos-ci/playwright": "^3.7.2",
     "@docusaurus/module-type-aliases": "3.5.2",
     "@docusaurus/tsconfig": "3.5.2",
     "@docusaurus/types": "3.5.2",
-    "typescript": "~5.5.2"
+    "@playwright/test": "^1.48.1",
+    "@types/xml2js": "^0.4.14",
+    "cheerio": "^1.0.0",
+    "typescript": "~5.5.2",
+    "xml2js": "^0.6.2"
   },
   "browserslist": {
     "production": [
