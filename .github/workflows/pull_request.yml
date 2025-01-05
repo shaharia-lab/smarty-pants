@@ -33,7 +33,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
-          go-version: '1.22'
+          go-version: '1.23'
       - name: Run Backend Tests
         run: make backend-test
 
@@ -125,7 +125,7 @@ jobs:
 
       - uses: actions/setup-go@v5
         with:
-          go-version: '^1.22'
+          go-version: '^1.23'
           check-latest: true
           cache: true
           go-version-file: 'backend/go.mod'
@@ -189,7 +189,7 @@ jobs:
 
       - uses: actions/setup-go@v3
         with:
-          go-version: '^1.22'
+          go-version: '^1.23'
 
       - uses: docker/login-action@v1
         with:
