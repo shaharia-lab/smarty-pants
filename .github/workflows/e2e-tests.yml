@@ -131,6 +131,7 @@ jobs:
         uses: actions/upload-artifact@v4
         if: failure()
         with:
+          retention-days: 1
           name: cypress-screenshots
           path: frontend/smarty-pants/cypress/screenshots
 
